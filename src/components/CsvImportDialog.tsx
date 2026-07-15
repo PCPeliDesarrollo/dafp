@@ -421,12 +421,10 @@ function PreviewSummary({
 
 export function CsvImportDialog({ trigger }: { trigger: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [done, setDone] = useState<{ count: number; name: string } | null>(null);
+  const [done, setDone] = useState<ImportedInfo | null>(null);
   const [tab, setTab] = useState<"pdf" | "csv">("pdf");
 
-  const handleImported = (count: number, name: string) => {
-    setDone({ count, name });
-  };
+  const handleImported = (info: ImportedInfo) => setDone(info);
 
   return (
     <Dialog
@@ -444,9 +442,10 @@ export function CsvImportDialog({ trigger }: { trigger: React.ReactNode }) {
             Importar ventas
           </DialogTitle>
           <DialogDescription>
-            Sube el reporte exportado desde tu programa de facturación. Los
-            datos se guardan en este navegador y sustituyen a los de
-            demostración.
+            Sube el reporte exportado desde tu programa de facturación. Cada
+            venta se guarda con su fecha real y se acumula con las
+            importaciones anteriores (los albaranes repetidos se actualizan,
+            no se duplican).
           </DialogDescription>
         </DialogHeader>
 
@@ -457,8 +456,14 @@ export function CsvImportDialog({ trigger }: { trigger: React.ReactNode }) {
             </div>
             <p className="font-medium">¡Importación completada!</p>
             <p className="text-sm text-muted-foreground">
-              {done.count} ventas importadas desde{" "}
+              <span className="font-medium text-foreground">{done.added}</span>{" "}
+              nuevas ·{" "}
+              <span className="font-medium text-foreground">{done.updated}</span>{" "}
+              actualizadas · desde{" "}
               <span className="font-medium text-foreground">{done.name}</span>.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Total acumulado: {done.total} ventas.
             </p>
             <DialogFooter className="sm:justify-center">
               <Button onClick={() => setOpen(false)}>Ver dashboard</Button>
