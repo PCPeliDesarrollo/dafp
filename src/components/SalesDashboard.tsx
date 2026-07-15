@@ -265,9 +265,7 @@ export function SalesDashboard() {
       "fecha",
       "empleado",
       "total_venta",
-      "coste",
       "beneficio",
-      "margen",
     ];
     const escape = (v: unknown) => {
       const s = String(v ?? "");
