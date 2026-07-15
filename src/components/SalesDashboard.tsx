@@ -19,7 +19,8 @@ import {
   ReceiptText,
   TrendingUp,
   Trophy,
-  Download,
+  Upload,
+  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +31,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
+import { CsvImportDialog } from "./CsvImportDialog";
+import { ventasStore } from "@/lib/ventas-store";
 
 type RangoKey = "hoy" | "semana" | "mes" | "custom";
 
@@ -189,7 +192,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export function SalesDashboard() {
-  const { data, isLoading } = useDashboardVentas();
+  const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("hoy");
 
   const rows = data ?? [];
@@ -259,33 +262,8 @@ export function SalesDashboard() {
       .sort((a, b) => b.total - a.total);
   }, [rows, today]);
 
-  const exportCSV = () => {
-    const cols: (keyof VentaRow)[] = [
-      "id",
-      "fecha",
-      "empleado",
-      "total_venta",
-      "beneficio",
-    ];
-    const escape = (v: unknown) => {
-      const s = String(v ?? "");
-      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const header = cols.join(",");
-    const body = filtered
-      .map((r) => cols.map((c) => escape((r as any)[c])).join(","))
-      .join("\n");
-    const csv = "\ufeff" + header + "\n" + body;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `dashboard_ventas_${rango}_${today || "export"}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
+
+
 
 
   if (isLoading) {
@@ -326,6 +304,28 @@ export function SalesDashboard() {
                 year: "numeric",
               }) : ""}
             </p>
+            <div className="mt-2">
+              {source === "csv" ? (
+                <Badge
+                  variant="outline"
+                  className="border-success/40 bg-success/10 text-success"
+                >
+                  CSV · {fileName}
+                  {importedAt && (
+                    <span className="ml-2 opacity-70">
+                      {new Date(importedAt).toLocaleDateString("es-ES")}
+                    </span>
+                  )}
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="border-border/60 text-muted-foreground"
+                >
+                  Datos de demostración
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Filtros rápidos + export */}
@@ -348,16 +348,29 @@ export function SalesDashboard() {
                 </Button>
               ))}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportCSV}
-              disabled={!filtered.length}
-              className="h-10 gap-2 rounded-xl border-border/60 bg-card/60 text-xs font-medium backdrop-blur hover:bg-muted/60"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Exportar CSV
-            </Button>
+            <CsvImportDialog
+              trigger={
+                <Button
+                  size="sm"
+                  className="h-10 gap-2 rounded-xl gradient-primary text-xs font-medium text-primary-foreground shadow-glow hover:opacity-90"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Importar CSV
+                </Button>
+              }
+            />
+            {source === "csv" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => ventasStore.clear()}
+                className="h-10 gap-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
+                title="Volver a los datos de demostración"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Restablecer demo
+              </Button>
+            )}
           </div>
         </header>
 
@@ -582,9 +595,9 @@ export function SalesDashboard() {
         </section>
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Datos simulados · Reemplaza <code className="rounded bg-muted px-1.5 py-0.5">useDashboardVentas</code>{" "}
-          por una consulta a Supabase para conectar la tabla{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5">dashboard_ventas</code>.
+          {source === "csv"
+            ? "Datos importados desde CSV · guardados en este navegador."
+            : "Datos de demostración · importa un CSV desde tu programa de facturación para ver tus ventas reales."}
         </p>
       </div>
     </div>
