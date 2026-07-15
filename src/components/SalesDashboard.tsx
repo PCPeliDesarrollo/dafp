@@ -326,16 +326,29 @@ export function SalesDashboard() {
                 </Button>
               ))}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportCSV}
-              disabled={!filtered.length}
-              className="h-10 gap-2 rounded-xl border-border/60 bg-card/60 text-xs font-medium backdrop-blur hover:bg-muted/60"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Exportar CSV
-            </Button>
+            <CsvImportDialog
+              trigger={
+                <Button
+                  size="sm"
+                  className="h-10 gap-2 rounded-xl gradient-primary text-xs font-medium text-primary-foreground shadow-glow hover:opacity-90"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Importar CSV
+                </Button>
+              }
+            />
+            {source === "csv" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => ventasStore.clear()}
+                className="h-10 gap-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
+                title="Volver a los datos de demostración"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Restablecer demo
+              </Button>
+            )}
           </div>
         </header>
 
