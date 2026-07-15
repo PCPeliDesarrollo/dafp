@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SalesDashboard } from "@/components/SalesDashboard";
+import { AuthGate } from "@/components/AuthGate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,5 +19,9 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: SalesDashboard,
+  component: () => (
+    <AuthGate>
+      <SalesDashboard />
+    </AuthGate>
+  ),
 });
