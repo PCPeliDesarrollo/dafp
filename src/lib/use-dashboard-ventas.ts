@@ -6,20 +6,18 @@ import { useVentasImport } from "./ventas-store";
  * Hook to fetch dashboard sales data.
  *
  * Data source priority:
- *  1. CSV imported by the user (stored in localStorage via ventasStore).
- *  2. Mock data (until the user imports a CSV from their billing software).
+ *  1. Ventas guardadas en Lovable Cloud (sincronizadas en tiempo real).
+ *  2. Datos de demostración (mientras no haya ventas importadas).
  */
 export function useDashboardVentas() {
   const imported = useVentasImport();
 
   const query = useQuery<VentaRow[]>({
-    queryKey: ["dashboard_ventas"],
-    queryFn: async () => {
-      await new Promise((r) => setTimeout(r, 200));
-      return generateMockVentas();
-    },
+    queryKey: ["dashboard_ventas_mock"],
+    queryFn: async () => generateMockVentas(),
     staleTime: 60_000,
-    enabled: !imported.rows,
+    // Only fall back to mock data once the cloud fetch finished with no rows
+    enabled: imported.loaded && !imported.rows,
   });
 
   if (imported.rows) {
@@ -30,6 +28,18 @@ export function useDashboardVentas() {
       source: "csv" as const,
       importedAt: imported.importedAt,
       fileName: imported.fileName,
+    };
+  }
+
+  // While the cloud fetch is in flight, show a loading state instead of mock
+  if (!imported.loaded) {
+    return {
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      source: "mock" as const,
+      importedAt: null,
+      fileName: null,
     };
   }
 
