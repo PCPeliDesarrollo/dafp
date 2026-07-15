@@ -101,9 +101,10 @@ function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
 
   const doImport = () => {
     if (!preview?.ready) return;
-    ventasStore.setImported(preview.rows, fileName);
-    onImported(preview.rows.length, fileName);
+    const info = ventasStore.setImported(preview.rows, fileName);
+    onImported({ ...info, name: fileName });
   };
+
 
   return (
     <div className="space-y-4">
