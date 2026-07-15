@@ -50,15 +50,37 @@ export const ventasStore = {
     listeners.add(l);
     return () => listeners.delete(l);
   },
-  setImported: (rows: VentaRow[], fileName: string) => {
+  /**
+   * Merge newly-imported rows with what's already stored.
+   * Rows are keyed by `id`, so re-importing the same albarán/factura updates
+   * it in place instead of duplicating. Returns counts for feedback.
+   */
+  setImported: (
+    rows: VentaRow[],
+    fileName: string,
+  ): { added: number; updated: number; total: number } => {
+    hydrate();
+    const map = new Map<string, VentaRow>();
+    for (const r of snapshot.rows ?? []) map.set(r.id, r);
+    let added = 0;
+    let updated = 0;
+    for (const r of rows) {
+      if (map.has(r.id)) updated++;
+      else added++;
+      map.set(r.id, r);
+    }
     snapshot = {
-      rows,
+      rows: Array.from(map.values()).sort((a, b) =>
+        a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0,
+      ),
       importedAt: new Date().toISOString(),
       fileName,
     };
     persist();
     emit();
+    return { added, updated, total: snapshot.rows!.length };
   },
+
   clear: () => {
     snapshot = { rows: null, importedAt: null, fileName: null };
     persist();
