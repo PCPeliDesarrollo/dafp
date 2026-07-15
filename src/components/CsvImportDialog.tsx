@@ -253,9 +253,10 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
 
   const doImport = () => {
     if (!converted) return;
-    ventasStore.setImported(converted.rows, fileName);
-    onImported(converted.rows.length, fileName);
+    const info = ventasStore.setImported(converted.rows, fileName);
+    onImported({ ...info, name: fileName });
   };
+
 
   return (
     <div className="space-y-4">
