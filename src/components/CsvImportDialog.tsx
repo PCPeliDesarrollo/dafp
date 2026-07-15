@@ -60,7 +60,9 @@ const FIELD_LABELS: { key: keyof ColumnMap; label: string; required: boolean }[]
   { key: "id", label: "ID / Nº factura (opcional)", required: false },
 ];
 
-function CsvPanel({ onImported }: { onImported: (n: number, name: string) => void }) {
+type ImportedInfo = { added: number; updated: number; total: number; name: string };
+
+function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) {
   const [fileName, setFileName] = useState("");
   const [parsed, setParsed] = useState<CsvParseResult | null>(null);
   const [map, setMap] = useState<ColumnMap>({
