@@ -259,6 +259,37 @@ export function SalesDashboard() {
       .sort((a, b) => b.total - a.total);
   }, [rows, today]);
 
+  const exportCSV = () => {
+    const cols: (keyof VentaRow)[] = [
+      "id",
+      "fecha",
+      "empleado",
+      "total_venta",
+      "coste",
+      "beneficio",
+      "margen",
+    ];
+    const escape = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = cols.join(",");
+    const body = filtered
+      .map((r) => cols.map((c) => escape((r as any)[c])).join(","))
+      .join("\n");
+    const csv = "\ufeff" + header + "\n" + body;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dashboard_ventas_${rango}_${today || "export"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-8">
