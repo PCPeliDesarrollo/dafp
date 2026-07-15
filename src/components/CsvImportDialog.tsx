@@ -213,10 +213,25 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
   const [margen, setMargen] = useState<number>(20);
   const [fileError, setFileError] = useState<string | null>(null);
 
-  const stocksDetectados = useMemo(() => {
-    if (!albaranes) return [] as string[];
-    return Array.from(new Set(albaranes.map((a) => a.stock))).sort();
+  const stocksMostrados = useMemo(() => {
+    // Always show the three known STOCK slots (A/T/C) so the user sees the
+    // full mapping — plus any extra letter detected in this PDF.
+    const base = new Set(Object.keys(DEFAULT_STOCK_MAP));
+    for (const a of albaranes ?? []) base.add(a.stock);
+    return Array.from(base).sort();
   }, [albaranes]);
+
+  const stocksDetectados = useMemo(
+    () => new Set((albaranes ?? []).map((a) => a.stock)),
+    [albaranes],
+  );
+
+  const dateRange = useMemo(() => {
+    if (!albaranes?.length) return null;
+    const dates = albaranes.map((a) => a.fecha).sort();
+    return { min: dates[0], max: dates[dates.length - 1] };
+  }, [albaranes]);
+
 
   const onFile = async (file: File) => {
     setFileError(null);
