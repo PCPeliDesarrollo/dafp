@@ -1,8 +1,23 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { VentaRow } from "@/lib/dashboard-mock";
 
@@ -113,12 +128,15 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
   return (
     <Card className="gradient-card border-border/50 shadow-elevated">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base font-semibold">
           <CalendarDays className="h-4 w-4 text-primary" />
           Calendario de ventas
-          <Badge variant="outline" className="ml-auto border-border/60 text-muted-foreground">
+          <Badge variant="outline" className="border-border/60 text-muted-foreground">
             Pincha un día para ver el detalle
           </Badge>
+          <div className="ml-auto">
+            <MonthlySummary rows={rows} />
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -300,5 +318,185 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Monthly summary                                */
+/* -------------------------------------------------------------------------- */
+
+function MonthlySummary({ rows }: { rows: VentaRow[] }) {
+  const [open, setOpen] = useState(false);
+
+  // All months that have at least one row, sorted newest → oldest
+  const months = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) set.add(r.fecha.slice(0, 7)); // YYYY-MM
+    return Array.from(set).sort().reverse();
+  }, [rows]);
+
+  const defaultMonth = months[0] ?? new Date().toISOString().slice(0, 7);
+  const [month, setMonth] = useState<string>(defaultMonth);
+
+  // Keep selection valid when data changes
+  const currentMonth = months.includes(month) ? month : defaultMonth;
+
+  const monthRows = useMemo(
+    () => rows.filter((r) => r.fecha.startsWith(currentMonth)),
+    [rows, currentMonth],
+  );
+
+  const total = monthRows.reduce((a, r) => a + r.total_venta, 0);
+  const beneficio = monthRows.reduce((a, r) => a + r.beneficio, 0);
+  const margen = total > 0 ? beneficio / total : 0;
+  const nAlb = monthRows.length;
+  const diasActivos = new Set(monthRows.map((r) => r.fecha)).size;
+
+  const porComercial = useMemo(() => {
+    const m = new Map<string, { total: number; beneficio: number; n: number }>();
+    for (const r of monthRows) {
+      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
+      cur.total += r.total_venta;
+      cur.beneficio += r.beneficio;
+      cur.n += 1;
+      m.set(r.empleado, cur);
+    }
+    return Array.from(m.entries())
+      .map(([empleado, v]) => ({ empleado, ...v }))
+      .sort((a, b) => b.total - a.total);
+  }, [monthRows]);
+
+  const formatMonthLabel = (ym: string) => {
+    const [y, m] = ym.split("-").map(Number);
+    return `${MONTHS[m - 1]} ${y}`;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 rounded-lg border-primary/40 bg-primary/10 text-xs font-medium text-primary hover:bg-primary/15"
+        >
+          <Calculator className="h-3.5 w-3.5" />
+          Cálculo mensual
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-primary" />
+            Resumen mensual
+          </DialogTitle>
+          <DialogDescription>
+            Suma de todos los albaranes registrados en el mes seleccionado.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Mes</label>
+            {months.length === 0 ? (
+              <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                Todavía no hay ventas importadas.
+              </p>
+            ) : (
+              <Select value={currentMonth} onValueChange={setMonth}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((ym) => (
+                    <SelectItem key={ym} value={ym}>
+                      {formatMonthLabel(ym)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-lg border border-border/60 bg-card/60 p-3">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <Euro className="h-3 w-3" /> Total
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">
+                {eur.format(total)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-card/60 p-3">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <TrendingUp className="h-3 w-3" /> Beneficio
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">
+                {eur.format(beneficio)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                margen {(margen * 100).toFixed(1)}%
+              </div>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-card/60 p-3">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <ReceiptText className="h-3 w-3" /> Albaranes
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">{nAlb}</div>
+            </div>
+            <div className="rounded-lg border border-border/60 bg-card/60 p-3">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <CalendarDays className="h-3 w-3" /> Días
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums">{diasActivos}</div>
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <Users className="h-3 w-3" /> Desglose por comercial
+            </div>
+            {porComercial.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Sin ventas este mes.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {porComercial.map((e) => {
+                  const share = total > 0 ? (e.total / total) * 100 : 0;
+                  return (
+                    <div
+                      key={e.empleado}
+                      className="rounded-lg border border-border/50 bg-background/40 px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{e.empleado}</span>
+                        <span className="flex items-center gap-3">
+                          <span className="text-muted-foreground">{e.n} alb.</span>
+                          <span className="font-semibold tabular-nums">
+                            {eurP.format(e.total)}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted/60">
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${share}%` }}
+                          />
+                        </div>
+                        <span className="w-10 text-right text-[10px] tabular-nums text-muted-foreground">
+                          {share.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">
+                        Beneficio {eurP.format(e.beneficio)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
