@@ -19,6 +19,7 @@ import {
   ReceiptText,
   TrendingUp,
   Trophy,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -258,6 +259,35 @@ export function SalesDashboard() {
       .sort((a, b) => b.total - a.total);
   }, [rows, today]);
 
+  const exportCSV = () => {
+    const cols: (keyof VentaRow)[] = [
+      "id",
+      "fecha",
+      "empleado",
+      "total_venta",
+      "beneficio",
+    ];
+    const escape = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = cols.join(",");
+    const body = filtered
+      .map((r) => cols.map((c) => escape((r as any)[c])).join(","))
+      .join("\n");
+    const csv = "\ufeff" + header + "\n" + body;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `dashboard_ventas_${rango}_${today || "export"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-8">
@@ -298,24 +328,36 @@ export function SalesDashboard() {
             </p>
           </div>
 
-          {/* Filtros rápidos */}
-          <div className="inline-flex rounded-xl border border-border/60 bg-card/60 p-1 backdrop-blur">
-            {RANGOS.map((r) => (
-              <Button
-                key={r.key}
-                variant="ghost"
-                size="sm"
-                onClick={() => setRango(r.key)}
-                className={cn(
-                  "h-8 rounded-lg text-xs font-medium",
-                  rango === r.key
-                    ? "gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {r.label}
-              </Button>
-            ))}
+          {/* Filtros rápidos + export */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-xl border border-border/60 bg-card/60 p-1 backdrop-blur">
+              {RANGOS.map((r) => (
+                <Button
+                  key={r.key}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRango(r.key)}
+                  className={cn(
+                    "h-8 rounded-lg text-xs font-medium",
+                    rango === r.key
+                      ? "gradient-primary text-primary-foreground shadow-glow hover:opacity-90"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {r.label}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportCSV}
+              disabled={!filtered.length}
+              className="h-10 gap-2 rounded-xl border-border/60 bg-card/60 text-xs font-medium backdrop-blur hover:bg-muted/60"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar CSV
+            </Button>
           </div>
         </header>
 
