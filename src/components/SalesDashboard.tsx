@@ -192,7 +192,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export function SalesDashboard() {
-  const { data, isLoading } = useDashboardVentas();
+  const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("hoy");
 
   const rows = data ?? [];
