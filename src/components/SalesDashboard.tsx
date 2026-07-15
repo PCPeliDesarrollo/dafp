@@ -31,6 +31,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
+import { CsvImportDialog } from "./CsvImportDialog";
+import { ventasStore } from "@/lib/ventas-store";
 
 type RangoKey = "hoy" | "semana" | "mes" | "custom";
 
