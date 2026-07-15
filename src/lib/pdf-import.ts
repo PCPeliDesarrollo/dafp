@@ -56,10 +56,8 @@ export type AlbaranRow = {
   total: number;
 };
 
-// Match one albarán block: header (nº + fecha), STOCK X marker, and the
-// "Base Imponible / Impuestos / Total" summary — Total is the 3rd amount.
-const ALBARAN_RE =
-  /Albarán nº\s+(\d+#\d+)[\s\S]{0,1500}?Fecha\s+(\d{1,2}\/\d{1,2}\/\d{2,4})[\s\S]{0,800}?STOCK\s+([A-Z])[\s\S]{0,5000}?Base Imponible[\s\S]{0,400}?Total[\s\S]{0,300}?([\d.]+,\d{2})\s*€[\s\S]{0,80}?([\d.]+,\d{2})\s*€[\s\S]{0,80}?([\d.]+,\d{2})\s*€/g;
+
+
 
 function parseESNumber(s: string): number {
   const n = Number(s.replace(/\./g, "").replace(",", "."));
