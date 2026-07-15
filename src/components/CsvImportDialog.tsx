@@ -205,7 +205,7 @@ function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
 /*                              PDF import panel                              */
 /* -------------------------------------------------------------------------- */
 
-function PdfPanel({ onImported }: { onImported: (n: number, name: string) => void }) {
+function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) {
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [albaranes, setAlbaranes] = useState<AlbaranRow[] | null>(null);
