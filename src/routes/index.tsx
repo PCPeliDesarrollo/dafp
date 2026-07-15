@@ -14,7 +14,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "KPIs, gráficos y ranking del equipo comercial con datos actualizados por día y por empleado.",
+          "Panel visual de ventas, beneficios y clasificación del equipo comercial en tiempo real.",
       },
     ],
   }),
