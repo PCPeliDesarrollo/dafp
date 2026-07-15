@@ -360,7 +360,7 @@ export function SalesDashboard() {
                   className="h-10 gap-2 rounded-xl gradient-primary text-xs font-medium text-primary-foreground shadow-glow hover:opacity-90"
                 >
                   <Upload className="h-3.5 w-3.5" />
-                  Importar CSV
+                  Importar{"\u00a0"}
                 </Button>
               }
             />
