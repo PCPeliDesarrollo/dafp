@@ -304,6 +304,28 @@ export function SalesDashboard() {
                 year: "numeric",
               }) : ""}
             </p>
+            <div className="mt-2">
+              {source === "csv" ? (
+                <Badge
+                  variant="outline"
+                  className="border-success/40 bg-success/10 text-success"
+                >
+                  CSV · {fileName}
+                  {importedAt && (
+                    <span className="ml-2 opacity-70">
+                      {new Date(importedAt).toLocaleDateString("es-ES")}
+                    </span>
+                  )}
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="border-border/60 text-muted-foreground"
+                >
+                  Datos de demostración
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Filtros rápidos + export */}
