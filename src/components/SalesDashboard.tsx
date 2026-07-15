@@ -595,9 +595,9 @@ export function SalesDashboard() {
         </section>
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Datos simulados · Reemplaza <code className="rounded bg-muted px-1.5 py-0.5">useDashboardVentas</code>{" "}
-          por una consulta a Supabase para conectar la tabla{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5">dashboard_ventas</code>.
+          {source === "csv"
+            ? "Datos importados desde CSV · guardados en este navegador."
+            : "Datos de demostración · importa un CSV desde tu programa de facturación para ver tus ventas reales."}
         </p>
       </div>
     </div>
