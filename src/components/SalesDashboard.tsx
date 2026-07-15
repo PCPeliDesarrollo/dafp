@@ -34,13 +34,13 @@ import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
 import { CsvImportDialog } from "./CsvImportDialog";
 import { ventasStore } from "@/lib/ventas-store";
 
-type RangoKey = "hoy" | "semana" | "mes" | "custom";
+type RangoKey = "hoy" | "semana" | "mes" | "todo";
 
 const RANGOS: { key: RangoKey; label: string }[] = [
   { key: "hoy", label: "Hoy" },
   { key: "semana", label: "Esta semana" },
   { key: "mes", label: "Este mes" },
-  { key: "custom", label: "Personalizado" },
+  { key: "todo", label: "Todo" },
 ];
 
 const eur = new Intl.NumberFormat("es-ES", {
