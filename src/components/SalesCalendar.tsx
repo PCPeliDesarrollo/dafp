@@ -128,12 +128,15 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
   return (
     <Card className="gradient-card border-border/50 shadow-elevated">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base font-semibold">
           <CalendarDays className="h-4 w-4 text-primary" />
           Calendario de ventas
-          <Badge variant="outline" className="ml-auto border-border/60 text-muted-foreground">
+          <Badge variant="outline" className="border-border/60 text-muted-foreground">
             Pincha un día para ver el detalle
           </Badge>
+          <div className="ml-auto">
+            <MonthlySummary rows={rows} />
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
