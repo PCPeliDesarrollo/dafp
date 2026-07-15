@@ -99,10 +99,14 @@ function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
     return { ready: true as const, ...mapRows(parsed, map) };
   }, [parsed, map]);
 
-  const doImport = () => {
+  const doImport = async () => {
     if (!preview?.ready) return;
-    const info = ventasStore.setImported(preview.rows, fileName);
-    onImported({ ...info, name: fileName });
+    try {
+      const info = await ventasStore.setImported(preview.rows, fileName);
+      onImported({ ...info, name: fileName });
+    } catch (e: any) {
+      setFileError(e?.message ?? "No se pudieron guardar las ventas en la nube.");
+    }
   };
 
 
@@ -266,10 +270,14 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
     return albaranesToVentas(albaranes, stockMap, margen);
   }, [albaranes, stockMap, margen]);
 
-  const doImport = () => {
+  const doImport = async () => {
     if (!converted) return;
-    const info = ventasStore.setImported(converted.rows, fileName);
-    onImported({ ...info, name: fileName });
+    try {
+      const info = await ventasStore.setImported(converted.rows, fileName);
+      onImported({ ...info, name: fileName });
+    } catch (e: any) {
+      setFileError(e?.message ?? "No se pudieron guardar los albaranes en la nube.");
+    }
   };
 
 
