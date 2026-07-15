@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -34,13 +34,13 @@ import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
 import { CsvImportDialog } from "./CsvImportDialog";
 import { ventasStore } from "@/lib/ventas-store";
 
-type RangoKey = "hoy" | "semana" | "mes" | "custom";
+type RangoKey = "hoy" | "semana" | "mes" | "todo";
 
 const RANGOS: { key: RangoKey; label: string }[] = [
   { key: "hoy", label: "Hoy" },
   { key: "semana", label: "Esta semana" },
   { key: "mes", label: "Este mes" },
-  { key: "custom", label: "Personalizado" },
+  { key: "todo", label: "Todo" },
 ];
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -90,10 +90,8 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
     const start = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
     return rows.filter((r) => new Date(r.fecha) >= start);
   }
-  // custom -> last 15 days for demo
-  const start = new Date(todayDate);
-  start.setDate(todayDate.getDate() - 14);
-  return rows.filter((r) => new Date(r.fecha) >= start);
+  // "todo" — every row in the dataset
+  return rows;
 }
 
 function variacion(actual: number, previo: number) {
@@ -194,6 +192,12 @@ function ChartTooltip({ active, payload, label }: any) {
 export function SalesDashboard() {
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("hoy");
+
+  // Whenever a new CSV/PDF import lands, switch to "Todo" so the user
+  // immediately sees the imported rows regardless of their real date.
+  useEffect(() => {
+    if (source === "csv" && importedAt) setRango("todo");
+  }, [source, importedAt]);
 
   const rows = data ?? [];
   const filtered = useMemo(() => filterByRange(rows, rango), [rows, rango]);

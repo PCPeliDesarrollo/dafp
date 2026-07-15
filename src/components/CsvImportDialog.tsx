@@ -213,10 +213,25 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
   const [margen, setMargen] = useState<number>(20);
   const [fileError, setFileError] = useState<string | null>(null);
 
-  const stocksDetectados = useMemo(() => {
-    if (!albaranes) return [] as string[];
-    return Array.from(new Set(albaranes.map((a) => a.stock))).sort();
+  const stocksMostrados = useMemo(() => {
+    // Always show the three known STOCK slots (A/T/C) so the user sees the
+    // full mapping — plus any extra letter detected in this PDF.
+    const base = new Set(Object.keys(DEFAULT_STOCK_MAP));
+    for (const a of albaranes ?? []) base.add(a.stock);
+    return Array.from(base).sort();
   }, [albaranes]);
+
+  const stocksDetectados = useMemo(
+    () => new Set((albaranes ?? []).map((a) => a.stock)),
+    [albaranes],
+  );
+
+  const dateRange = useMemo(() => {
+    if (!albaranes?.length) return null;
+    const dates = albaranes.map((a) => a.fecha).sort();
+    return { min: dates[0], max: dates[dates.length - 1] };
+  }, [albaranes]);
+
 
   const onFile = async (file: File) => {
     setFileError(null);
@@ -302,32 +317,47 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
           <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs">
             <span className="truncate font-medium">{fileName}</span>
             <span className="text-muted-foreground">
-              {albaranes.length} albaranes detectados
+              {albaranes.length} albaranes ·{" "}
+              {dateRange &&
+                (dateRange.min === dateRange.max
+                  ? new Date(dateRange.min).toLocaleDateString("es-ES")
+                  : `${new Date(dateRange.min).toLocaleDateString("es-ES")} → ${new Date(dateRange.max).toLocaleDateString("es-ES")}`)}
             </span>
           </div>
 
           <div>
             <Label className="text-xs">Asigna cada STOCK a su comercial</Label>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              {stocksDetectados.map((s) => (
-                <div key={s} className="flex items-center gap-2">
-                  <span className="inline-flex h-9 min-w-16 items-center justify-center rounded-md border border-border/60 bg-card/60 px-2 text-xs font-semibold">
-                    STOCK {s}
-                  </span>
-                  <Input
-                    value={stockMap[s] ?? ""}
-                    placeholder="Nombre del comercial"
-                    onChange={(e) =>
-                      setStockMap((m) => ({ ...m, [s]: e.target.value }))
-                    }
-                    className="h-9"
-                  />
-                </div>
-              ))}
+              {stocksMostrados.map((s) => {
+                const enPdf = stocksDetectados.has(s);
+                return (
+                  <div key={s} className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex h-9 min-w-16 items-center justify-center rounded-md border px-2 text-xs font-semibold",
+                        enPdf
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border/60 bg-card/60 text-muted-foreground",
+                      )}
+                      title={enPdf ? "Presente en este PDF" : "No aparece en este PDF"}
+                    >
+                      STOCK {s}
+                    </span>
+                    <Input
+                      value={stockMap[s] ?? ""}
+                      placeholder="Nombre del comercial"
+                      onChange={(e) =>
+                        setStockMap((m) => ({ ...m, [s]: e.target.value }))
+                      }
+                      className="h-9"
+                    />
+                  </div>
+                );
+              })}
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Deja el nombre vacío para omitir todas las ventas de ese STOCK
-              (por ejemplo si un comercial ya no está).
+              Los STOCK resaltados aparecen en este PDF. Deja el nombre vacío
+              para omitir todas las ventas de ese STOCK.
             </p>
           </div>
 

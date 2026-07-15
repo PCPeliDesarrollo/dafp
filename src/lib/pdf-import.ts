@@ -74,22 +74,21 @@ export function parseAlbaranes(text: string): AlbaranRow[] {
   const out: AlbaranRow[] = [];
   const seen = new Set<string>();
 
-  // Split the document into per-albarán chunks. Each albarán starts with
-  // "Albarán nº <n>#<code>"; a document may repeat that line in the footer.
-  const headerRe = /Albarán nº\s+(\d+#\d+)/g;
-  const positions: { num: string; index: number }[] = [];
+  // Only real page headers are followed shortly by the "Agente" label.
+  // Footer references like "Albarán nº 10#0368  Pág.1/3" do NOT have it, so
+  // this pattern skips them and picks the correct header for every albarán,
+  // even when several pages share the same footer number.
+  const headerRe = /Albarán nº\s+(\d+#\d+)[\s\S]{0,120}?Agente/g;
+  const uniquePositions: { num: string; index: number }[] = [];
+  const found = new Set<string>();
   let m: RegExpExecArray | null;
   while ((m = headerRe.exec(text)) !== null) {
-    positions.push({ num: m[1], index: m.index });
+    if (found.has(m[1])) continue;
+    found.add(m[1]);
+    uniquePositions.push({ num: m[1], index: m.index });
   }
-  // Keep only the FIRST occurrence per albarán number (top-of-page header).
-  const firstByNum = new Map<string, number>();
-  for (const p of positions) {
-    if (!firstByNum.has(p.num)) firstByNum.set(p.num, p.index);
-  }
-  const uniquePositions = Array.from(firstByNum.entries())
-    .map(([num, index]) => ({ num, index }))
-    .sort((a, b) => a.index - b.index);
+  uniquePositions.sort((a, b) => a.index - b.index);
+
 
   for (let i = 0; i < uniquePositions.length; i++) {
     const start = uniquePositions[i].index;
