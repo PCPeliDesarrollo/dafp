@@ -464,7 +464,14 @@ export function CsvImportDialog({ trigger }: { trigger: React.ReactNode }) {
         if (!o) setTimeout(() => setDone(null), 200);
       }}
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogTrigger asChild>
+        {trigger || (
+          <Button variant="outline" size="sm" className="gap-2">
+            <Upload className="h-4 w-4" />
+            Importar{"\u00a0"}
+          </Button>
+        )}
+      </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
