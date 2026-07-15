@@ -90,10 +90,8 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
     const start = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
     return rows.filter((r) => new Date(r.fecha) >= start);
   }
-  // custom -> last 15 days for demo
-  const start = new Date(todayDate);
-  start.setDate(todayDate.getDate() - 14);
-  return rows.filter((r) => new Date(r.fecha) >= start);
+  // "todo" — every row in the dataset
+  return rows;
 }
 
 function variacion(actual: number, previo: number) {
