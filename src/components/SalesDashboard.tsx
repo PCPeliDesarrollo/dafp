@@ -193,6 +193,12 @@ export function SalesDashboard() {
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("hoy");
 
+  // Whenever a new CSV/PDF import lands, switch to "Todo" so the user
+  // immediately sees the imported rows regardless of their real date.
+  useEffect(() => {
+    if (source === "csv" && importedAt) setRango("todo");
+  }, [source, importedAt]);
+
   const rows = data ?? [];
   const filtered = useMemo(() => filterByRange(rows, rango), [rows, rango]);
 
