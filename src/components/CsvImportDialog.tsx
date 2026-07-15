@@ -317,32 +317,47 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
           <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs">
             <span className="truncate font-medium">{fileName}</span>
             <span className="text-muted-foreground">
-              {albaranes.length} albaranes detectados
+              {albaranes.length} albaranes ·{" "}
+              {dateRange &&
+                (dateRange.min === dateRange.max
+                  ? new Date(dateRange.min).toLocaleDateString("es-ES")
+                  : `${new Date(dateRange.min).toLocaleDateString("es-ES")} → ${new Date(dateRange.max).toLocaleDateString("es-ES")}`)}
             </span>
           </div>
 
           <div>
             <Label className="text-xs">Asigna cada STOCK a su comercial</Label>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              {stocksDetectados.map((s) => (
-                <div key={s} className="flex items-center gap-2">
-                  <span className="inline-flex h-9 min-w-16 items-center justify-center rounded-md border border-border/60 bg-card/60 px-2 text-xs font-semibold">
-                    STOCK {s}
-                  </span>
-                  <Input
-                    value={stockMap[s] ?? ""}
-                    placeholder="Nombre del comercial"
-                    onChange={(e) =>
-                      setStockMap((m) => ({ ...m, [s]: e.target.value }))
-                    }
-                    className="h-9"
-                  />
-                </div>
-              ))}
+              {stocksMostrados.map((s) => {
+                const enPdf = stocksDetectados.has(s);
+                return (
+                  <div key={s} className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex h-9 min-w-16 items-center justify-center rounded-md border px-2 text-xs font-semibold",
+                        enPdf
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border/60 bg-card/60 text-muted-foreground",
+                      )}
+                      title={enPdf ? "Presente en este PDF" : "No aparece en este PDF"}
+                    >
+                      STOCK {s}
+                    </span>
+                    <Input
+                      value={stockMap[s] ?? ""}
+                      placeholder="Nombre del comercial"
+                      onChange={(e) =>
+                        setStockMap((m) => ({ ...m, [s]: e.target.value }))
+                      }
+                      className="h-9"
+                    />
+                  </div>
+                );
+              })}
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Deja el nombre vacío para omitir todas las ventas de ese STOCK
-              (por ejemplo si un comercial ya no está).
+              Los STOCK resaltados aparecen en este PDF. Deja el nombre vacío
+              para omitir todas las ventas de ese STOCK.
             </p>
           </div>
 
