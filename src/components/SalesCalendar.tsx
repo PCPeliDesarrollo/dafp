@@ -345,6 +345,37 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                   </div>
                 )}
               </div>
+
+              {/* Gastos del día */}
+              {selectedGastos.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    <Wallet className="h-3 w-3" /> Gastos ({selectedGastos.length})
+                  </div>
+                  <div className="max-h-40 space-y-1 overflow-y-auto pr-1">
+                    {selectedGastos
+                      .slice()
+                      .sort((a, b) => b.monto - a.monto)
+                      .map((g) => (
+                        <div
+                          key={g.id}
+                          className="flex items-center justify-between gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-2 py-1.5 text-xs"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[11px]">{g.concepto || "Movimiento"}</div>
+                            <div className="truncate text-[10px] text-muted-foreground">
+                              {g.categoria === "personales" ? "Personales" : "Tienda"} · {g.fuente === "banco" ? "Banco" : "Efectivo"}
+                            </div>
+                          </div>
+                          <div className="font-semibold tabular-nums text-destructive">
+                            −{eurP.format(g.monto)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
