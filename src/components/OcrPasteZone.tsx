@@ -19,7 +19,7 @@ type Status =
   | { kind: "idle" }
   | { kind: "ocr"; progress: number }
   | { kind: "parsed"; parsed: ParsedAlbaran; text: string }
-  | { kind: "saving" }
+  | { kind: "saving"; parsed: ParsedAlbaran; text: string }
   | { kind: "saved"; parsed: ParsedAlbaran }
   | { kind: "error"; message: string };
 
