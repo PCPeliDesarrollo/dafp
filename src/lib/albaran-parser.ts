@@ -162,7 +162,6 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     fecha,
     numero,
     warnings,
-    warnings,
   };
 }
 
