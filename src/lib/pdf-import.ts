@@ -138,7 +138,6 @@ export const DEFAULT_STOCK_MAP: StockMap = {
 export function albaranesToVentas(
   albaranes: AlbaranRow[],
   stockMap: StockMap,
-  margenPct: number,
 ): { rows: VentaRow[]; skipped: AlbaranRow[] } {
   const rows: VentaRow[] = [];
   const skipped: AlbaranRow[] = [];
@@ -148,13 +147,14 @@ export function albaranesToVentas(
       skipped.push(a);
       continue;
     }
-    const beneficio = Math.round(a.total * (margenPct / 100) * 100) / 100;
+    // Beneficio real se obtiene por OCR de la captura del albarán (PVP-PVD).
+    // Aquí solo se registra el ingreso bruto; beneficio queda a 0 hasta OCR.
     rows.push({
       id: `alb-${a.numero}`,
       fecha: a.fecha,
       empleado,
       total_venta: a.total,
-      beneficio,
+      beneficio: 0,
     });
   }
   return { rows, skipped };

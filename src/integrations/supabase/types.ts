@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      gastos: {
+        Row: {
+          categoria: string
+          concepto: string
+          created_at: string
+          fecha: string
+          fuente: string
+          id: string
+          monto: number
+          referencia: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string
+          concepto?: string
+          created_at?: string
+          fecha?: string
+          fuente?: string
+          id: string
+          monto?: number
+          referencia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          concepto?: string
+          created_at?: string
+          fecha?: string
+          fuente?: string
+          id?: string
+          monto?: number
+          referencia?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ventas: {
         Row: {
           beneficio: number

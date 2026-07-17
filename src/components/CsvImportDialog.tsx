@@ -214,7 +214,7 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
   const [busy, setBusy] = useState(false);
   const [albaranes, setAlbaranes] = useState<AlbaranRow[] | null>(null);
   const [stockMap, setStockMap] = useState<StockMap>({ ...DEFAULT_STOCK_MAP });
-  const [margen, setMargen] = useState<number>(20);
+  
   const [fileError, setFileError] = useState<string | null>(null);
 
   const stocksMostrados = useMemo(() => {
@@ -267,8 +267,8 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
 
   const converted = useMemo(() => {
     if (!albaranes) return null;
-    return albaranesToVentas(albaranes, stockMap, margen);
-  }, [albaranes, stockMap, margen]);
+    return albaranesToVentas(albaranes, stockMap);
+  }, [albaranes, stockMap]);
 
   const doImport = async () => {
     if (!converted) return;
@@ -369,26 +369,14 @@ function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
             </p>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div>
-              <Label className="text-xs">Margen de beneficio estimado (%)</Label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                step={0.5}
-                value={margen}
-                onChange={(e) => setMargen(Number(e.target.value) || 0)}
-                className="mt-1 h-9"
-              />
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                El PDF no incluye el coste; se aplica este margen sobre el total
-                para calcular el beneficio.
-              </p>
-            </div>
+          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+            <p className="text-muted-foreground">
+              El beneficio real se calcula desde los albaranes con OCR (PVP/PVD/ENTREGA).
+              Estos albaranes de PDF se importan como ingreso bruto sin beneficio hasta que se pegue la captura.
+            </p>
             <Badge
               variant="outline"
-              className="h-9 justify-center border-primary/30 bg-primary/10 text-primary"
+              className="ml-3 h-9 justify-center border-primary/30 bg-primary/10 text-primary"
             >
               {converted.rows.length} ventas listas
             </Badge>
