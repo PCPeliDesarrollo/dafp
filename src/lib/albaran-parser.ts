@@ -1,0 +1,89 @@
+// Parser + calculadora de albaranes basado en palabras clave.
+// Todo el texto se normaliza a MAYÚSCULAS antes de aplicar los regex.
+
+export type MetodoPago = "efectivo" | "tpv" | "banco";
+
+export type ParsedAlbaran = {
+  pvp: number;
+  pvd: number;
+  entrega: number | null;
+  metodo_pago: MetodoPago;
+  ingreso: number;
+  coste: number;
+  beneficio_real: number;
+  warnings: string[];
+};
+
+function firstNumberAfter(text: string, keyword: string): number | null {
+  // Acepta "PVP 200", "PVP: 200", "PVP=200", "PVP\n200", "PVP 1.234,56"
+  const re = new RegExp(
+    `\\b${keyword}\\b[^\\d\\-]*([\\-]?\\d{1,3}(?:[.\\s]\\d{3})*(?:[.,]\\d+)?|[\\-]?\\d+(?:[.,]\\d+)?)`,
+    "i",
+  );
+  const m = re.exec(text);
+  if (!m) return null;
+  // "1.234,56" -> 1234.56 ; "1234.56" -> 1234.56 ; "50" -> 50
+  let raw = m[1].replace(/\s/g, "");
+  if (raw.includes(",")) {
+    raw = raw.replace(/\./g, "").replace(",", ".");
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function parseAlbaranText(rawText: string): ParsedAlbaran {
+  const text = (rawText ?? "").toUpperCase();
+  const warnings: string[] = [];
+
+  const pvpVal = firstNumberAfter(text, "PVP");
+  const pvdVal = firstNumberAfter(text, "PVD");
+  const entregaVal = firstNumberAfter(text, "ENTREGA");
+
+  if (pvpVal == null) warnings.push("No se detectó PVP; se usa 0.");
+  if (pvdVal == null) warnings.push("No se detectó PVD; se usa 0.");
+
+  const pvp = pvpVal ?? 0;
+  const pvd = pvdVal ?? 0;
+
+  const hasTpv = /\bTPV\b/.test(text);
+  const hasBanco = /\bBANCO\b/.test(text);
+  const metodo_pago: MetodoPago = hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo";
+
+  let ingreso: number;
+  let coste: number;
+  let beneficio_real: number;
+  let entrega: number | null = null;
+
+  if (entregaVal != null && entregaVal > 0 && pvp > 0) {
+    entrega = entregaVal;
+    ingreso = entregaVal;
+    coste = entregaVal * (pvd / pvp);
+    beneficio_real = entregaVal * ((pvp - pvd) / pvp);
+  } else {
+    if (entregaVal != null && pvp <= 0) {
+      warnings.push("ENTREGA presente pero PVP=0; se ignora la entrega.");
+    }
+    ingreso = pvp;
+    coste = pvd;
+    beneficio_real = pvp - pvd;
+  }
+
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
+  return {
+    pvp: round2(pvp),
+    pvd: round2(pvd),
+    entrega: entrega != null ? round2(entrega) : null,
+    metodo_pago,
+    ingreso: round2(ingreso),
+    coste: round2(coste),
+    beneficio_real: round2(beneficio_real),
+    warnings,
+  };
+}
+
+export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
+  efectivo: "Efectivo (Caja)",
+  tpv: "Tarjeta (TPV)",
+  banco: "Transferencias (BANCO)",
+};
