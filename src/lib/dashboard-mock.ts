@@ -13,6 +13,9 @@ export type VentaRow = {
   pvp?: number | null;
   pvd?: number | null;
   entrega?: number | null;
+  efectivo_amount?: number | null;
+  tpv_amount?: number | null;
+  banco_amount?: number | null;
 };
 
 const EMPLEADOS = ["Lucía Fernández", "Marcos Ruiz", "Elena García", "Javier Soto", "Nora Vidal"];
