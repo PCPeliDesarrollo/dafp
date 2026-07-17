@@ -519,7 +519,11 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
                           <span className="font-semibold tabular-nums">
                             {eurP.format(e.total)}
                           </span>
+                          <span className="font-medium tabular-nums text-success">
+                            +{eurP.format(e.beneficio)}
+                          </span>
                         </span>
+
                       </div>
                       <div className="mt-1.5 flex items-center gap-2">
                         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted/60">
