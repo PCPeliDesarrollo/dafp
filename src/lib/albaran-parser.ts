@@ -101,6 +101,14 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     fecha = `${y}-${m}-${d}`;
   }
 
+  // Nº de albarán: "Albarán nº 10#0375" -> "10#0375". Se usa como ID único
+  // para que al re-subir la misma captura se sobrescriba, no se duplique.
+  let numero: string | null = null;
+  const numM =
+    /ALBAR[ÁA]N\s*(?:N[ºO°]?\.?)?\s*([0-9]+\s*#\s*[0-9]+)/i.exec(text) ||
+    /\b([0-9]{1,4}\s*#\s*[0-9]{2,6})\b/.exec(text);
+  if (numM) numero = numM[1].replace(/\s+/g, "");
+
   const hasTpv = /\bTPV\b/.test(text);
   const hasBanco = /\bBANCO\b/.test(text);
   const metodo_pago: MetodoPago =
