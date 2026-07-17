@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { parseAlbaranText, METODO_PAGO_LABEL, type ParsedAlbaran } from "@/lib/albaran-parser";
 import { ventasStore } from "@/lib/ventas-store";
-import { EMPLEADOS_LIST } from "@/lib/dashboard-mock";
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
