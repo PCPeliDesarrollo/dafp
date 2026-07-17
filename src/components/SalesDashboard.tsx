@@ -268,15 +268,16 @@ export function SalesDashboard() {
 
   // Desglose por método de pago (sobre `filtered`, respeta el filtro de rango)
   const desglosePago = useMemo(() => {
-    const base: Record<MetodoPago, { ingreso: number; count: number }> = {
-      efectivo: { ingreso: 0, count: 0 },
-      tpv: { ingreso: 0, count: 0 },
-      banco: { ingreso: 0, count: 0 },
+    const base: Record<MetodoPago, { ingreso: number; beneficio: number; count: number }> = {
+      efectivo: { ingreso: 0, beneficio: 0, count: 0 },
+      tpv: { ingreso: 0, beneficio: 0, count: 0 },
+      banco: { ingreso: 0, beneficio: 0, count: 0 },
     };
     for (const r of filtered) {
       const mp: MetodoPago = (r.metodo_pago ?? "efectivo") as MetodoPago;
       const b = base[mp] ?? base.efectivo;
       b.ingreso += r.total_venta;
+      b.beneficio += r.beneficio ?? 0;
       b.count += 1;
     }
     return base;
@@ -286,6 +287,15 @@ export function SalesDashboard() {
     () => filtered.reduce((a, r) => a + r.total_venta, 0),
     [filtered],
   );
+  const beneficioRealTotal = useMemo(
+    () => filtered.reduce((a, r) => a + (r.beneficio ?? 0), 0),
+    [filtered],
+  );
+  const albaranesConBeneficio = useMemo(
+    () => filtered.filter((r) => (r.beneficio ?? 0) > 0).length,
+    [filtered],
+  );
+
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnap = useGastos();
   const filteredGastos = useMemo(() => {
