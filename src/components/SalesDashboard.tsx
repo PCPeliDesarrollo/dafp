@@ -553,6 +553,127 @@ export function SalesDashboard() {
           })}
         </section>
 
+        {/* Resumen global de tesorería (Ingresos - Gastos = Dinero Neto Real) */}
+        <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-success/40 bg-success/5 shadow-elevated">
+            <CardContent className="p-5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Total Ingresos Reales
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">
+                {eurP.format(ingresosRealesTotal)}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Suma de PVP y entregas parciales
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-warning/40 bg-warning/5 shadow-elevated">
+            <CardContent className="p-5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Total Gastos Tienda
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-warning">
+                {eurP.format(gastosTiendaTotal)}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Efectivo + banco (proveedores)
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-destructive/40 bg-destructive/5 shadow-elevated">
+            <CardContent className="p-5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Total Gastos Personales
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
+                {eurP.format(gastosPersonales)}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Retiradas de caja personales
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="relative overflow-hidden gradient-primary text-primary-foreground shadow-glow">
+            <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <CardContent className="p-5">
+              <p className="flex items-center gap-1 text-[10px] uppercase tracking-widest opacity-90">
+                <PiggyBank className="h-3.5 w-3.5" /> Dinero Neto Real
+              </p>
+              <p className={cn(
+                "mt-1 text-3xl font-bold tabular-nums",
+                dineroNetoReal < 0 && "text-destructive-foreground",
+              )}>
+                {eurP.format(dineroNetoReal)}
+              </p>
+              <p className="mt-1 text-[11px] opacity-90">
+                Ingresos − Gastos Tienda − Gastos Personales
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Desglose de gastos por categoría */}
+        <section className="mt-4 grid gap-4 md:grid-cols-2">
+          <Card className="border-warning/30 bg-warning/5 shadow-elevated">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <ShoppingBag className="h-4 w-4 text-warning" /> Gastos Tienda
+                </p>
+                <Badge variant="outline" className="text-[10px]">
+                  {filteredGastos.filter((g) => g.categoria === "tienda").length} mov.
+                </Badge>
+              </div>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">
+                {eurP.format(gastosTiendaTotal)}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-md border border-border/50 bg-card/60 p-2">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Efectivo (manual)
+                  </p>
+                  <p className="mt-0.5 text-base font-semibold tabular-nums">
+                    {eurP.format(gastosTiendaCash)}
+                  </p>
+                </div>
+                <div className="rounded-md border border-border/50 bg-card/60 p-2">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Banco (CSV)
+                  </p>
+                  <p className="mt-0.5 text-base font-semibold tabular-nums">
+                    {eurP.format(gastosTiendaBanco)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-destructive/30 bg-destructive/5 shadow-elevated">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <Wallet className="h-4 w-4 text-destructive" /> Gastos Personales
+                </p>
+                <Badge variant="outline" className="text-[10px]">
+                  {filteredGastos.filter((g) => g.categoria === "personales").length} mov.
+                </Badge>
+              </div>
+              <p className="mt-2 text-2xl font-semibold tabular-nums">
+                {eurP.format(gastosPersonales)}
+              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Registrados en efectivo desde el formulario de gastos.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Formularios de gastos: caja manual + importador CSV bancario */}
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
+          <GastosCashForm />
+          <GastosBankImport />
+        </section>
+
         {/* Zona de pegado / OCR de albaranes */}
         <section className="mt-6">
           <OcrPasteZone />
