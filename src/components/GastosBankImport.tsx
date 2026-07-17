@@ -25,16 +25,15 @@ export function GastosBankImport() {
   const onFile = async (file: File) => {
     setBusy(true);
     try {
-      const text = await file.text();
-      const res = parseBankCsv(text, file.name);
+      const res = await parseBankFile(file);
       if (!res.expenses.length) {
-        toast.error("No se detectaron cargos negativos en el CSV");
+        toast.error("No se detectaron cargos negativos en el archivo");
         setPreview(null);
       } else {
         setPreview({ file: file.name, expenses: res.expenses, ignored: res.ignoredPositives });
       }
     } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo leer el CSV");
+      toast.error(err?.message ?? "No se pudo leer el archivo");
     } finally {
       setBusy(false);
     }
