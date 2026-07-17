@@ -634,7 +634,10 @@ export function SalesDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-destructive/30 bg-destructive/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-destructive/30 bg-destructive/5 shadow-elevated transition-colors hover:border-destructive/60 hover:bg-destructive/10"
+            onClick={() => setGastosDialog("personales")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <p className="flex items-center gap-2 text-sm font-semibold">
