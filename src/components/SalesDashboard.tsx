@@ -851,6 +851,12 @@ export function SalesDashboard() {
             : "Datos de demostración · importa un CSV desde tu programa de facturación para ver tus ventas reales."}
         </p>
       </div>
+      <GastosListDialog
+        open={gastosDialog !== null}
+        onOpenChange={(v) => !v && setGastosDialog(null)}
+        categoria={gastosDialog ?? "tienda"}
+        gastos={filteredGastos}
+      />
     </div>
   );
 }
