@@ -260,8 +260,8 @@ export function OcrPasteZone() {
             {(status.kind === "parsed" || status.kind === "saving") && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <Field label="PVP" value={eur.format(status.parsed.pvp)} />
-                  <Field label="PVD" value={eur.format(status.parsed.pvd)} />
+                  <Field label="PVP (TOTAL)" value={eur.format(status.parsed.pvp)} strong />
+                  <Field label="PVD (coste)" value={eur.format(status.parsed.pvd)} />
                   <Field
                     label="Entrega"
                     value={
@@ -269,19 +269,20 @@ export function OcrPasteZone() {
                     }
                   />
                   <Field
-                    label="Método"
-                    value={METODO_PAGO_LABEL[status.parsed.metodo_pago]}
-                  />
-                  <Field
-                    label="Ingreso"
-                    value={eur.format(status.parsed.ingreso)}
-                    strong
-                  />
-                  <Field
                     label="Beneficio real"
                     value={eur.format(status.parsed.beneficio_real)}
                     strong
                   />
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Desglose de cobro
+                  </p>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <Field label="Efectivo" value={eur.format(status.parsed.efectivo_amount)} />
+                    <Field label="TPV" value={eur.format(status.parsed.tpv_amount)} />
+                    <Field label="Banco" value={eur.format(status.parsed.banco_amount)} />
+                  </div>
                 </div>
                 {status.parsed.warnings.length > 0 && (
                   <div className="rounded-md bg-warning/10 p-2 text-xs text-warning">
