@@ -422,13 +422,21 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="rounded-lg border border-border/60 bg-card/60 p-3">
               <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <Euro className="h-3 w-3" /> Total
               </div>
               <div className="mt-1 text-lg font-semibold tabular-nums">
                 {eur.format(total)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-success/40 bg-success/5 p-3">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <Euro className="h-3 w-3" /> Beneficio
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums text-success">
+                {eur.format(beneficioMes)}
               </div>
             </div>
             <div className="rounded-lg border border-border/60 bg-card/60 p-3">
@@ -444,6 +452,7 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
               <div className="mt-1 text-lg font-semibold tabular-nums">{diasActivos}</div>
             </div>
           </div>
+
 
           <div>
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
