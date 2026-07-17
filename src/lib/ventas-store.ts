@@ -134,7 +134,7 @@ export const ventasStore = {
 
     const { error } = await supabase
       .from("ventas")
-      .upsert(payload, { onConflict: "id" });
+      .upsert(payload as any, { onConflict: "id" });
 
     if (error) {
       console.error("Error guardando ventas:", error);
