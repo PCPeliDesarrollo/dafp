@@ -108,7 +108,7 @@ export type ColumnMap = {
   fecha: string;
   empleado: string;
   total_venta: string;
-  beneficio: string;
+  beneficio?: string;
   id?: string;
 };
 
@@ -147,7 +147,6 @@ export function mapRows(
   const iFecha = idx(map.fecha);
   const iEmp = idx(map.empleado);
   const iTotal = idx(map.total_venta);
-  const iBen = idx(map.beneficio);
   const iId = idx(map.id ?? "");
 
   const rows: VentaRow[] = [];
@@ -158,14 +157,11 @@ export function mapRows(
     const fecha = iFecha >= 0 ? parseDate(r[iFecha] ?? "") : null;
     const empleado = iEmp >= 0 ? (r[iEmp] ?? "").trim() : "";
     const total = iTotal >= 0 ? parseNumber(r[iTotal] ?? "") : NaN;
-    const beneficio = iBen >= 0 ? parseNumber(r[iBen] ?? "") : NaN;
 
     if (!fecha) return errors.push({ row: rowNum, reason: "Fecha inválida" });
     if (!empleado) return errors.push({ row: rowNum, reason: "Empleado vacío" });
     if (!Number.isFinite(total))
       return errors.push({ row: rowNum, reason: "Total de venta inválido" });
-    if (!Number.isFinite(beneficio))
-      return errors.push({ row: rowNum, reason: "Beneficio inválido" });
 
     const id =
       (iId >= 0 && (r[iId] ?? "").trim()) ||
@@ -176,7 +172,7 @@ export function mapRows(
       fecha,
       empleado,
       total_venta: total,
-      beneficio,
+      beneficio: 0,
     });
   });
 

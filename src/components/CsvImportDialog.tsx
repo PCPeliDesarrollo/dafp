@@ -56,7 +56,6 @@ const FIELD_LABELS: { key: keyof ColumnMap; label: string; required: boolean }[]
   { key: "fecha", label: "Fecha", required: true },
   { key: "empleado", label: "Empleado", required: true },
   { key: "total_venta", label: "Total venta (€)", required: true },
-  { key: "beneficio", label: "Beneficio (€)", required: true },
   { key: "id", label: "ID / Nº factura (opcional)", required: false },
 ];
 
@@ -69,7 +68,6 @@ function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
     fecha: "",
     empleado: "",
     total_venta: "",
-    beneficio: "",
     id: "",
   });
   const [fileError, setFileError] = useState<string | null>(null);

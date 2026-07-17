@@ -41,17 +41,23 @@ async function loadFromCloud() {
     return;
   }
 
-  const rows: VentaRow[] = (data ?? []).map((r: any) => ({
-    id: r.id,
-    fecha: r.fecha,
-    empleado: r.empleado,
-    total_venta: Number(r.total_venta),
-    beneficio: Number(r.beneficio),
-    metodo_pago: (r.metodo_pago ?? "efectivo") as VentaRow["metodo_pago"],
-    pvp: r.pvp != null ? Number(r.pvp) : null,
-    pvd: r.pvd != null ? Number(r.pvd) : null,
-    entrega: r.entrega != null ? Number(r.entrega) : null,
-  }));
+  const rows: VentaRow[] = (data ?? []).map((r: any) => {
+    const pvp = r.pvp != null ? Number(r.pvp) : null;
+    const pvd = r.pvd != null ? Number(r.pvd) : null;
+    const entrega = r.entrega != null ? Number(r.entrega) : null;
+    const hasParsedAlbaranValues = pvp != null || pvd != null || entrega != null;
+    return {
+      id: r.id,
+      fecha: r.fecha,
+      empleado: r.empleado,
+      total_venta: Number(r.total_venta),
+      beneficio: hasParsedAlbaranValues ? Number(r.beneficio) : 0,
+      metodo_pago: (r.metodo_pago ?? "efectivo") as VentaRow["metodo_pago"],
+      pvp,
+      pvd,
+      entrega,
+    };
+  });
 
   // Compute a friendly "importedAt" from the most recent updated_at
   const mostRecent = (data ?? []).reduce<string | null>((acc, r) => {
