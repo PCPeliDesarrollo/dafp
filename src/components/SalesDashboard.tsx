@@ -216,10 +216,17 @@ function ChartTooltip({ active, payload, label }: any) {
 export function SalesDashboard() {
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("mes");
-
+  const [monthAnchor, setMonthAnchor] = useState<string>(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   const rows = data ?? [];
-  const filtered = useMemo(() => filterByRange(rows, rango), [rows, rango]);
+  const filtered = useMemo(
+    () => filterByRange(rows, rango, monthAnchor),
+    [rows, rango, monthAnchor],
+  );
+
 
   const { today, yesterday } = useMemo(() => isoDaysAgo(rows), [rows]);
   const todayRows = useMemo(() => rows.filter((r) => r.fecha === today), [rows, today]);
