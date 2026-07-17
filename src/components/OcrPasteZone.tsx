@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { parseAlbaranText, METODO_PAGO_LABEL, type ParsedAlbaran } from "@/lib/albaran-parser";
 import { ventasStore } from "@/lib/ventas-store";
-import { EMPLEADOS_LIST } from "@/lib/dashboard-mock";
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -25,7 +24,7 @@ type Status =
 
 export function OcrPasteZone() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
-  const [empleado, setEmpleado] = useState<string>(EMPLEADOS_LIST[0] ?? "");
+  const [fechaOverride, setFechaOverride] = useState<string | null>(null);
   const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -85,6 +84,13 @@ export function OcrPasteZone() {
 
   const save = async () => {
     if (status.kind !== "parsed") return;
+    if (!status.parsed.empleado) {
+      setStatus({
+        kind: "error",
+        message: "No se pudo detectar el STOCK (A/C/T) en la imagen. Sube una captura más clara.",
+      });
+      return;
+    }
     setStatus({ kind: "saving", parsed: status.parsed, text: status.text });
     try {
       const p = status.parsed;
@@ -92,13 +98,14 @@ export function OcrPasteZone() {
         [
           {
             id: `ocr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            fecha,
-            empleado: empleado || "Sin asignar",
+            fecha: fechaOverride ?? new Date().toISOString().slice(0, 10),
+            empleado: p.empleado!,
             total_venta: p.ingreso,
             beneficio: p.beneficio_real,
             metodo_pago: p.metodo_pago,
             pvp: p.pvp,
             pvd: p.pvd,
+
             entrega: p.entrega,
           },
         ],
@@ -234,30 +241,27 @@ export function OcrPasteZone() {
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Empleado</Label>
-                    <select
-                      value={empleado}
-                      onChange={(e) => setEmpleado(e.target.value)}
-                      className="mt-1 h-9 w-full rounded-md border border-border/60 bg-background px-2 text-sm"
-                    >
-                      {EMPLEADOS_LIST.map((e) => (
-                        <option key={e} value={e}>
-                          {e}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="rounded-md border border-border/40 bg-background/60 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Stock detectado
+                    </p>
+                    <p className="text-sm font-medium">
+                      {status.parsed.stock
+                        ? `${status.parsed.stock} · ${status.parsed.empleado}`
+                        : "— no detectado —"}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-xs">Fecha</Label>
                     <Input
                       type="date"
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
+                      value={fechaOverride ?? new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setFechaOverride(e.target.value)}
                       className="mt-1 h-9"
                     />
                   </div>
                 </div>
+
                 <div className="flex gap-2">
                   <Button
                     onClick={save}

@@ -3,6 +3,14 @@
 
 export type MetodoPago = "efectivo" | "tpv" | "banco";
 
+export type StockLetter = "A" | "C" | "T";
+
+export const STOCK_TO_EMPLEADO: Record<StockLetter, string> = {
+  A: "Ainhoa",
+  C: "Cristina",
+  T: "Tomás",
+};
+
 export type ParsedAlbaran = {
   pvp: number;
   pvd: number;
@@ -11,8 +19,11 @@ export type ParsedAlbaran = {
   ingreso: number;
   coste: number;
   beneficio_real: number;
+  stock: StockLetter | null;
+  empleado: string | null;
   warnings: string[];
 };
+
 
 function firstNumberAfter(text: string, keyword: string): number | null {
   // Acepta "PVP 200", "PVP: 200", "PVP=200", "PVP\n200", "PVP 1.234,56"
@@ -49,6 +60,20 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const hasBanco = /\bBANCO\b/.test(text);
   const metodo_pago: MetodoPago = hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo";
 
+  // Detect STOCK letter (A, C, T). Accepts "STOCK A", "STOCK: A", "STOCK\nA".
+  let stock: StockLetter | null = null;
+  const stockM = /\bSTOCK\b[^A-Z0-9]*([ACT])\b/.exec(text);
+  if (stockM) {
+    stock = stockM[1] as StockLetter;
+  } else {
+    // Fallback: isolated letter A/C/T on its own line/token near "STOCK" section
+    const altM = /\b([ACT])\b\s*(?:STOCK|\bSTK\b)/.exec(text);
+    if (altM) stock = altM[1] as StockLetter;
+  }
+  const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
+  if (!stock) warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
+
+
   let ingreso: number;
   let coste: number;
   let beneficio_real: number;
@@ -78,6 +103,8 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     ingreso: round2(ingreso),
     coste: round2(coste),
     beneficio_real: round2(beneficio_real),
+    stock,
+    empleado,
     warnings,
   };
 }
