@@ -31,7 +31,7 @@ function sortRows(rows: VentaRow[]): VentaRow[] {
 async function loadFromCloud() {
   const { data, error } = await supabase
     .from("ventas")
-    .select("id, fecha, empleado, total_venta, beneficio, updated_at")
+    .select("id, fecha, empleado, total_venta, beneficio, metodo_pago, pvp, pvd, entrega, updated_at")
     .order("fecha", { ascending: true });
 
   if (error) {
@@ -41,12 +41,16 @@ async function loadFromCloud() {
     return;
   }
 
-  const rows: VentaRow[] = (data ?? []).map((r) => ({
+  const rows: VentaRow[] = (data ?? []).map((r: any) => ({
     id: r.id,
     fecha: r.fecha,
     empleado: r.empleado,
     total_venta: Number(r.total_venta),
     beneficio: Number(r.beneficio),
+    metodo_pago: (r.metodo_pago ?? "efectivo") as VentaRow["metodo_pago"],
+    pvp: r.pvp != null ? Number(r.pvp) : null,
+    pvd: r.pvd != null ? Number(r.pvd) : null,
+    entrega: r.entrega != null ? Number(r.entrega) : null,
   }));
 
   // Compute a friendly "importedAt" from the most recent updated_at
