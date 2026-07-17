@@ -460,8 +460,8 @@ export function SalesDashboard() {
           />
         </section>
 
-        {/* Resumen real de ingresos, respeta filtro */}
-        <section className="mt-6 grid gap-4">
+        {/* Resumen real de ingresos y beneficio, respeta filtro */}
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Card className="gradient-card border-border/50 shadow-elevated">
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -475,7 +475,21 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
+          <Card className="border-success/40 bg-success/5 shadow-elevated">
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
+                {eurP.format(beneficioRealTotal)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Calculado desde PVP − PVD de los albaranes ({albaranesConBeneficio} con datos)
+              </p>
+            </CardContent>
+          </Card>
         </section>
+
 
         {/* Desglose por método de pago */}
         <section className="mt-4 grid gap-4 md:grid-cols-3">
