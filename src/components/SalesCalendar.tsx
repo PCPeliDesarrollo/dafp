@@ -265,20 +265,29 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                 })}
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2">
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <Euro className="h-3 w-3" /> Total
+                    <Euro className="h-3 w-3" /> Ingresos
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{eur.format(totalDia)}</div>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <ReceiptText className="h-3 w-3" /> Nº
+                    <ReceiptText className="h-3 w-3" /> Alb.
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{nAlb}</div>
                 </div>
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <Wallet className="h-3 w-3" /> Gastos
+                  </div>
+                  <div className="mt-1 text-sm font-semibold tabular-nums text-destructive">
+                    −{eur.format(gastosDia)}
+                  </div>
+                </div>
               </div>
+
 
               {/* Por comercial */}
               <div className="mt-4">
