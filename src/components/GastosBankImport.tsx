@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Landmark, Loader2, Upload } from "lucide-react";
-import { parseBankCsv, type BankExpense } from "@/lib/bank-csv";
+import type { BankExpense } from "@/lib/bank-csv";
+import { parseBankFile } from "@/lib/bank-file";
 import { gastosStore } from "@/lib/gastos-store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -24,16 +25,15 @@ export function GastosBankImport() {
   const onFile = async (file: File) => {
     setBusy(true);
     try {
-      const text = await file.text();
-      const res = parseBankCsv(text, file.name);
+      const res = await parseBankFile(file);
       if (!res.expenses.length) {
-        toast.error("No se detectaron cargos negativos en el CSV");
+        toast.error("No se detectaron cargos negativos en el archivo");
         setPreview(null);
       } else {
         setPreview({ file: file.name, expenses: res.expenses, ignored: res.ignoredPositives });
       }
     } catch (err: any) {
-      toast.error(err?.message ?? "No se pudo leer el CSV");
+      toast.error(err?.message ?? "No se pudo leer el archivo");
     } finally {
       setBusy(false);
     }
@@ -64,7 +64,7 @@ export function GastosBankImport() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Landmark className="h-4 w-4 text-info" />
-          Importar CSV bancario
+          Importar extracto bancario
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -78,7 +78,7 @@ export function GastosBankImport() {
           >
             <Upload className="h-6 w-6 text-muted-foreground" />
             <p className="text-sm font-medium">
-              {busy ? "Analizando CSV…" : "Sube el extracto bancario (.csv)"}
+              {busy ? "Analizando archivo…" : "Sube el extracto bancario (.xlsx, .xls, .csv o .pdf)"}
             </p>
             <p className="text-xs text-muted-foreground">
               Se ignoran los ingresos (positivos). Solo se importan los cargos
@@ -86,7 +86,7 @@ export function GastosBankImport() {
             </p>
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,.xlsm,.pdf,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf"
               className="hidden"
               disabled={busy}
               onChange={(e) => {
