@@ -322,13 +322,15 @@ export function SalesDashboard() {
     if (rango === "todo") return gastosSnap.rows;
     const now = new Date();
     if (rango === "mes") {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const [yy, mm] = monthAnchor.split("-").map(Number);
+      const start = new Date(yy, mm - 1, 1);
+      const end = new Date(yy, mm, 1);
       return gastosSnap.rows.filter((g) => {
         const d = new Date(g.fecha);
         return d >= start && d < end;
       });
     }
+
     // For "hoy" / "semana" anchor on max date in sales dataset (falls back to now)
     const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
     const anchorIso = sortedDates[sortedDates.length - 1];
