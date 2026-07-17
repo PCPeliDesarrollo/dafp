@@ -336,14 +336,16 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
   );
 
   const total = monthRows.reduce((a, r) => a + r.total_venta, 0);
+  const beneficioMes = monthRows.reduce((a, r) => a + (r.beneficio ?? 0), 0);
   const nAlb = monthRows.length;
   const diasActivos = new Set(monthRows.map((r) => r.fecha)).size;
 
   const porComercial = useMemo(() => {
-    const m = new Map<string, { total: number; n: number }>();
+    const m = new Map<string, { total: number; beneficio: number; n: number }>();
     for (const r of monthRows) {
-      const cur = m.get(r.empleado) ?? { total: 0, n: 0 };
+      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       cur.n += 1;
       m.set(r.empleado, cur);
     }
@@ -354,18 +356,20 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
 
   const porMetodo = useMemo(() => {
     const base = {
-      efectivo: { total: 0, n: 0 },
-      tpv: { total: 0, n: 0 },
-      banco: { total: 0, n: 0 },
-    } as Record<"efectivo" | "tpv" | "banco", { total: number; n: number }>;
+      efectivo: { total: 0, beneficio: 0, n: 0 },
+      tpv: { total: 0, beneficio: 0, n: 0 },
+      banco: { total: 0, beneficio: 0, n: 0 },
+    } as Record<"efectivo" | "tpv" | "banco", { total: number; beneficio: number; n: number }>;
     for (const r of monthRows) {
       const k = (r.metodo_pago ?? "efectivo") as "efectivo" | "tpv" | "banco";
       const cur = base[k] ?? base.efectivo;
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       cur.n += 1;
     }
     return base;
   }, [monthRows]);
+
 
   const formatMonthLabel = (ym: string) => {
     const [y, m] = ym.split("-").map(Number);
