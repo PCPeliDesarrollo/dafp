@@ -291,6 +291,14 @@ export function OcrPasteZone() {
                     ))}
                   </div>
                 )}
+                <details className="rounded-md border border-border/40 bg-background/40 p-2 text-[11px] text-muted-foreground">
+                  <summary className="cursor-pointer select-none">
+                    Ver texto OCR detectado (debug)
+                  </summary>
+                  <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-tight">
+                    {status.text || "(vacío)"}
+                  </pre>
+                </details>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-md border border-border/40 bg-background/60 px-3 py-2">
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
