@@ -42,6 +42,14 @@ import { GastosListDialog } from "./GastosListDialog";
 import { ventasStore } from "@/lib/ventas-store";
 import { useGastos } from "@/lib/gastos-store";
 import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 type RangoKey = "hoy" | "semana" | "mes" | "todo";
 
@@ -84,7 +92,7 @@ function isoDaysAgo(rows: VentaRow[]): { today: string; yesterday: string } {
   };
 }
 
-function filterByRange(rows: VentaRow[], rango: RangoKey) {
+function filterByRange(rows: VentaRow[], rango: RangoKey, monthAnchor: string) {
   if (!rows.length) return rows;
   const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
   const today = sortedDates[sortedDates.length - 1];
@@ -96,9 +104,9 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
     return rows.filter((r) => new Date(r.fecha) >= start);
   }
   if (rango === "mes") {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const [yy, mm] = monthAnchor.split("-").map(Number);
+    const start = new Date(yy, mm - 1, 1);
+    const end = new Date(yy, mm, 1);
     return rows.filter((r) => {
       const d = new Date(r.fecha);
       return d >= start && d < end;
@@ -108,6 +116,7 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
   // "todo" — every row in the dataset
   return rows;
 }
+
 
 function variacion(actual: number, previo: number) {
   if (previo === 0) return actual === 0 ? 0 : 1;
@@ -207,10 +216,17 @@ function ChartTooltip({ active, payload, label }: any) {
 export function SalesDashboard() {
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("mes");
-
+  const [monthAnchor, setMonthAnchor] = useState<string>(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   const rows = data ?? [];
-  const filtered = useMemo(() => filterByRange(rows, rango), [rows, rango]);
+  const filtered = useMemo(
+    () => filterByRange(rows, rango, monthAnchor),
+    [rows, rango, monthAnchor],
+  );
+
 
   const { today, yesterday } = useMemo(() => isoDaysAgo(rows), [rows]);
   const todayRows = useMemo(() => rows.filter((r) => r.fecha === today), [rows, today]);
@@ -306,13 +322,15 @@ export function SalesDashboard() {
     if (rango === "todo") return gastosSnap.rows;
     const now = new Date();
     if (rango === "mes") {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const [yy, mm] = monthAnchor.split("-").map(Number);
+      const start = new Date(yy, mm - 1, 1);
+      const end = new Date(yy, mm, 1);
       return gastosSnap.rows.filter((g) => {
         const d = new Date(g.fecha);
         return d >= start && d < end;
       });
     }
+
     // For "hoy" / "semana" anchor on max date in sales dataset (falls back to now)
     const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
     const anchorIso = sortedDates[sortedDates.length - 1];
@@ -324,7 +342,26 @@ export function SalesDashboard() {
     const start = new Date(anchor);
     start.setDate(anchor.getDate() - 6);
     return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
-  }, [gastosSnap.rows, rows, rango]);
+  }, [gastosSnap.rows, rows, rango, monthAnchor]);
+
+  // Available months from ventas + gastos + current month for the picker
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) set.add(r.fecha.slice(0, 7));
+    for (const g of gastosSnap.rows) set.add(g.fecha.slice(0, 7));
+    const now = new Date();
+    set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    set.add(monthAnchor);
+    return Array.from(set).sort().reverse();
+  }, [rows, gastosSnap.rows, monthAnchor]);
+
+  const monthLabel = (ym: string) => {
+    const [yy, mm] = ym.split("-").map(Number);
+    return new Date(yy, mm - 1, 1)
+      .toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+      .replace(/^./, (c) => c.toUpperCase());
+  };
+
 
 
   const gastosTiendaCash = filteredGastos
@@ -428,6 +465,25 @@ export function SalesDashboard() {
                 </Button>
               ))}
             </div>
+            <Select
+              value={monthAnchor}
+              onValueChange={(v) => {
+                setMonthAnchor(v);
+                setRango("mes");
+              }}
+            >
+              <SelectTrigger className="h-10 w-[180px] rounded-xl border-border/60 bg-card/60 text-xs backdrop-blur">
+                <SelectValue placeholder="Mes" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {availableMonths.map((m) => (
+                  <SelectItem key={m} value={m} className="text-xs">
+                    {monthLabel(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <CsvImportDialog
               trigger={
                 <Button
