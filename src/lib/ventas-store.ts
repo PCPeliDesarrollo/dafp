@@ -126,6 +126,10 @@ export const ventasStore = {
       empleado: r.empleado,
       total_venta: r.total_venta,
       beneficio: r.beneficio,
+      metodo_pago: r.metodo_pago ?? "efectivo",
+      pvp: r.pvp ?? null,
+      pvd: r.pvd ?? null,
+      entrega: r.entrega ?? null,
     }));
 
     const { error } = await supabase
