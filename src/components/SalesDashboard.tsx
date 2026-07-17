@@ -41,7 +41,7 @@ import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { ventasStore } from "@/lib/ventas-store";
 import { useGastos } from "@/lib/gastos-store";
-import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
+import { METODO_PAGO_LABEL, getMetodoBreakdown, type MetodoPago } from "@/lib/albaran-parser";
 import {
   Select,
   SelectContent,
