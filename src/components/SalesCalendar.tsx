@@ -336,14 +336,16 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
   );
 
   const total = monthRows.reduce((a, r) => a + r.total_venta, 0);
+  const beneficioMes = monthRows.reduce((a, r) => a + (r.beneficio ?? 0), 0);
   const nAlb = monthRows.length;
   const diasActivos = new Set(monthRows.map((r) => r.fecha)).size;
 
   const porComercial = useMemo(() => {
-    const m = new Map<string, { total: number; n: number }>();
+    const m = new Map<string, { total: number; beneficio: number; n: number }>();
     for (const r of monthRows) {
-      const cur = m.get(r.empleado) ?? { total: 0, n: 0 };
+      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       cur.n += 1;
       m.set(r.empleado, cur);
     }
@@ -354,18 +356,20 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
 
   const porMetodo = useMemo(() => {
     const base = {
-      efectivo: { total: 0, n: 0 },
-      tpv: { total: 0, n: 0 },
-      banco: { total: 0, n: 0 },
-    } as Record<"efectivo" | "tpv" | "banco", { total: number; n: number }>;
+      efectivo: { total: 0, beneficio: 0, n: 0 },
+      tpv: { total: 0, beneficio: 0, n: 0 },
+      banco: { total: 0, beneficio: 0, n: 0 },
+    } as Record<"efectivo" | "tpv" | "banco", { total: number; beneficio: number; n: number }>;
     for (const r of monthRows) {
       const k = (r.metodo_pago ?? "efectivo") as "efectivo" | "tpv" | "banco";
       const cur = base[k] ?? base.efectivo;
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       cur.n += 1;
     }
     return base;
   }, [monthRows]);
+
 
   const formatMonthLabel = (ym: string) => {
     const [y, m] = ym.split("-").map(Number);
@@ -418,13 +422,21 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div className="rounded-lg border border-border/60 bg-card/60 p-3">
               <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <Euro className="h-3 w-3" /> Total
               </div>
               <div className="mt-1 text-lg font-semibold tabular-nums">
                 {eur.format(total)}
+              </div>
+            </div>
+            <div className="rounded-lg border border-success/40 bg-success/5 p-3">
+              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <Euro className="h-3 w-3" /> Beneficio
+              </div>
+              <div className="mt-1 text-lg font-semibold tabular-nums text-success">
+                {eur.format(beneficioMes)}
               </div>
             </div>
             <div className="rounded-lg border border-border/60 bg-card/60 p-3">
@@ -440,6 +452,7 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
               <div className="mt-1 text-lg font-semibold tabular-nums">{diasActivos}</div>
             </div>
           </div>
+
 
           <div>
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
@@ -462,9 +475,15 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
                       <span className="font-medium">{m.label}</span>
                       <span className="text-muted-foreground">{v.n} alb.</span>
                     </div>
-                    <div className="mt-1 text-base font-semibold tabular-nums">
-                      {eurP.format(v.total)}
+                    <div className="mt-1 flex items-baseline justify-between gap-2">
+                      <span className="text-base font-semibold tabular-nums">
+                        {eurP.format(v.total)}
+                      </span>
+                      <span className="text-xs font-medium tabular-nums text-success">
+                        +{eurP.format(v.beneficio)}
+                      </span>
                     </div>
+
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/60">
                       <div
                         className={cn("h-full rounded-full", m.accent)}
@@ -500,7 +519,11 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
                           <span className="font-semibold tabular-nums">
                             {eurP.format(e.total)}
                           </span>
+                          <span className="font-medium tabular-nums text-success">
+                            +{eurP.format(e.beneficio)}
+                          </span>
                         </span>
+
                       </div>
                       <div className="mt-1.5 flex items-center gap-2">
                         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted/60">

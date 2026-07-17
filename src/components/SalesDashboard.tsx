@@ -268,15 +268,16 @@ export function SalesDashboard() {
 
   // Desglose por método de pago (sobre `filtered`, respeta el filtro de rango)
   const desglosePago = useMemo(() => {
-    const base: Record<MetodoPago, { ingreso: number; count: number }> = {
-      efectivo: { ingreso: 0, count: 0 },
-      tpv: { ingreso: 0, count: 0 },
-      banco: { ingreso: 0, count: 0 },
+    const base: Record<MetodoPago, { ingreso: number; beneficio: number; count: number }> = {
+      efectivo: { ingreso: 0, beneficio: 0, count: 0 },
+      tpv: { ingreso: 0, beneficio: 0, count: 0 },
+      banco: { ingreso: 0, beneficio: 0, count: 0 },
     };
     for (const r of filtered) {
       const mp: MetodoPago = (r.metodo_pago ?? "efectivo") as MetodoPago;
       const b = base[mp] ?? base.efectivo;
       b.ingreso += r.total_venta;
+      b.beneficio += r.beneficio ?? 0;
       b.count += 1;
     }
     return base;
@@ -286,6 +287,15 @@ export function SalesDashboard() {
     () => filtered.reduce((a, r) => a + r.total_venta, 0),
     [filtered],
   );
+  const beneficioRealTotal = useMemo(
+    () => filtered.reduce((a, r) => a + (r.beneficio ?? 0), 0),
+    [filtered],
+  );
+  const albaranesConBeneficio = useMemo(
+    () => filtered.filter((r) => (r.beneficio ?? 0) > 0).length,
+    [filtered],
+  );
+
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnap = useGastos();
   const filteredGastos = useMemo(() => {
@@ -450,8 +460,8 @@ export function SalesDashboard() {
           />
         </section>
 
-        {/* Resumen real de ingresos, respeta filtro */}
-        <section className="mt-6 grid gap-4">
+        {/* Resumen real de ingresos y beneficio, respeta filtro */}
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Card className="gradient-card border-border/50 shadow-elevated">
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -465,7 +475,21 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
+          <Card className="border-success/40 bg-success/5 shadow-elevated">
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
+                {eurP.format(beneficioRealTotal)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Calculado desde PVP − PVD de los albaranes ({albaranesConBeneficio} con datos)
+              </p>
+            </CardContent>
+          </Card>
         </section>
+
 
         {/* Desglose por método de pago */}
         <section className="mt-4 grid gap-4 md:grid-cols-3">
@@ -486,7 +510,7 @@ export function SalesDashboard() {
                       {d.count} venta{d.count === 1 ? "" : "s"}
                     </Badge>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                         Ingreso
@@ -495,7 +519,16 @@ export function SalesDashboard() {
                         {eurP.format(d.ingreso)}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Beneficio
+                      </p>
+                      <p className="text-xl font-semibold tabular-nums text-success">
+                        {eurP.format(d.beneficio)}
+                      </p>
+                    </div>
                   </div>
+
                 </CardContent>
               </Card>
             );
