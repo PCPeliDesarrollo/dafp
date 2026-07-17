@@ -47,8 +47,21 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const text = (rawText ?? "").toUpperCase();
   const warnings: string[] = [];
 
-  const pvpVal = firstNumberAfter(text, "PVP");
-  const pvdVal = firstNumberAfter(text, "PVD");
+  // PVP: primero busca la palabra clave; si no aparece, cae a "TOTAL (€)" del pie.
+  let pvpVal = firstNumberAfter(text, "PVP");
+  if (pvpVal == null) {
+    const totM = /\bTOTAL\b[^\n]{0,20}?([\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?)/i.exec(text);
+    if (totM) {
+      let raw = totM[1].replace(/\s/g, "");
+      if (raw.includes(",")) raw = raw.replace(/\./g, "").replace(",", ".");
+      const n = Number(raw);
+      if (Number.isFinite(n)) pvpVal = n;
+    }
+  }
+  // PVD: acepta también "PDV" (errata habitual) y "COSTE".
+  let pvdVal = firstNumberAfter(text, "PVD");
+  if (pvdVal == null) pvdVal = firstNumberAfter(text, "PDV");
+  if (pvdVal == null) pvdVal = firstNumberAfter(text, "COSTE");
   const entregaVal = firstNumberAfter(text, "ENTREGA");
 
   if (pvpVal == null) warnings.push("No se detectó PVP; se usa 0.");
@@ -56,6 +69,19 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
 
   const pvp = pvpVal ?? 0;
   const pvd = pvdVal ?? 0;
+
+  // Fecha "dd/mm/yyyy" o "dd-mm-yyyy" (opcionalmente precedida por "FECHA").
+  let fecha: string | null = null;
+  const fechaM =
+    /\bFECHA\b[^\d]{0,10}(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/i.exec(text) ||
+    /\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/.exec(text);
+  if (fechaM) {
+    const d = fechaM[1].padStart(2, "0");
+    const m = fechaM[2].padStart(2, "0");
+    let y = fechaM[3];
+    if (y.length === 2) y = (Number(y) > 50 ? "19" : "20") + y;
+    fecha = `${y}-${m}-${d}`;
+  }
 
   const hasTpv = /\bTPV\b/.test(text);
   const hasBanco = /\bBANCO\b/.test(text);
