@@ -149,7 +149,7 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
             Pincha un día para ver el detalle
           </Badge>
           <div className="ml-auto">
-            <MonthlySummary rows={rows} />
+            <MonthlySummary rows={rows} gastos={gastos} />
           </div>
         </CardTitle>
       </CardHeader>
