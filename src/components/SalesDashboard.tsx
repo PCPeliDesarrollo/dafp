@@ -465,6 +465,25 @@ export function SalesDashboard() {
                 </Button>
               ))}
             </div>
+            <Select
+              value={monthAnchor}
+              onValueChange={(v) => {
+                setMonthAnchor(v);
+                setRango("mes");
+              }}
+            >
+              <SelectTrigger className="h-10 w-[180px] rounded-xl border-border/60 bg-card/60 text-xs backdrop-blur">
+                <SelectValue placeholder="Mes" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {availableMonths.map((m) => (
+                  <SelectItem key={m} value={m} className="text-xs">
+                    {monthLabel(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <CsvImportDialog
               trigger={
                 <Button
