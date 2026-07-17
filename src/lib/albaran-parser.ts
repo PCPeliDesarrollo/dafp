@@ -21,6 +21,7 @@ export type ParsedAlbaran = {
   beneficio_real: number;
   stock: StockLetter | null;
   empleado: string | null;
+  fecha: string | null;
   warnings: string[];
 };
 
