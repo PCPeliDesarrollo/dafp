@@ -47,8 +47,25 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const text = (rawText ?? "").toUpperCase();
   const warnings: string[] = [];
 
+  // Patrón inline "PDV X TPV|BANCO|EFECTIVO Y" que usamos en las descripciones
+  // del albarán: X = precio de coste, Y = precio de venta por ese método.
+  // Tiene prioridad sobre los demás detectores porque es lo que el usuario teclea.
+  let pvpVal: number | null = null;
+  let pvdVal: number | null = null;
+  let inlineMetodo: MetodoPago | null = null;
+  const inlineRe =
+    /\bP[DV]V\s+([\d]+(?:[.,]\d+)?)\s+(TPV|BANCO|EFECTIVO|CAJA|CONTADO)\s+([\d]+(?:[.,]\d+)?)/i;
+  const inlineM = inlineRe.exec(text);
+  if (inlineM) {
+    const parseN = (s: string) => Number(s.replace(",", "."));
+    pvdVal = parseN(inlineM[1]);
+    pvpVal = parseN(inlineM[3]);
+    const kw = inlineM[2].toUpperCase();
+    inlineMetodo = kw === "TPV" ? "tpv" : kw === "BANCO" ? "banco" : "efectivo";
+  }
+
   // PVP: primero busca la palabra clave; si no aparece, cae a "TOTAL (€)" del pie.
-  let pvpVal = firstNumberAfter(text, "PVP");
+  if (pvpVal == null) pvpVal = firstNumberAfter(text, "PVP");
   if (pvpVal == null) {
     const totM = /\bTOTAL\b[^\n]{0,20}?([\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?)/i.exec(text);
     if (totM) {
@@ -59,7 +76,7 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     }
   }
   // PVD: acepta también "PDV" (errata habitual) y "COSTE".
-  let pvdVal = firstNumberAfter(text, "PVD");
+  if (pvdVal == null) pvdVal = firstNumberAfter(text, "PVD");
   if (pvdVal == null) pvdVal = firstNumberAfter(text, "PDV");
   if (pvdVal == null) pvdVal = firstNumberAfter(text, "COSTE");
   const entregaVal = firstNumberAfter(text, "ENTREGA");
