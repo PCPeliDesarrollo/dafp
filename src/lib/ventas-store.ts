@@ -31,7 +31,7 @@ function sortRows(rows: VentaRow[]): VentaRow[] {
 async function loadFromCloud() {
   const { data, error } = await supabase
     .from("ventas")
-    .select("id, fecha, empleado, total_venta, beneficio, metodo_pago, pvp, pvd, entrega, updated_at")
+    .select("id, fecha, empleado, total_venta, beneficio, metodo_pago, pvp, pvd, entrega, efectivo_amount, tpv_amount, banco_amount, updated_at")
     .order("fecha", { ascending: true });
 
   if (error) {
@@ -56,6 +56,9 @@ async function loadFromCloud() {
       pvp,
       pvd,
       entrega,
+      efectivo_amount: r.efectivo_amount != null ? Number(r.efectivo_amount) : null,
+      tpv_amount: r.tpv_amount != null ? Number(r.tpv_amount) : null,
+      banco_amount: r.banco_amount != null ? Number(r.banco_amount) : null,
     };
   });
 
