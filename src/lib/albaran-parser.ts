@@ -132,6 +132,7 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     beneficio_real: round2(beneficio_real),
     stock,
     empleado,
+    fecha,
     warnings,
   };
 }
