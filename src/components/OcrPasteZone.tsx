@@ -108,8 +108,10 @@ export function OcrPasteZone() {
             metodo_pago: p.metodo_pago,
             pvp: p.pvp,
             pvd: p.pvd,
-
             entrega: p.entrega,
+            efectivo_amount: p.efectivo_amount,
+            tpv_amount: p.tpv_amount,
+            banco_amount: p.banco_amount,
           },
         ],
         "Albarán (OCR)",
