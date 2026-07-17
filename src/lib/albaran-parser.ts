@@ -54,15 +54,25 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   let pvpVal: number | null = null;
   let pvdVal: number | null = null;
   let inlineMetodo: MetodoPago | null = null;
-  const inlineRe =
-    /\bP[DV]V\s+([\d]+(?:[.,]\d+)?)\s+(TPV|BANCO|EFECTIVO|CAJA|CONTADO)\s+([\d]+(?:[.,]\d+)?)/i;
+  // OCR-tolerant keywords: T.P.V / TPU / 1PV, BANCO/BAN0, etc.
+  const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VU]|1PV|TARJETA)";
+  const BANCO_RE = "(?:BANC[O0]|TRANSFER(?:ENCIA)?)";
+  const EFEC_RE = "(?:EFECTIVO|CAJA|CONTADO|MET[AÁ]LICO)";
+  const inlineRe = new RegExp(
+    `\\bP[DV]V\\s+([\\d]+(?:[.,]\\d+)?)[\\s\\S]{0,60}?(${TPV_RE}|${BANCO_RE}|${EFEC_RE})\\s*[:\\-]?\\s*([\\d]+(?:[.,]\\d+)?)`,
+    "i"
+  );
   const inlineM = inlineRe.exec(text);
   if (inlineM) {
     const parseN = (s: string) => Number(s.replace(",", "."));
     pvdVal = parseN(inlineM[1]);
     pvpVal = parseN(inlineM[3]);
     const kw = inlineM[2].toUpperCase();
-    inlineMetodo = kw === "TPV" ? "tpv" : kw === "BANCO" ? "banco" : "efectivo";
+    inlineMetodo = new RegExp(TPV_RE, "i").test(kw)
+      ? "tpv"
+      : new RegExp(BANCO_RE, "i").test(kw)
+      ? "banco"
+      : "efectivo";
   }
 
   // PVP: primero busca la palabra clave; si no aparece, cae a "TOTAL (€)" del pie.
