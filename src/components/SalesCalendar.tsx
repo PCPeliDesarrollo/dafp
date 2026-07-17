@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { VentaRow } from "@/lib/dashboard-mock";
+import type { Gasto } from "@/lib/gastos-store";
+
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
