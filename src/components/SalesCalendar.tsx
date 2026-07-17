@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -97,15 +97,13 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
 
   const selectedRows = byDay.get(selected) ?? [];
   const totalDia = selectedRows.reduce((a, r) => a + r.total_venta, 0);
-  const beneficioDia = selectedRows.reduce((a, r) => a + r.beneficio, 0);
   const nAlb = selectedRows.length;
 
   const porComercial = useMemo(() => {
-    const m = new Map<string, { total: number; beneficio: number; n: number }>();
+    const m = new Map<string, { total: number; n: number }>();
     for (const r of selectedRows) {
-      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
+      const cur = m.get(r.empleado) ?? { total: 0, n: 0 };
       cur.total += r.total_venta;
-      cur.beneficio += r.beneficio;
       cur.n += 1;
       m.set(r.empleado, cur);
     }
@@ -233,18 +231,12 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                 })}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                     <Euro className="h-3 w-3" /> Total
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{eur.format(totalDia)}</div>
-                </div>
-                <div className="rounded-lg border border-border/50 bg-background/40 p-2">
-                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Beneficio
-                  </div>
-                  <div className="mt-1 text-sm font-semibold tabular-nums">{eur.format(beneficioDia)}</div>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -304,9 +296,6 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                           </div>
                           <div className="text-right">
                             <div className="font-semibold tabular-nums">{eurP.format(r.total_venta)}</div>
-                            <div className="text-[10px] text-muted-foreground tabular-nums">
-                              Ben. {eurP.format(r.beneficio)}
-                            </div>
                           </div>
                         </div>
                       ))}
@@ -347,17 +336,14 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
   );
 
   const total = monthRows.reduce((a, r) => a + r.total_venta, 0);
-  const beneficio = monthRows.reduce((a, r) => a + r.beneficio, 0);
-  const margen = total > 0 ? beneficio / total : 0;
   const nAlb = monthRows.length;
   const diasActivos = new Set(monthRows.map((r) => r.fecha)).size;
 
   const porComercial = useMemo(() => {
-    const m = new Map<string, { total: number; beneficio: number; n: number }>();
+    const m = new Map<string, { total: number; n: number }>();
     for (const r of monthRows) {
-      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
+      const cur = m.get(r.empleado) ?? { total: 0, n: 0 };
       cur.total += r.total_venta;
-      cur.beneficio += r.beneficio;
       cur.n += 1;
       m.set(r.empleado, cur);
     }
@@ -368,15 +354,14 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
 
   const porMetodo = useMemo(() => {
     const base = {
-      efectivo: { total: 0, beneficio: 0, n: 0 },
-      tpv: { total: 0, beneficio: 0, n: 0 },
-      banco: { total: 0, beneficio: 0, n: 0 },
-    } as Record<"efectivo" | "tpv" | "banco", { total: number; beneficio: number; n: number }>;
+      efectivo: { total: 0, n: 0 },
+      tpv: { total: 0, n: 0 },
+      banco: { total: 0, n: 0 },
+    } as Record<"efectivo" | "tpv" | "banco", { total: number; n: number }>;
     for (const r of monthRows) {
       const k = (r.metodo_pago ?? "efectivo") as "efectivo" | "tpv" | "banco";
       const cur = base[k] ?? base.efectivo;
       cur.total += r.total_venta;
-      cur.beneficio += r.beneficio;
       cur.n += 1;
     }
     return base;
@@ -433,24 +418,13 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div className="rounded-lg border border-border/60 bg-card/60 p-3">
               <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 <Euro className="h-3 w-3" /> Total
               </div>
               <div className="mt-1 text-lg font-semibold tabular-nums">
                 {eur.format(total)}
-              </div>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-card/60 p-3">
-              <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                <TrendingUp className="h-3 w-3" /> Beneficio
-              </div>
-              <div className="mt-1 text-lg font-semibold tabular-nums">
-                {eur.format(beneficio)}
-              </div>
-              <div className="text-[10px] text-muted-foreground">
-                margen {(margen * 100).toFixed(1)}%
               </div>
             </div>
             <div className="rounded-lg border border-border/60 bg-card/60 p-3">
@@ -490,9 +464,6 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
                     </div>
                     <div className="mt-1 text-base font-semibold tabular-nums">
                       {eurP.format(v.total)}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Beneficio {eurP.format(v.beneficio)}
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/60">
                       <div
@@ -541,9 +512,6 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
                         <span className="w-10 text-right text-[10px] tabular-nums text-muted-foreground">
                           {share.toFixed(0)}%
                         </span>
-                      </div>
-                      <div className="mt-0.5 text-[10px] text-muted-foreground">
-                        Beneficio {eurP.format(e.beneficio)}
                       </div>
                     </div>
                   );

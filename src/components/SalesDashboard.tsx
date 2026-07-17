@@ -15,9 +15,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Euro,
-  Percent,
   ReceiptText,
-  TrendingUp,
   Trophy,
   Upload,
   RotateCcw,
@@ -219,15 +217,10 @@ export function SalesDashboard() {
     [rows, yesterday],
   );
 
-  const sum = (rs: VentaRow[], k: "total_venta" | "beneficio") =>
-    rs.reduce((a, r) => a + r[k], 0);
+  const sumTotal = (rs: VentaRow[]) => rs.reduce((a, r) => a + r.total_venta, 0);
 
-  const totalHoy = sum(todayRows, "total_venta");
-  const totalAyer = sum(yestRows, "total_venta");
-  const benHoy = sum(todayRows, "beneficio");
-  const benAyer = sum(yestRows, "beneficio");
-  const margenHoy = totalHoy ? benHoy / totalHoy : 0;
-  const margenAyer = totalAyer ? benAyer / totalAyer : 0;
+  const totalHoy = sumTotal(todayRows);
+  const totalAyer = sumTotal(yestRows);
   const ventasHoy = todayRows.length;
   const ventasAyer = yestRows.length;
 
@@ -247,8 +240,7 @@ export function SalesDashboard() {
       const day = rows.filter((r) => r.fecha === d);
       return {
         fecha: new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }),
-        ventas: Math.round(sum(day, "total_venta")),
-        beneficio: Math.round(sum(day, "beneficio")),
+        ventas: Math.round(sumTotal(day)),
       };
     });
   }, [rows]);
@@ -259,18 +251,16 @@ export function SalesDashboard() {
     const todayDate = today ? new Date(today) : new Date();
     const monthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
     const mensuales = rows.filter((r) => new Date(r.fecha) >= monthStart);
-    const map = new Map<string, { total: number; beneficio: number }>();
+    const map = new Map<string, { total: number }>();
     for (const r of mensuales) {
-      const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
+      const cur = map.get(r.empleado) ?? { total: 0 };
       cur.total += r.total_venta;
-      cur.beneficio += r.beneficio;
       map.set(r.empleado, cur);
     }
     return Array.from(map.entries())
       .map(([empleado, v]) => ({
         empleado,
         total: v.total,
-        beneficio: v.beneficio,
         progreso: Math.min(100, (v.total / EMPLEADO_OBJETIVO_MENSUAL) * 100),
       }))
       .sort((a, b) => b.total - a.total);
@@ -278,16 +268,15 @@ export function SalesDashboard() {
 
   // Desglose por método de pago (sobre `filtered`, respeta el filtro de rango)
   const desglosePago = useMemo(() => {
-    const base: Record<MetodoPago, { ingreso: number; beneficio: number; count: number }> = {
-      efectivo: { ingreso: 0, beneficio: 0, count: 0 },
-      tpv: { ingreso: 0, beneficio: 0, count: 0 },
-      banco: { ingreso: 0, beneficio: 0, count: 0 },
+    const base: Record<MetodoPago, { ingreso: number; count: number }> = {
+      efectivo: { ingreso: 0, count: 0 },
+      tpv: { ingreso: 0, count: 0 },
+      banco: { ingreso: 0, count: 0 },
     };
     for (const r of filtered) {
       const mp: MetodoPago = (r.metodo_pago ?? "efectivo") as MetodoPago;
       const b = base[mp] ?? base.efectivo;
       b.ingreso += r.total_venta;
-      b.beneficio += r.beneficio;
       b.count += 1;
     }
     return base;
@@ -297,11 +286,6 @@ export function SalesDashboard() {
     () => filtered.reduce((a, r) => a + r.total_venta, 0),
     [filtered],
   );
-  const beneficioRealTotal = useMemo(
-    () => filtered.reduce((a, r) => a + r.beneficio, 0),
-    [filtered],
-  );
-
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnap = useGastos();
   const filteredGastos = useMemo(() => {
@@ -449,27 +433,13 @@ export function SalesDashboard() {
         </header>
 
         {/* KPIs */}
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2">
           <KpiCard
             title="Total Vendido Hoy"
             value={eur.format(totalHoy)}
             delta={variacion(totalHoy, totalAyer)}
             icon={Euro}
             accent="primary"
-          />
-          <KpiCard
-            title="Beneficio Neto Hoy"
-            value={eur.format(benHoy)}
-            delta={variacion(benHoy, benAyer)}
-            icon={TrendingUp}
-            accent="accent"
-          />
-          <KpiCard
-            title="Margen Medio"
-            value={pct.format(margenHoy)}
-            delta={variacion(margenHoy, margenAyer)}
-            icon={Percent}
-            accent="warning"
           />
           <KpiCard
             title="Nº Ventas Hoy"
@@ -480,8 +450,8 @@ export function SalesDashboard() {
           />
         </section>
 
-        {/* Resumen real (ingreso y beneficio efectivos, respeta filtro) */}
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
+        {/* Resumen real de ingresos, respeta filtro */}
+        <section className="mt-6 grid gap-4">
           <Card className="gradient-card border-border/50 shadow-elevated">
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -492,19 +462,6 @@ export function SalesDashboard() {
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Incluye entregas parciales al valor cobrado
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="gradient-card border-border/50 shadow-elevated">
-            <CardContent className="p-6">
-              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                Total Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
-              </p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums">
-                {eurP.format(beneficioRealTotal)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Margen efectivo aplicando prorrateo de entregas
               </p>
             </CardContent>
           </Card>
@@ -529,21 +486,13 @@ export function SalesDashboard() {
                       {d.count} venta{d.count === 1 ? "" : "s"}
                     </Badge>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="mt-3">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                         Ingreso
                       </p>
                       <p className="text-xl font-semibold tabular-nums">
                         {eurP.format(d.ingreso)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Beneficio
-                      </p>
-                      <p className="text-xl font-semibold tabular-nums">
-                        {eurP.format(d.beneficio)}
                       </p>
                     </div>
                   </div>
@@ -739,9 +688,6 @@ export function SalesDashboard() {
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-chart-1" /> Ventas
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-chart-2" /> Beneficio
-                  </span>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -776,16 +722,6 @@ export function SalesDashboard() {
                     strokeWidth={3}
                     dot={false}
                     activeDot={{ r: 5, fill: "var(--color-chart-1)" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="beneficio"
-                    name="Beneficio"
-                    stroke="var(--color-chart-2)"
-                    strokeWidth={2.5}
-                    strokeDasharray="4 4"
-                    dot={false}
-                    activeDot={{ r: 5, fill: "var(--color-chart-2)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -850,12 +786,6 @@ export function SalesDashboard() {
                         )}
                       </div>
                       <div className="flex items-baseline gap-4 text-sm">
-                        <span className="text-muted-foreground">
-                          Beneficio{" "}
-                          <span className="font-semibold text-foreground">
-                            {eur.format(emp.beneficio)}
-                          </span>
-                        </span>
                         <span className="font-semibold tabular-nums">
                           {eur.format(emp.total)}
                         </span>

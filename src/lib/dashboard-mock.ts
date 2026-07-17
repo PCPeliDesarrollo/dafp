@@ -51,14 +51,12 @@ export function generateMockVentas(): VentaRow[] {
       const sales = 1 + Math.floor(rand() * 4);
       for (let s = 0; s < sales; s++) {
         const total = Math.round((150 + rand() * 1850) * 100) / 100;
-        const marginPct = 0.12 + rand() * 0.28;
-        const beneficio = Math.round(total * marginPct * 100) / 100;
         rows.push({
           id: uuid(counter++),
           fecha: iso,
           empleado,
           total_venta: total,
-          beneficio,
+          beneficio: 0,
           metodo_pago: "efectivo",
         });
       }
