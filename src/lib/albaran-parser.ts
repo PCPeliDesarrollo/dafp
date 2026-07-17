@@ -22,6 +22,7 @@ export type ParsedAlbaran = {
   stock: StockLetter | null;
   empleado: string | null;
   fecha: string | null;
+  numero: string | null;
   warnings: string[];
 };
 
