@@ -772,7 +772,7 @@ export function SalesDashboard() {
 
         {/* Calendario */}
         <section className="mt-6">
-          <SalesCalendar rows={rows} />
+          <SalesCalendar rows={rows} gastos={gastosSnap.rows} />
         </section>
 
         {/* Leaderboard */}
