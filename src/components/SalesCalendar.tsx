@@ -348,15 +348,17 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
 /*                             Monthly summary                                */
 /* -------------------------------------------------------------------------- */
 
-function MonthlySummary({ rows }: { rows: VentaRow[] }) {
+function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gasto[] }) {
   const [open, setOpen] = useState(false);
 
-  // All months that have at least one row, sorted newest → oldest
+  // All months that have at least one row (ventas o gastos), sorted newest → oldest
   const months = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows) set.add(r.fecha.slice(0, 7)); // YYYY-MM
+    for (const g of gastos) set.add(g.fecha.slice(0, 7));
     return Array.from(set).sort().reverse();
-  }, [rows]);
+  }, [rows, gastos]);
+
 
   const defaultMonth = months[0] ?? new Date().toISOString().slice(0, 7);
   const [month, setMonth] = useState<string>(defaultMonth);
