@@ -302,6 +302,38 @@ export function SalesDashboard() {
     [filtered],
   );
 
+  // ------- Gastos (respeta el mismo filtro de rango) -------
+  const gastosSnap = useGastos();
+  const filteredGastos = useMemo(() => {
+    if (!gastosSnap.rows.length) return [];
+    if (rango === "todo") return gastosSnap.rows;
+    if (!rows.length) return gastosSnap.rows;
+    const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
+    const todayIso = sortedDates[sortedDates.length - 1];
+    const todayDate = new Date(todayIso);
+    if (rango === "hoy") return gastosSnap.rows.filter((g) => g.fecha === todayIso);
+    if (rango === "semana") {
+      const start = new Date(todayDate);
+      start.setDate(todayDate.getDate() - 6);
+      return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
+    }
+    const start = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+    return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
+  }, [gastosSnap.rows, rows, rango]);
+
+  const gastosTiendaCash = filteredGastos
+    .filter((g) => g.categoria === "tienda" && g.fuente === "efectivo")
+    .reduce((a, g) => a + g.monto, 0);
+  const gastosTiendaBanco = filteredGastos
+    .filter((g) => g.categoria === "tienda" && g.fuente === "banco")
+    .reduce((a, g) => a + g.monto, 0);
+  const gastosTiendaTotal = gastosTiendaCash + gastosTiendaBanco;
+  const gastosPersonales = filteredGastos
+    .filter((g) => g.categoria === "personales")
+    .reduce((a, g) => a + g.monto, 0);
+  const dineroNetoReal = ingresosRealesTotal - gastosTiendaTotal - gastosPersonales;
+
+
 
 
 
