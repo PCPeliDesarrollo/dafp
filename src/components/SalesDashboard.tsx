@@ -598,7 +598,10 @@ export function SalesDashboard() {
 
         {/* Desglose de gastos por categoría */}
         <section className="mt-4 grid gap-4 md:grid-cols-2">
-          <Card className="border-warning/30 bg-warning/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-warning/30 bg-warning/5 shadow-elevated transition-colors hover:border-warning/60 hover:bg-warning/10"
+            onClick={() => setGastosDialog("tienda")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <p className="flex items-center gap-2 text-sm font-semibold">
