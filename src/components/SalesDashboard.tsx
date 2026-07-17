@@ -21,6 +21,10 @@ import {
   Trophy,
   Upload,
   RotateCcw,
+  Wallet,
+  Landmark,
+  PiggyBank,
+  ShoppingBag,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,7 +38,10 @@ import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
 import { CsvImportDialog } from "./CsvImportDialog";
 import { SalesCalendar } from "./SalesCalendar";
 import { OcrPasteZone } from "./OcrPasteZone";
+import { GastosCashForm } from "./GastosCashForm";
+import { GastosBankImport } from "./GastosBankImport";
 import { ventasStore } from "@/lib/ventas-store";
+import { useGastos } from "@/lib/gastos-store";
 import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
 
 type RangoKey = "hoy" | "semana" | "mes" | "todo";
