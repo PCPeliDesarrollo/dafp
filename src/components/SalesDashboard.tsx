@@ -92,7 +92,7 @@ function isoDaysAgo(rows: VentaRow[]): { today: string; yesterday: string } {
   };
 }
 
-function filterByRange(rows: VentaRow[], rango: RangoKey) {
+function filterByRange(rows: VentaRow[], rango: RangoKey, monthAnchor: string) {
   if (!rows.length) return rows;
   const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
   const today = sortedDates[sortedDates.length - 1];
@@ -104,9 +104,9 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
     return rows.filter((r) => new Date(r.fecha) >= start);
   }
   if (rango === "mes") {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const [yy, mm] = monthAnchor.split("-").map(Number);
+    const start = new Date(yy, mm - 1, 1);
+    const end = new Date(yy, mm, 1);
     return rows.filter((r) => {
       const d = new Date(r.fecha);
       return d >= start && d < end;
@@ -116,6 +116,7 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
   // "todo" — every row in the dataset
   return rows;
 }
+
 
 function variacion(actual: number, previo: number) {
   if (previo === 0) return actual === 0 ? 0 : 1;
