@@ -32,6 +32,13 @@ export type ParsedAlbaran = {
 // OCR-tolerant keywords (no cierran con \b para permitir "TPV6" o "TPV:6")
 const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VUY]|1PV|IPV|LPV|TARJETA)";
 const BANCO_RE = "(?:BANC[O0]|BAN[O0]|TRANSFER(?:ENCIA)?)";
+const FINANCIAL_KEYWORD_RE = `(?:PDV|PVD|COSTE|${TPV_RE}|${BANCO_RE})`;
+
+function normalizeFinancialText(text: string): string {
+  return text
+    .replace(new RegExp(`(\\d)(?=${FINANCIAL_KEYWORD_RE})`, "gi"), "$1 ")
+    .replace(new RegExp(`(${FINANCIAL_KEYWORD_RE})(?=\\d)`, "gi"), "$1 ");
+}
 
 function parseNum(raw: string): number | null {
   let s = raw.replace(/\s/g, "");
@@ -78,7 +85,7 @@ function findLastTotal(text: string): number | null {
 }
 
 export function parseAlbaranText(rawText: string): ParsedAlbaran {
-  const text = (rawText ?? "").toUpperCase();
+  const text = normalizeFinancialText((rawText ?? "").toUpperCase());
   const warnings: string[] = [];
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
