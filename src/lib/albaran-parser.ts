@@ -3,6 +3,14 @@
 
 export type MetodoPago = "efectivo" | "tpv" | "banco";
 
+export type StockLetter = "A" | "C" | "T";
+
+export const STOCK_TO_EMPLEADO: Record<StockLetter, string> = {
+  A: "Ainhoa",
+  C: "Cristina",
+  T: "Tomás",
+};
+
 export type ParsedAlbaran = {
   pvp: number;
   pvd: number;
@@ -11,8 +19,11 @@ export type ParsedAlbaran = {
   ingreso: number;
   coste: number;
   beneficio_real: number;
+  stock: StockLetter | null;
+  empleado: string | null;
   warnings: string[];
 };
+
 
 function firstNumberAfter(text: string, keyword: string): number | null {
   // Acepta "PVP 200", "PVP: 200", "PVP=200", "PVP\n200", "PVP 1.234,56"
