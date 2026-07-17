@@ -96,9 +96,15 @@ function filterByRange(rows: VentaRow[], rango: RangoKey) {
     return rows.filter((r) => new Date(r.fecha) >= start);
   }
   if (rango === "mes") {
-    const start = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    return rows.filter((r) => new Date(r.fecha) >= start);
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return rows.filter((r) => {
+      const d = new Date(r.fecha);
+      return d >= start && d < end;
+    });
   }
+
   // "todo" — every row in the dataset
   return rows;
 }
