@@ -81,10 +81,10 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const warnings: string[] = [];
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
-  // 1) PVP = TOTAL del albarán (prioritario). Si no hay TOTAL, cae al keyword PVP
-  //    y como último recurso, al valor tras "PDV X TPV Y" (venta manual sin TOTAL).
-  let pvpVal: number | null = findLastTotal(text);
-  if (pvpVal == null) pvpVal = firstNumberAfter(text, "PVP");
+  // 1) TOTAL del albarán = importe cobrado en EFECTIVO (base del albarán).
+  //    Si no hay TOTAL, cae al keyword PVP.
+  let totalAlbaran: number | null = findLastTotal(text);
+  if (totalAlbaran == null) totalAlbaran = firstNumberAfter(text, "PVP");
 
   // 2) PVD = suma de todas las anotaciones "PDV|PVD X" (coste)
   let pvdSum =
@@ -92,36 +92,30 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     sumAllAfter(text, "PVD") +
     sumAllAfter(text, "COSTE");
 
-  // 3) Pagos parciales por método: suma de todos los "TPV X" y "BANCO X"
+  // 3) Cobros ADICIONALES por tarjeta / banco anotados en comentarios
+  //    ("TPV 6" bajo la línea = 6€ extra cobrados con tarjeta, encima del TOTAL).
   const tpv_amount = round2(sumAllAfter(text, TPV_RE));
   const banco_amount = round2(sumAllAfter(text, BANCO_RE));
 
-  // Fallback: venta manual "PDV 2 TPV 6" sin TOTAL ni PVP → el "6" tras TPV es el PVP
-  if (pvpVal == null && tpv_amount === 0 && banco_amount === 0) {
+  // Fallback: venta manual "PDV 2 TPV 6" sin TOTAL → sólo hay cobro por tarjeta.
+  if (totalAlbaran == null && (tpv_amount > 0 || banco_amount > 0)) {
+    totalAlbaran = 0; // no hay efectivo, sólo TPV/BANCO
+  }
+  if (totalAlbaran == null) {
     warnings.push("No se detectó PVP ni TOTAL; se usa 0.");
   }
-  if (pvpVal == null && (tpv_amount > 0 || banco_amount > 0) && pvdSum > 0) {
-    // patrón "PDV X TPV Y" solitario → PVP = importe pagado
-    pvpVal = tpv_amount + banco_amount;
-  }
 
-  const pvp = pvpVal ?? 0;
+  // 4) Efectivo = TOTAL del albarán. PVP final = efectivo + TPV + BANCO.
+  const efectivo_amount = round2(Math.max(0, totalAlbaran ?? 0));
+  const pvp = round2(efectivo_amount + tpv_amount + banco_amount);
   const pvd = round2(pvdSum);
 
   if (pvdSum === 0) warnings.push("No se detectó PVD/PDV; coste = 0.");
 
-  // 4) ENTREGA (pago parcial global sobre un PVP mayor)
+  // 5) ENTREGA (pago parcial global sobre un PVP mayor)
   const entregaVal = firstNumberAfter(text, "ENTREGA");
 
-  // 5) Efectivo = resto del PVP tras descontar TPV + BANCO (nunca negativo)
-  const nonCash = tpv_amount + banco_amount;
-  const efectivo_amount = round2(Math.max(0, pvp - nonCash));
 
-  if (nonCash > pvp + 0.01) {
-    warnings.push(
-      `TPV+BANCO (${round2(nonCash)}€) supera el TOTAL (${round2(pvp)}€). Revisa la captura.`,
-    );
-  }
 
   // Método dominante (para el campo legado metodo_pago)
   const metodo_pago: MetodoPago =
