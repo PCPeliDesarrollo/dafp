@@ -475,9 +475,15 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
                       <span className="font-medium">{m.label}</span>
                       <span className="text-muted-foreground">{v.n} alb.</span>
                     </div>
-                    <div className="mt-1 text-base font-semibold tabular-nums">
-                      {eurP.format(v.total)}
+                    <div className="mt-1 flex items-baseline justify-between gap-2">
+                      <span className="text-base font-semibold tabular-nums">
+                        {eurP.format(v.total)}
+                      </span>
+                      <span className="text-xs font-medium tabular-nums text-success">
+                        +{eurP.format(v.beneficio)}
+                      </span>
                     </div>
+
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/60">
                       <div
                         className={cn("h-full rounded-full", m.accent)}
