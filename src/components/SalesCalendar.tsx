@@ -194,6 +194,9 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                 const dayRows = byDay.get(iso) ?? [];
                 const total = dayRows.reduce((a, r) => a + r.total_venta, 0);
                 const has = dayRows.length > 0;
+                const dayGastos = gastosByDay.get(iso) ?? [];
+                const totalGastos = dayGastos.reduce((a, g) => a + g.monto, 0);
+                const hasGastos = dayGastos.length > 0;
                 const isSelected = iso === selected;
                 const intensity = maxDayTotal > 0 ? total / maxDayTotal : 0;
                 return (
@@ -206,7 +209,7 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                       "flex flex-col justify-between",
                       isSelected
                         ? "border-primary/70 bg-primary/15 shadow-glow"
-                        : has
+                        : has || hasGastos
                           ? "border-border/60 bg-card/60 hover:border-primary/40 hover:bg-primary/5"
                           : "border-border/30 bg-transparent text-muted-foreground/50 hover:bg-muted/30",
                     )}
@@ -218,19 +221,34 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                         style={{ opacity: 0.35 + intensity * 0.65 }}
                       />
                     )}
+                    {hasGastos && (
+                      <span
+                        aria-hidden
+                        title={`Gastos: ${eurP.format(totalGastos)}`}
+                        className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-destructive"
+                      />
+                    )}
                     <span className={cn(
                       "text-[11px] font-semibold tabular-nums",
                       isSelected && "text-primary",
                     )}>
                       {d.getDate()}
                     </span>
-                    {has && (
-                      <span className="relative z-[1] text-[10px] font-medium tabular-nums text-foreground">
-                        {total >= 1000 ? `${(total / 1000).toFixed(1)}k` : eur.format(total)}
+                    {(has || hasGastos) && (
+                      <span className="relative z-[1] flex flex-col gap-0.5 text-[10px] font-medium tabular-nums text-foreground">
+                        {has && (
+                          <span>{total >= 1000 ? `${(total / 1000).toFixed(1)}k` : eur.format(total)}</span>
+                        )}
+                        {hasGastos && (
+                          <span className="text-destructive">
+                            −{totalGastos >= 1000 ? `${(totalGastos / 1000).toFixed(1)}k` : eur.format(totalGastos)}
+                          </span>
+                        )}
                       </span>
                     )}
                   </button>
                 );
+
               })}
             </div>
           </div>
