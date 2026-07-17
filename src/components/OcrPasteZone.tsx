@@ -84,6 +84,13 @@ export function OcrPasteZone() {
 
   const save = async () => {
     if (status.kind !== "parsed") return;
+    if (!status.parsed.empleado) {
+      setStatus({
+        kind: "error",
+        message: "No se pudo detectar el STOCK (A/C/T) en la imagen. Sube una captura más clara.",
+      });
+      return;
+    }
     setStatus({ kind: "saving", parsed: status.parsed, text: status.text });
     try {
       const p = status.parsed;
@@ -91,13 +98,14 @@ export function OcrPasteZone() {
         [
           {
             id: `ocr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            fecha,
-            empleado: empleado || "Sin asignar",
+            fecha: fechaOverride ?? new Date().toISOString().slice(0, 10),
+            empleado: p.empleado!,
             total_venta: p.ingreso,
             beneficio: p.beneficio_real,
             metodo_pago: p.metodo_pago,
             pvp: p.pvp,
             pvd: p.pvd,
+
             entrega: p.entrega,
           },
         ],
