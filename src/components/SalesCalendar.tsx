@@ -499,6 +499,49 @@ function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gast
             </div>
           </div>
 
+          {/* Gastos del mes */}
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <Wallet className="h-3 w-3" /> Gastos del mes ({monthGastos.length} mov.)
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="rounded-lg border border-warning/40 bg-warning/5 px-3 py-2">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <ShoppingBag className="h-3 w-3" /> Tienda · Efectivo
+                </div>
+                <div className="mt-1 text-base font-semibold tabular-nums text-warning">
+                  −{eurP.format(gTiendaCash)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-warning/40 bg-warning/5 px-3 py-2">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Landmark className="h-3 w-3" /> Tienda · Banco
+                </div>
+                <div className="mt-1 text-base font-semibold tabular-nums text-warning">
+                  −{eurP.format(gTiendaBanco)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Wallet className="h-3 w-3" /> Personales
+                </div>
+                <div className="mt-1 text-base font-semibold tabular-nums text-destructive">
+                  −{eurP.format(gPersonales)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 flex items-center justify-between rounded-lg border border-primary/40 bg-primary/10 px-3 py-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Dinero neto del mes
+              </span>
+              <span className={cn("text-base font-bold tabular-nums", netoMes >= 0 ? "text-success" : "text-destructive")}>
+                {eurP.format(netoMes)}
+              </span>
+            </div>
+          </div>
+
+
+
 
           <div>
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
