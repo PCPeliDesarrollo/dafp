@@ -24,7 +24,7 @@ type Status =
 
 export function OcrPasteZone() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
-  const [empleado, setEmpleado] = useState<string>(EMPLEADOS_LIST[0] ?? "");
+  const [fechaOverride, setFechaOverride] = useState<string | null>(null);
   const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
