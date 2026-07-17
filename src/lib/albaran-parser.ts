@@ -119,8 +119,8 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     /\b([0-9]{1,4}\s*#\s*[0-9]{2,6})\b/.exec(text);
   if (numM) numero = numM[1].replace(/\s+/g, "");
 
-  const hasTpv = /\bTPV\b/.test(text);
-  const hasBanco = /\bBANCO\b/.test(text);
+  const hasTpv = new RegExp(`\\b${TPV_RE}\\b`, "i").test(text);
+  const hasBanco = new RegExp(`\\b${BANCO_RE}\\b`, "i").test(text);
   const metodo_pago: MetodoPago =
     inlineMetodo ?? (hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo");
 
