@@ -85,7 +85,7 @@ export function OcrPasteZone() {
 
   const save = async () => {
     if (status.kind !== "parsed") return;
-    setStatus({ kind: "saving" });
+    setStatus({ kind: "saving", parsed: status.parsed, text: status.text });
     try {
       const p = status.parsed;
       await ventasStore.setImported(
