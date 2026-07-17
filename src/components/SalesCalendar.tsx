@@ -111,6 +111,9 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
   const selectedRows = byDay.get(selected) ?? [];
   const totalDia = selectedRows.reduce((a, r) => a + r.total_venta, 0);
   const nAlb = selectedRows.length;
+  const selectedGastos = gastosByDay.get(selected) ?? [];
+  const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
+
 
   const porComercial = useMemo(() => {
     const m = new Map<string, { total: number; n: number }>();
