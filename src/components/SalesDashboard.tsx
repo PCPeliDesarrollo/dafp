@@ -33,7 +33,9 @@ import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
 import { CsvImportDialog } from "./CsvImportDialog";
 import { SalesCalendar } from "./SalesCalendar";
+import { OcrPasteZone } from "./OcrPasteZone";
 import { ventasStore } from "@/lib/ventas-store";
+import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
 
 type RangoKey = "hoy" | "semana" | "mes" | "todo";
 
