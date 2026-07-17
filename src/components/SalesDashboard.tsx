@@ -342,7 +342,26 @@ export function SalesDashboard() {
     const start = new Date(anchor);
     start.setDate(anchor.getDate() - 6);
     return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
-  }, [gastosSnap.rows, rows, rango]);
+  }, [gastosSnap.rows, rows, rango, monthAnchor]);
+
+  // Available months from ventas + gastos + current month for the picker
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) set.add(r.fecha.slice(0, 7));
+    for (const g of gastosSnap.rows) set.add(g.fecha.slice(0, 7));
+    const now = new Date();
+    set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    set.add(monthAnchor);
+    return Array.from(set).sort().reverse();
+  }, [rows, gastosSnap.rows, monthAnchor]);
+
+  const monthLabel = (ym: string) => {
+    const [yy, mm] = ym.split("-").map(Number);
+    return new Date(yy, mm - 1, 1)
+      .toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+      .replace(/^./, (c) => c.toUpperCase());
+  };
+
 
 
   const gastosTiendaCash = filteredGastos
