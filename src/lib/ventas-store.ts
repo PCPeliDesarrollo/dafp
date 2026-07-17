@@ -139,6 +139,9 @@ export const ventasStore = {
       pvp: r.pvp ?? null,
       pvd: r.pvd ?? null,
       entrega: r.entrega ?? null,
+      efectivo_amount: r.efectivo_amount ?? null,
+      tpv_amount: r.tpv_amount ?? null,
+      banco_amount: r.banco_amount ?? null,
     }));
 
     const { error } = await supabase
