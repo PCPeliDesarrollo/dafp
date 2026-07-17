@@ -103,6 +103,8 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     ingreso: round2(ingreso),
     coste: round2(coste),
     beneficio_real: round2(beneficio_real),
+    stock,
+    empleado,
     warnings,
   };
 }
