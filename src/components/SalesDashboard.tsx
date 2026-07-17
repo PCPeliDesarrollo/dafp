@@ -510,7 +510,7 @@ export function SalesDashboard() {
                       {d.count} venta{d.count === 1 ? "" : "s"}
                     </Badge>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                         Ingreso
@@ -519,7 +519,16 @@ export function SalesDashboard() {
                         {eurP.format(d.ingreso)}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Beneficio
+                      </p>
+                      <p className="text-xl font-semibold tabular-nums text-success">
+                        {eurP.format(d.beneficio)}
+                      </p>
+                    </div>
                   </div>
+
                 </CardContent>
               </Card>
             );
