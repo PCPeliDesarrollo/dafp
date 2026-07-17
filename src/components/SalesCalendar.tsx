@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { VentaRow } from "@/lib/dashboard-mock";
+import type { Gasto } from "@/lib/gastos-store";
+
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -57,7 +59,18 @@ function buildMonthGrid(year: number, month: number) {
   return cells;
 }
 
-export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
+export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gasto[] }) {
+  // Group gastos by ISO date
+  const gastosByDay = useMemo(() => {
+    const m = new Map<string, Gasto[]>();
+    for (const g of gastos) {
+      const arr = m.get(g.fecha) ?? [];
+      arr.push(g);
+      m.set(g.fecha, arr);
+    }
+    return m;
+  }, [gastos]);
+
   // Group rows by ISO date
   const byDay = useMemo(() => {
     const m = new Map<string, VentaRow[]>();
@@ -98,6 +111,9 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
   const selectedRows = byDay.get(selected) ?? [];
   const totalDia = selectedRows.reduce((a, r) => a + r.total_venta, 0);
   const nAlb = selectedRows.length;
+  const selectedGastos = gastosByDay.get(selected) ?? [];
+  const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
+
 
   const porComercial = useMemo(() => {
     const m = new Map<string, { total: number; n: number }>();
@@ -133,7 +149,7 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
             Pincha un día para ver el detalle
           </Badge>
           <div className="ml-auto">
-            <MonthlySummary rows={rows} />
+            <MonthlySummary rows={rows} gastos={gastos} />
           </div>
         </CardTitle>
       </CardHeader>
@@ -178,6 +194,9 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                 const dayRows = byDay.get(iso) ?? [];
                 const total = dayRows.reduce((a, r) => a + r.total_venta, 0);
                 const has = dayRows.length > 0;
+                const dayGastos = gastosByDay.get(iso) ?? [];
+                const totalGastos = dayGastos.reduce((a, g) => a + g.monto, 0);
+                const hasGastos = dayGastos.length > 0;
                 const isSelected = iso === selected;
                 const intensity = maxDayTotal > 0 ? total / maxDayTotal : 0;
                 return (
@@ -190,7 +209,7 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                       "flex flex-col justify-between",
                       isSelected
                         ? "border-primary/70 bg-primary/15 shadow-glow"
-                        : has
+                        : has || hasGastos
                           ? "border-border/60 bg-card/60 hover:border-primary/40 hover:bg-primary/5"
                           : "border-border/30 bg-transparent text-muted-foreground/50 hover:bg-muted/30",
                     )}
@@ -202,19 +221,34 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                         style={{ opacity: 0.35 + intensity * 0.65 }}
                       />
                     )}
+                    {hasGastos && (
+                      <span
+                        aria-hidden
+                        title={`Gastos: ${eurP.format(totalGastos)}`}
+                        className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-destructive"
+                      />
+                    )}
                     <span className={cn(
                       "text-[11px] font-semibold tabular-nums",
                       isSelected && "text-primary",
                     )}>
                       {d.getDate()}
                     </span>
-                    {has && (
-                      <span className="relative z-[1] text-[10px] font-medium tabular-nums text-foreground">
-                        {total >= 1000 ? `${(total / 1000).toFixed(1)}k` : eur.format(total)}
+                    {(has || hasGastos) && (
+                      <span className="relative z-[1] flex flex-col gap-0.5 text-[10px] font-medium tabular-nums text-foreground">
+                        {has && (
+                          <span>{total >= 1000 ? `${(total / 1000).toFixed(1)}k` : eur.format(total)}</span>
+                        )}
+                        {hasGastos && (
+                          <span className="text-destructive">
+                            −{totalGastos >= 1000 ? `${(totalGastos / 1000).toFixed(1)}k` : eur.format(totalGastos)}
+                          </span>
+                        )}
                       </span>
                     )}
                   </button>
                 );
+
               })}
             </div>
           </div>
@@ -231,20 +265,29 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                 })}
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2">
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <Euro className="h-3 w-3" /> Total
+                    <Euro className="h-3 w-3" /> Ingresos
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{eur.format(totalDia)}</div>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <ReceiptText className="h-3 w-3" /> Nº
+                    <ReceiptText className="h-3 w-3" /> Alb.
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{nAlb}</div>
                 </div>
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <Wallet className="h-3 w-3" /> Gastos
+                  </div>
+                  <div className="mt-1 text-sm font-semibold tabular-nums text-destructive">
+                    −{eur.format(gastosDia)}
+                  </div>
+                </div>
               </div>
+
 
               {/* Por comercial */}
               <div className="mt-4">
@@ -302,6 +345,37 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
                   </div>
                 )}
               </div>
+
+              {/* Gastos del día */}
+              {selectedGastos.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    <Wallet className="h-3 w-3" /> Gastos ({selectedGastos.length})
+                  </div>
+                  <div className="max-h-40 space-y-1 overflow-y-auto pr-1">
+                    {selectedGastos
+                      .slice()
+                      .sort((a, b) => b.monto - a.monto)
+                      .map((g) => (
+                        <div
+                          key={g.id}
+                          className="flex items-center justify-between gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-2 py-1.5 text-xs"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[11px]">{g.concepto || "Movimiento"}</div>
+                            <div className="truncate text-[10px] text-muted-foreground">
+                              {g.categoria === "personales" ? "Personales" : "Tienda"} · {g.fuente === "banco" ? "Banco" : "Efectivo"}
+                            </div>
+                          </div>
+                          <div className="font-semibold tabular-nums text-destructive">
+                            −{eurP.format(g.monto)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>
@@ -314,15 +388,17 @@ export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
 /*                             Monthly summary                                */
 /* -------------------------------------------------------------------------- */
 
-function MonthlySummary({ rows }: { rows: VentaRow[] }) {
+function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gasto[] }) {
   const [open, setOpen] = useState(false);
 
-  // All months that have at least one row, sorted newest → oldest
+  // All months that have at least one row (ventas o gastos), sorted newest → oldest
   const months = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows) set.add(r.fecha.slice(0, 7)); // YYYY-MM
+    for (const g of gastos) set.add(g.fecha.slice(0, 7));
     return Array.from(set).sort().reverse();
-  }, [rows]);
+  }, [rows, gastos]);
+
 
   const defaultMonth = months[0] ?? new Date().toISOString().slice(0, 7);
   const [month, setMonth] = useState<string>(defaultMonth);
@@ -369,6 +445,16 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
     }
     return base;
   }, [monthRows]);
+  const monthGastos = useMemo(
+    () => gastos.filter((g) => g.fecha.startsWith(currentMonth)),
+    [gastos, currentMonth],
+  );
+  const gTiendaCash = monthGastos.filter((g) => g.categoria === "tienda" && g.fuente === "efectivo").reduce((a, g) => a + g.monto, 0);
+  const gTiendaBanco = monthGastos.filter((g) => g.categoria === "tienda" && g.fuente === "banco").reduce((a, g) => a + g.monto, 0);
+  const gPersonales = monthGastos.filter((g) => g.categoria === "personales").reduce((a, g) => a + g.monto, 0);
+  const gastosTotal = gTiendaCash + gTiendaBanco + gPersonales;
+  const netoMes = total - gastosTotal;
+
 
 
   const formatMonthLabel = (ym: string) => {
@@ -452,6 +538,49 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
               <div className="mt-1 text-lg font-semibold tabular-nums">{diasActivos}</div>
             </div>
           </div>
+
+          {/* Gastos del mes */}
+          <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <Wallet className="h-3 w-3" /> Gastos del mes ({monthGastos.length} mov.)
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="rounded-lg border border-warning/40 bg-warning/5 px-3 py-2">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <ShoppingBag className="h-3 w-3" /> Tienda · Efectivo
+                </div>
+                <div className="mt-1 text-base font-semibold tabular-nums text-warning">
+                  −{eurP.format(gTiendaCash)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-warning/40 bg-warning/5 px-3 py-2">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Landmark className="h-3 w-3" /> Tienda · Banco
+                </div>
+                <div className="mt-1 text-base font-semibold tabular-nums text-warning">
+                  −{eurP.format(gTiendaBanco)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Wallet className="h-3 w-3" /> Personales
+                </div>
+                <div className="mt-1 text-base font-semibold tabular-nums text-destructive">
+                  −{eurP.format(gPersonales)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-2 flex items-center justify-between rounded-lg border border-primary/40 bg-primary/10 px-3 py-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Dinero neto del mes
+              </span>
+              <span className={cn("text-base font-bold tabular-nums", netoMes >= 0 ? "text-success" : "text-destructive")}>
+                {eurP.format(netoMes)}
+              </span>
+            </div>
+          </div>
+
+
 
 
           <div>

@@ -772,7 +772,7 @@ export function SalesDashboard() {
 
         {/* Calendario */}
         <section className="mt-6">
-          <SalesCalendar rows={rows} />
+          <SalesCalendar rows={rows} gastos={gastosSnap.rows} />
         </section>
 
         {/* Leaderboard */}
@@ -855,7 +855,7 @@ export function SalesDashboard() {
         open={gastosDialog !== null}
         onOpenChange={(v) => !v && setGastosDialog(null)}
         categoria={gastosDialog ?? "tienda"}
-        gastos={filteredGastos}
+        gastos={gastosSnap.rows}
       />
     </div>
   );
