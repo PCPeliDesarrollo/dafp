@@ -59,7 +59,18 @@ function buildMonthGrid(year: number, month: number) {
   return cells;
 }
 
-export function SalesCalendar({ rows }: { rows: VentaRow[] }) {
+export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gasto[] }) {
+  // Group gastos by ISO date
+  const gastosByDay = useMemo(() => {
+    const m = new Map<string, Gasto[]>();
+    for (const g of gastos) {
+      const arr = m.get(g.fecha) ?? [];
+      arr.push(g);
+      m.set(g.fecha, arr);
+    }
+    return m;
+  }, [gastos]);
+
   // Group rows by ISO date
   const byDay = useMemo(() => {
     const m = new Map<string, VentaRow[]>();
