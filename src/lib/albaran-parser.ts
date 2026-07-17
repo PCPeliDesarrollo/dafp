@@ -29,9 +29,9 @@ export type ParsedAlbaran = {
   warnings: string[];
 };
 
-// OCR-tolerant keywords
-const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VU]|1PV|TARJETA)";
-const BANCO_RE = "(?:BANC[O0]|TRANSFER(?:ENCIA)?)";
+// OCR-tolerant keywords (no cierran con \b para permitir "TPV6" o "TPV:6")
+const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VUY]|1PV|IPV|LPV|TARJETA)";
+const BANCO_RE = "(?:BANC[O0]|BAN[O0]|TRANSFER(?:ENCIA)?)";
 
 function parseNum(raw: string): number | null {
   let s = raw.replace(/\s/g, "");
@@ -42,7 +42,7 @@ function parseNum(raw: string): number | null {
 
 function firstNumberAfter(text: string, keyword: string): number | null {
   const re = new RegExp(
-    `\\b${keyword}\\b[^\\d\\-]{0,10}([\\-]?\\d{1,3}(?:[.\\s]\\d{3})*(?:[.,]\\d+)?|[\\-]?\\d+(?:[.,]\\d+)?)`,
+    `(?:^|[^A-Z0-9])${keyword}(?![A-Z])[^\\d\\-]{0,10}([\\-]?\\d{1,3}(?:[.\\s]\\d{3})*(?:[.,]\\d+)?|[\\-]?\\d+(?:[.,]\\d+)?)`,
     "i",
   );
   const m = re.exec(text);
@@ -52,7 +52,7 @@ function firstNumberAfter(text: string, keyword: string): number | null {
 // Suma TODAS las apariciones de "KEYWORD <num>" en el texto.
 function sumAllAfter(text: string, keywordRe: string): number {
   const re = new RegExp(
-    `\\b${keywordRe}\\b[^\\d\\-]{0,10}([\\-]?\\d+(?:[.,]\\d+)?)`,
+    `(?:^|[^A-Z0-9])${keywordRe}(?![A-Z])[^\\d\\-]{0,10}([\\-]?\\d+(?:[.,]\\d+)?)`,
     "gi",
   );
   let total = 0;
@@ -63,6 +63,7 @@ function sumAllAfter(text: string, keywordRe: string): number {
   }
   return total;
 }
+
 
 // Último "TOTAL ... <num>" del texto (típicamente el TOTAL (€) del pie).
 function findLastTotal(text: string): number | null {
