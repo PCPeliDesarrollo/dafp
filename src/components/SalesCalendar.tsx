@@ -438,11 +438,20 @@ function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gast
       banco: { total: 0, beneficio: 0, n: 0 },
     } as Record<"efectivo" | "tpv" | "banco", { total: number; beneficio: number; n: number }>;
     for (const r of monthRows) {
-      const k = (r.metodo_pago ?? "efectivo") as "efectivo" | "tpv" | "banco";
-      const cur = base[k] ?? base.efectivo;
-      cur.total += r.total_venta;
-      cur.beneficio += r.beneficio ?? 0;
-      cur.n += 1;
+      const bd = getMetodoBreakdown(r);
+      const totalCobrado = bd.efectivo + bd.tpv + bd.banco;
+      const benef = r.beneficio ?? 0;
+      const share = (part: number) =>
+        totalCobrado > 0 ? (part / totalCobrado) * benef : 0;
+      base.efectivo.total += bd.efectivo;
+      base.tpv.total += bd.tpv;
+      base.banco.total += bd.banco;
+      base.efectivo.beneficio += share(bd.efectivo);
+      base.tpv.beneficio += share(bd.tpv);
+      base.banco.beneficio += share(bd.banco);
+      if (bd.efectivo > 0) base.efectivo.n += 1;
+      if (bd.tpv > 0) base.tpv.n += 1;
+      if (bd.banco > 0) base.banco.n += 1;
     }
     return base;
   }, [monthRows]);
