@@ -41,6 +41,7 @@ export function OcrPasteZone() {
         },
       });
       const parsed = parseAlbaranText(data.text ?? "");
+      if (parsed.fecha) setFechaOverride(parsed.fecha);
       setStatus({ kind: "parsed", parsed, text: data.text ?? "" });
     } catch (err) {
       console.error("OCR error", err);
