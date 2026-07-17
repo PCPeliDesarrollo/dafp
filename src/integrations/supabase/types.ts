@@ -19,8 +19,13 @@ export type Database = {
           beneficio: number
           created_at: string
           empleado: string
+          entrega: number | null
           fecha: string
           id: string
+          metodo_pago: string
+          pvd: number | null
+          pvp: number | null
+          raw_text: string | null
           total_venta: number
           updated_at: string
         }
@@ -28,8 +33,13 @@ export type Database = {
           beneficio?: number
           created_at?: string
           empleado: string
+          entrega?: number | null
           fecha: string
           id: string
+          metodo_pago?: string
+          pvd?: number | null
+          pvp?: number | null
+          raw_text?: string | null
           total_venta?: number
           updated_at?: string
         }
@@ -37,8 +47,13 @@ export type Database = {
           beneficio?: number
           created_at?: string
           empleado?: string
+          entrega?: number | null
           fecha?: string
           id?: string
+          metodo_pago?: string
+          pvd?: number | null
+          pvp?: number | null
+          raw_text?: string | null
           total_venta?: number
           updated_at?: string
         }
