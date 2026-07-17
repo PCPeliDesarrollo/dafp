@@ -366,6 +366,22 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
       .sort((a, b) => b.total - a.total);
   }, [monthRows]);
 
+  const porMetodo = useMemo(() => {
+    const base = {
+      efectivo: { total: 0, beneficio: 0, n: 0 },
+      tpv: { total: 0, beneficio: 0, n: 0 },
+      banco: { total: 0, beneficio: 0, n: 0 },
+    } as Record<"efectivo" | "tpv" | "banco", { total: number; beneficio: number; n: number }>;
+    for (const r of monthRows) {
+      const k = (r.metodo_pago ?? "efectivo") as "efectivo" | "tpv" | "banco";
+      const cur = base[k] ?? base.efectivo;
+      cur.total += r.total_venta;
+      cur.beneficio += r.beneficio;
+      cur.n += 1;
+    }
+    return base;
+  }, [monthRows]);
+
   const formatMonthLabel = (ym: string) => {
     const [y, m] = ym.split("-").map(Number);
     return `${MONTHS[m - 1]} ${y}`;
