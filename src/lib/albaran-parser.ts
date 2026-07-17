@@ -102,7 +102,8 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
 
   const hasTpv = /\bTPV\b/.test(text);
   const hasBanco = /\bBANCO\b/.test(text);
-  const metodo_pago: MetodoPago = hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo";
+  const metodo_pago: MetodoPago =
+    inlineMetodo ?? (hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo");
 
   // Detect STOCK letter (A, C, T). Accepts "STOCK A", "STOCK: A", "STOCK\nA".
   let stock: StockLetter | null = null;
