@@ -405,6 +405,16 @@ function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gast
     }
     return base;
   }, [monthRows]);
+  const monthGastos = useMemo(
+    () => gastos.filter((g) => g.fecha.startsWith(currentMonth)),
+    [gastos, currentMonth],
+  );
+  const gTiendaCash = monthGastos.filter((g) => g.categoria === "tienda" && g.fuente === "efectivo").reduce((a, g) => a + g.monto, 0);
+  const gTiendaBanco = monthGastos.filter((g) => g.categoria === "tienda" && g.fuente === "banco").reduce((a, g) => a + g.monto, 0);
+  const gPersonales = monthGastos.filter((g) => g.categoria === "personales").reduce((a, g) => a + g.monto, 0);
+  const gastosTotal = gTiendaCash + gTiendaBanco + gPersonales;
+  const netoMes = total - gastosTotal;
+
 
 
   const formatMonthLabel = (ym: string) => {
