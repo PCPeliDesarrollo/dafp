@@ -366,6 +366,22 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
       .sort((a, b) => b.total - a.total);
   }, [monthRows]);
 
+  const porMetodo = useMemo(() => {
+    const base = {
+      efectivo: { total: 0, beneficio: 0, n: 0 },
+      tpv: { total: 0, beneficio: 0, n: 0 },
+      banco: { total: 0, beneficio: 0, n: 0 },
+    } as Record<"efectivo" | "tpv" | "banco", { total: number; beneficio: number; n: number }>;
+    for (const r of monthRows) {
+      const k = (r.metodo_pago ?? "efectivo") as "efectivo" | "tpv" | "banco";
+      const cur = base[k] ?? base.efectivo;
+      cur.total += r.total_venta;
+      cur.beneficio += r.beneficio;
+      cur.n += 1;
+    }
+    return base;
+  }, [monthRows]);
+
   const formatMonthLabel = (ym: string) => {
     const [y, m] = ym.split("-").map(Number);
     return `${MONTHS[m - 1]} ${y}`;
@@ -452,6 +468,46 @@ function MonthlySummary({ rows }: { rows: VentaRow[] }) {
           </div>
 
           <div>
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+              <Euro className="h-3 w-3" /> Desglose por método de pago
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {([
+                { key: "efectivo", label: "Efectivo (Caja)", accent: "bg-emerald-500" },
+                { key: "tpv", label: "Tarjeta (TPV)", accent: "bg-sky-500" },
+                { key: "banco", label: "Transferencia (BANCO)", accent: "bg-violet-500" },
+              ] as const).map((m) => {
+                const v = porMetodo[m.key];
+                const share = total > 0 ? (v.total / total) * 100 : 0;
+                return (
+                  <div
+                    key={m.key}
+                    className="rounded-lg border border-border/50 bg-background/40 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium">{m.label}</span>
+                      <span className="text-muted-foreground">{v.n} alb.</span>
+                    </div>
+                    <div className="mt-1 text-base font-semibold tabular-nums">
+                      {eurP.format(v.total)}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Beneficio {eurP.format(v.beneficio)}
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/60">
+                      <div
+                        className={cn("h-full rounded-full", m.accent)}
+                        style={{ width: `${share}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               <Users className="h-3 w-3" /> Desglose por comercial
             </div>
