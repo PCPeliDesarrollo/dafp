@@ -38,6 +38,7 @@ import { SalesCalendar } from "./SalesCalendar";
 import { OcrPasteZone } from "./OcrPasteZone";
 import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
+import { GastosListDialog } from "./GastosListDialog";
 import { ventasStore } from "@/lib/ventas-store";
 import { useGastos } from "@/lib/gastos-store";
 import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
@@ -298,6 +299,7 @@ export function SalesDashboard() {
 
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnap = useGastos();
+  const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
   const filteredGastos = useMemo(() => {
     if (!gastosSnap.rows.length) return [];
     if (rango === "todo") return gastosSnap.rows;
@@ -597,7 +599,10 @@ export function SalesDashboard() {
 
         {/* Desglose de gastos por categoría */}
         <section className="mt-4 grid gap-4 md:grid-cols-2">
-          <Card className="border-warning/30 bg-warning/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-warning/30 bg-warning/5 shadow-elevated transition-colors hover:border-warning/60 hover:bg-warning/10"
+            onClick={() => setGastosDialog("tienda")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <p className="flex items-center gap-2 text-sm font-semibold">
@@ -630,7 +635,10 @@ export function SalesDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-destructive/30 bg-destructive/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-destructive/30 bg-destructive/5 shadow-elevated transition-colors hover:border-destructive/60 hover:bg-destructive/10"
+            onClick={() => setGastosDialog("personales")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <p className="flex items-center gap-2 text-sm font-semibold">
@@ -843,6 +851,12 @@ export function SalesDashboard() {
             : "Datos de demostración · importa un CSV desde tu programa de facturación para ver tus ventas reales."}
         </p>
       </div>
+      <GastosListDialog
+        open={gastosDialog !== null}
+        onOpenChange={(v) => !v && setGastosDialog(null)}
+        categoria={gastosDialog ?? "tienda"}
+        gastos={filteredGastos}
+      />
     </div>
   );
 }

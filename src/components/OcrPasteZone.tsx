@@ -125,8 +125,8 @@ export function OcrPasteZone() {
   return (
     <Card className="gradient-card border-border/50 shadow-elevated">
       <CardContent className="p-6">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <h3 className="text-base font-semibold">Añadir albarán por imagen</h3>
             <p className="text-xs text-muted-foreground">
               Pega una captura con <kbd className="rounded bg-muted px-1">Ctrl</kbd>+
@@ -134,7 +134,52 @@ export function OcrPasteZone() {
               Detecta <b>PVP</b>, <b>PVD</b>, <b>ENTREGA</b>, <b>TPV</b> y <b>BANCO</b>.
             </p>
           </div>
+          <Button
+            type="button"
+            variant="default"
+            className="gap-2"
+            onClick={async () => {
+              try {
+                if (!navigator.clipboard || !("read" in navigator.clipboard)) {
+                  setStatus({
+                    kind: "error",
+                    message:
+                      "Tu navegador no permite pegar imágenes con un botón. Usa Ctrl+V dentro de la página.",
+                  });
+                  return;
+                }
+                const items = await (navigator.clipboard as any).read();
+                for (const it of items) {
+                  const type = it.types.find((t: string) => t.startsWith("image/"));
+                  if (type) {
+                    const blob: Blob = await it.getType(type);
+                    const file = new File([blob], `clipboard.${type.split("/")[1] || "png"}`, {
+                      type,
+                    });
+                    handleFile(file);
+                    return;
+                  }
+                }
+                setStatus({
+                  kind: "error",
+                  message: "No hay ninguna imagen en el portapapeles.",
+                });
+              } catch (err) {
+                setStatus({
+                  kind: "error",
+                  message:
+                    err instanceof Error
+                      ? `No se pudo leer el portapapeles: ${err.message}`
+                      : "No se pudo leer el portapapeles.",
+                });
+              }
+            }}
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Pegar captura
+          </Button>
         </div>
+
 
         <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
           {/* Zona izquierda: drop / upload */}
