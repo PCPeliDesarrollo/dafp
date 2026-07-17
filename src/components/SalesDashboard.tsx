@@ -41,7 +41,7 @@ import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { ventasStore } from "@/lib/ventas-store";
 import { useGastos } from "@/lib/gastos-store";
-import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
+import { METODO_PAGO_LABEL, getMetodoBreakdown, type MetodoPago } from "@/lib/albaran-parser";
 import {
   Select,
   SelectContent,
@@ -292,11 +292,20 @@ export function SalesDashboard() {
       banco: { ingreso: 0, beneficio: 0, count: 0 },
     };
     for (const r of filtered) {
-      const mp: MetodoPago = (r.metodo_pago ?? "efectivo") as MetodoPago;
-      const b = base[mp] ?? base.efectivo;
-      b.ingreso += r.total_venta;
-      b.beneficio += r.beneficio ?? 0;
-      b.count += 1;
+      const bd = getMetodoBreakdown(r);
+      const totalCobrado = bd.efectivo + bd.tpv + bd.banco;
+      const benef = r.beneficio ?? 0;
+      const share = (part: number) =>
+        totalCobrado > 0 ? (part / totalCobrado) * benef : 0;
+      base.efectivo.ingreso += bd.efectivo;
+      base.tpv.ingreso += bd.tpv;
+      base.banco.ingreso += bd.banco;
+      base.efectivo.beneficio += share(bd.efectivo);
+      base.tpv.beneficio += share(bd.tpv);
+      base.banco.beneficio += share(bd.banco);
+      if (bd.efectivo > 0) base.efectivo.count += 1;
+      if (bd.tpv > 0) base.tpv.count += 1;
+      if (bd.banco > 0) base.banco.count += 1;
     }
     return base;
   }, [filtered]);

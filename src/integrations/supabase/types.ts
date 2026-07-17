@@ -52,8 +52,10 @@ export type Database = {
       }
       ventas: {
         Row: {
+          banco_amount: number | null
           beneficio: number
           created_at: string
+          efectivo_amount: number | null
           empleado: string
           entrega: number | null
           fecha: string
@@ -63,11 +65,14 @@ export type Database = {
           pvp: number | null
           raw_text: string | null
           total_venta: number
+          tpv_amount: number | null
           updated_at: string
         }
         Insert: {
+          banco_amount?: number | null
           beneficio?: number
           created_at?: string
+          efectivo_amount?: number | null
           empleado: string
           entrega?: number | null
           fecha: string
@@ -77,11 +82,14 @@ export type Database = {
           pvp?: number | null
           raw_text?: string | null
           total_venta?: number
+          tpv_amount?: number | null
           updated_at?: string
         }
         Update: {
+          banco_amount?: number | null
           beneficio?: number
           created_at?: string
+          efectivo_amount?: number | null
           empleado?: string
           entrega?: number | null
           fecha?: string
@@ -91,6 +99,7 @@ export type Database = {
           pvp?: number | null
           raw_text?: string | null
           total_venta?: number
+          tpv_amount?: number | null
           updated_at?: string
         }
         Relationships: []

@@ -15,7 +15,10 @@ export type ParsedAlbaran = {
   pvp: number;
   pvd: number;
   entrega: number | null;
-  metodo_pago: MetodoPago;
+  metodo_pago: MetodoPago; // método dominante (para compatibilidad)
+  efectivo_amount: number;
+  tpv_amount: number;
+  banco_amount: number;
   ingreso: number;
   coste: number;
   beneficio_real: number;
@@ -26,79 +29,109 @@ export type ParsedAlbaran = {
   warnings: string[];
 };
 
+// OCR-tolerant keywords
+const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VU]|1PV|TARJETA)";
+const BANCO_RE = "(?:BANC[O0]|TRANSFER(?:ENCIA)?)";
+
+function parseNum(raw: string): number | null {
+  let s = raw.replace(/\s/g, "");
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
 
 function firstNumberAfter(text: string, keyword: string): number | null {
-  // Acepta "PVP 200", "PVP: 200", "PVP=200", "PVP\n200", "PVP 1.234,56"
   const re = new RegExp(
-    `\\b${keyword}\\b[^\\d\\-]*([\\-]?\\d{1,3}(?:[.\\s]\\d{3})*(?:[.,]\\d+)?|[\\-]?\\d+(?:[.,]\\d+)?)`,
+    `\\b${keyword}\\b[^\\d\\-]{0,10}([\\-]?\\d{1,3}(?:[.\\s]\\d{3})*(?:[.,]\\d+)?|[\\-]?\\d+(?:[.,]\\d+)?)`,
     "i",
   );
   const m = re.exec(text);
-  if (!m) return null;
-  // "1.234,56" -> 1234.56 ; "1234.56" -> 1234.56 ; "50" -> 50
-  let raw = m[1].replace(/\s/g, "");
-  if (raw.includes(",")) {
-    raw = raw.replace(/\./g, "").replace(",", ".");
+  return m ? parseNum(m[1]) : null;
+}
+
+// Suma TODAS las apariciones de "KEYWORD <num>" en el texto.
+function sumAllAfter(text: string, keywordRe: string): number {
+  const re = new RegExp(
+    `\\b${keywordRe}\\b[^\\d\\-]{0,10}([\\-]?\\d+(?:[.,]\\d+)?)`,
+    "gi",
+  );
+  let total = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const n = parseNum(m[1]);
+    if (n != null && n > 0) total += n;
   }
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
+  return total;
+}
+
+// Último "TOTAL ... <num>" del texto (típicamente el TOTAL (€) del pie).
+function findLastTotal(text: string): number | null {
+  const re = /\bTOTAL\b(?:\s*\(?\s*€?\s*\)?)?\s*[:.]?\s*([\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?)/gi;
+  let last: number | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const n = parseNum(m[1]);
+    if (n != null) last = n;
+  }
+  return last;
 }
 
 export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const text = (rawText ?? "").toUpperCase();
   const warnings: string[] = [];
+  const round2 = (n: number) => Math.round(n * 100) / 100;
 
-  // Patrón inline "PDV X TPV|BANCO|EFECTIVO Y" que usamos en las descripciones
-  // del albarán: X = precio de coste, Y = precio de venta por ese método.
-  // Tiene prioridad sobre los demás detectores porque es lo que el usuario teclea.
-  let pvpVal: number | null = null;
-  let pvdVal: number | null = null;
-  let inlineMetodo: MetodoPago | null = null;
-  // OCR-tolerant keywords: T.P.V / TPU / 1PV, BANCO/BAN0, etc.
-  const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VU]|1PV|TARJETA)";
-  const BANCO_RE = "(?:BANC[O0]|TRANSFER(?:ENCIA)?)";
-  const EFEC_RE = "(?:EFECTIVO|CAJA|CONTADO|MET[AÁ]LICO)";
-  const inlineRe = new RegExp(
-    `\\bP[DV]V\\s+([\\d]+(?:[.,]\\d+)?)[\\s\\S]{0,60}?(${TPV_RE}|${BANCO_RE}|${EFEC_RE})\\s*[:\\-]?\\s*([\\d]+(?:[.,]\\d+)?)`,
-    "i"
-  );
-  const inlineM = inlineRe.exec(text);
-  if (inlineM) {
-    const parseN = (s: string) => Number(s.replace(",", "."));
-    pvdVal = parseN(inlineM[1]);
-    pvpVal = parseN(inlineM[3]);
-    const kw = inlineM[2].toUpperCase();
-    inlineMetodo = new RegExp(TPV_RE, "i").test(kw)
-      ? "tpv"
-      : new RegExp(BANCO_RE, "i").test(kw)
-      ? "banco"
-      : "efectivo";
-  }
-
-  // PVP: primero busca la palabra clave; si no aparece, cae a "TOTAL (€)" del pie.
+  // 1) PVP = TOTAL del albarán (prioritario). Si no hay TOTAL, cae al keyword PVP
+  //    y como último recurso, al valor tras "PDV X TPV Y" (venta manual sin TOTAL).
+  let pvpVal: number | null = findLastTotal(text);
   if (pvpVal == null) pvpVal = firstNumberAfter(text, "PVP");
-  if (pvpVal == null) {
-    const totM = /\bTOTAL\b[^\n]{0,20}?([\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?)/i.exec(text);
-    if (totM) {
-      let raw = totM[1].replace(/\s/g, "");
-      if (raw.includes(",")) raw = raw.replace(/\./g, "").replace(",", ".");
-      const n = Number(raw);
-      if (Number.isFinite(n)) pvpVal = n;
-    }
-  }
-  // PVD: acepta también "PDV" (errata habitual) y "COSTE".
-  if (pvdVal == null) pvdVal = firstNumberAfter(text, "PVD");
-  if (pvdVal == null) pvdVal = firstNumberAfter(text, "PDV");
-  if (pvdVal == null) pvdVal = firstNumberAfter(text, "COSTE");
-  const entregaVal = firstNumberAfter(text, "ENTREGA");
 
-  if (pvpVal == null) warnings.push("No se detectó PVP; se usa 0.");
-  if (pvdVal == null) warnings.push("No se detectó PVD; se usa 0.");
+  // 2) PVD = suma de todas las anotaciones "PDV|PVD X" (coste)
+  let pvdSum =
+    sumAllAfter(text, "PDV") +
+    sumAllAfter(text, "PVD") +
+    sumAllAfter(text, "COSTE");
+
+  // 3) Pagos parciales por método: suma de todos los "TPV X" y "BANCO X"
+  const tpv_amount = round2(sumAllAfter(text, TPV_RE));
+  const banco_amount = round2(sumAllAfter(text, BANCO_RE));
+
+  // Fallback: venta manual "PDV 2 TPV 6" sin TOTAL ni PVP → el "6" tras TPV es el PVP
+  if (pvpVal == null && tpv_amount === 0 && banco_amount === 0) {
+    warnings.push("No se detectó PVP ni TOTAL; se usa 0.");
+  }
+  if (pvpVal == null && (tpv_amount > 0 || banco_amount > 0) && pvdSum > 0) {
+    // patrón "PDV X TPV Y" solitario → PVP = importe pagado
+    pvpVal = tpv_amount + banco_amount;
+  }
 
   const pvp = pvpVal ?? 0;
-  const pvd = pvdVal ?? 0;
+  const pvd = round2(pvdSum);
 
-  // Fecha "dd/mm/yyyy" o "dd-mm-yyyy" (opcionalmente precedida por "FECHA").
+  if (pvdSum === 0) warnings.push("No se detectó PVD/PDV; coste = 0.");
+
+  // 4) ENTREGA (pago parcial global sobre un PVP mayor)
+  const entregaVal = firstNumberAfter(text, "ENTREGA");
+
+  // 5) Efectivo = resto del PVP tras descontar TPV + BANCO (nunca negativo)
+  const nonCash = tpv_amount + banco_amount;
+  const efectivo_amount = round2(Math.max(0, pvp - nonCash));
+
+  if (nonCash > pvp + 0.01) {
+    warnings.push(
+      `TPV+BANCO (${round2(nonCash)}€) supera el TOTAL (${round2(pvp)}€). Revisa la captura.`,
+    );
+  }
+
+  // Método dominante (para el campo legado metodo_pago)
+  const metodo_pago: MetodoPago =
+    efectivo_amount >= tpv_amount && efectivo_amount >= banco_amount
+      ? "efectivo"
+      : tpv_amount >= banco_amount
+      ? "tpv"
+      : "banco";
+
+  // 6) Fecha "dd/mm/yyyy" (opcionalmente precedida por "FECHA").
   let fecha: string | null = null;
   const fechaM =
     /\bFECHA\b[^\d]{0,10}(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/i.exec(text) ||
@@ -111,59 +144,49 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     fecha = `${y}-${m}-${d}`;
   }
 
-  // Nº de albarán: "Albarán nº 10#0375" -> "10#0375". Se usa como ID único
-  // para que al re-subir la misma captura se sobrescriba, no se duplique.
+  // 7) Nº de albarán → ID único para upsert
   let numero: string | null = null;
   const numM =
     /ALBAR[ÁA]N\s*(?:N[ºO°]?\.?)?\s*([0-9]+\s*#\s*[0-9]+)/i.exec(text) ||
     /\b([0-9]{1,4}\s*#\s*[0-9]{2,6})\b/.exec(text);
   if (numM) numero = numM[1].replace(/\s+/g, "");
 
-  const hasTpv = new RegExp(`\\b${TPV_RE}\\b`, "i").test(text);
-  const hasBanco = new RegExp(`\\b${BANCO_RE}\\b`, "i").test(text);
-  const metodo_pago: MetodoPago =
-    inlineMetodo ?? (hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo");
-
-  // Detect STOCK letter (A, C, T). Accepts "STOCK A", "STOCK: A", "STOCK\nA".
+  // 8) STOCK
   let stock: StockLetter | null = null;
   const stockM = /\bSTOCK\b[^A-Z0-9]*([ACT])\b/.exec(text);
-  if (stockM) {
-    stock = stockM[1] as StockLetter;
-  } else {
-    // Fallback: isolated letter A/C/T on its own line/token near "STOCK" section
+  if (stockM) stock = stockM[1] as StockLetter;
+  else {
     const altM = /\b([ACT])\b\s*(?:STOCK|\bSTK\b)/.exec(text);
     if (altM) stock = altM[1] as StockLetter;
   }
   const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
-  if (!stock) warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
+  if (!stock)
+    warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
 
-
+  // 9) Cálculo ingreso / coste / beneficio (respeta ENTREGA si aplica)
   let ingreso: number;
   let coste: number;
   let beneficio_real: number;
   let entrega: number | null = null;
-
   if (entregaVal != null && entregaVal > 0 && pvp > 0) {
     entrega = entregaVal;
     ingreso = entregaVal;
     coste = entregaVal * (pvd / pvp);
     beneficio_real = entregaVal * ((pvp - pvd) / pvp);
   } else {
-    if (entregaVal != null && pvp <= 0) {
-      warnings.push("ENTREGA presente pero PVP=0; se ignora la entrega.");
-    }
     ingreso = pvp;
     coste = pvd;
     beneficio_real = pvp - pvd;
   }
-
-  const round2 = (n: number) => Math.round(n * 100) / 100;
 
   return {
     pvp: round2(pvp),
     pvd: round2(pvd),
     entrega: entrega != null ? round2(entrega) : null,
     metodo_pago,
+    efectivo_amount,
+    tpv_amount,
+    banco_amount,
     ingreso: round2(ingreso),
     coste: round2(coste),
     beneficio_real: round2(beneficio_real),
@@ -180,3 +203,32 @@ export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
   tpv: "Tarjeta (TPV)",
   banco: "Transferencias (BANCO)",
 };
+
+// Devuelve el desglose por método de una venta.
+// Usa los importes explícitos si están presentes; si no, cae al método dominante.
+export function getMetodoBreakdown(row: {
+  total_venta: number;
+  metodo_pago?: MetodoPago | string | null;
+  efectivo_amount?: number | null;
+  tpv_amount?: number | null;
+  banco_amount?: number | null;
+}): { efectivo: number; tpv: number; banco: number } {
+  const hasBreakdown =
+    row.efectivo_amount != null ||
+    row.tpv_amount != null ||
+    row.banco_amount != null;
+  if (hasBreakdown) {
+    return {
+      efectivo: Number(row.efectivo_amount ?? 0),
+      tpv: Number(row.tpv_amount ?? 0),
+      banco: Number(row.banco_amount ?? 0),
+    };
+  }
+  const mp = (row.metodo_pago ?? "efectivo") as MetodoPago;
+  const total = Number(row.total_venta ?? 0);
+  return {
+    efectivo: mp === "efectivo" ? total : 0,
+    tpv: mp === "tpv" ? total : 0,
+    banco: mp === "banco" ? total : 0,
+  };
+}
