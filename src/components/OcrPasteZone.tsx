@@ -98,7 +98,9 @@ export function OcrPasteZone() {
       await ventasStore.setImported(
         [
           {
-            id: `ocr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            id: p.numero
+              ? `alb-${p.numero}`
+              : `ocr-${(fechaOverride ?? new Date().toISOString().slice(0, 10))}-${p.empleado}-${p.pvp}-${p.pvd}`,
             fecha: fechaOverride ?? new Date().toISOString().slice(0, 10),
             empleado: p.empleado!,
             total_venta: p.ingreso,
