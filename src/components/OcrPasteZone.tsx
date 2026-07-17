@@ -241,30 +241,27 @@ export function OcrPasteZone() {
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label className="text-xs">Empleado</Label>
-                    <select
-                      value={empleado}
-                      onChange={(e) => setEmpleado(e.target.value)}
-                      className="mt-1 h-9 w-full rounded-md border border-border/60 bg-background px-2 text-sm"
-                    >
-                      {EMPLEADOS_LIST.map((e) => (
-                        <option key={e} value={e}>
-                          {e}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="rounded-md border border-border/40 bg-background/60 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Stock detectado
+                    </p>
+                    <p className="text-sm font-medium">
+                      {status.parsed.stock
+                        ? `${status.parsed.stock} · ${status.parsed.empleado}`
+                        : "— no detectado —"}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-xs">Fecha</Label>
                     <Input
                       type="date"
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
+                      value={fechaOverride ?? new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setFechaOverride(e.target.value)}
                       className="mt-1 h-9"
                     />
                   </div>
                 </div>
+
                 <div className="flex gap-2">
                   <Button
                     onClick={save}
