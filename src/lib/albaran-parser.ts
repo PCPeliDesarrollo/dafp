@@ -160,6 +160,8 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     stock,
     empleado,
     fecha,
+    numero,
+    warnings,
     warnings,
   };
 }
