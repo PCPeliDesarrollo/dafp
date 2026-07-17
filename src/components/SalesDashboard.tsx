@@ -42,6 +42,14 @@ import { GastosListDialog } from "./GastosListDialog";
 import { ventasStore } from "@/lib/ventas-store";
 import { useGastos } from "@/lib/gastos-store";
 import { METODO_PAGO_LABEL, type MetodoPago } from "@/lib/albaran-parser";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 type RangoKey = "hoy" | "semana" | "mes" | "todo";
 
