@@ -441,6 +441,86 @@ export function SalesDashboard() {
           />
         </section>
 
+        {/* Resumen real (ingreso y beneficio efectivos, respeta filtro) */}
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
+          <Card className="gradient-card border-border/50 shadow-elevated">
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                Total Ingresos Reales · {RANGOS.find((r) => r.key === rango)?.label}
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">
+                {eurP.format(ingresosRealesTotal)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Incluye entregas parciales al valor cobrado
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="gradient-card border-border/50 shadow-elevated">
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                Total Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">
+                {eurP.format(beneficioRealTotal)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Margen efectivo aplicando prorrateo de entregas
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Desglose por método de pago */}
+        <section className="mt-4 grid gap-4 md:grid-cols-3">
+          {(["efectivo", "tpv", "banco"] as MetodoPago[]).map((mp) => {
+            const d = desglosePago[mp];
+            const accent =
+              mp === "efectivo"
+                ? "border-success/40 bg-success/5"
+                : mp === "tpv"
+                  ? "border-primary/40 bg-primary/5"
+                  : "border-info/40 bg-info/5";
+            return (
+              <Card key={mp} className={cn("border shadow-elevated", accent)}>
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">{METODO_PAGO_LABEL[mp]}</p>
+                    <Badge variant="outline" className="text-[10px]">
+                      {d.count} venta{d.count === 1 ? "" : "s"}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Ingreso
+                      </p>
+                      <p className="text-xl font-semibold tabular-nums">
+                        {eurP.format(d.ingreso)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Beneficio
+                      </p>
+                      <p className="text-xl font-semibold tabular-nums">
+                        {eurP.format(d.beneficio)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </section>
+
+        {/* Zona de pegado / OCR de albaranes */}
+        <section className="mt-6">
+          <OcrPasteZone />
+        </section>
+
+
+
         {/* Charts */}
         <section className="mt-6 grid gap-6 lg:grid-cols-5">
           <Card className="gradient-card border-border/50 shadow-elevated lg:col-span-2">
