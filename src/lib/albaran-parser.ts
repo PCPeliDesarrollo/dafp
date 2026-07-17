@@ -60,6 +60,20 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const hasBanco = /\bBANCO\b/.test(text);
   const metodo_pago: MetodoPago = hasTpv ? "tpv" : hasBanco ? "banco" : "efectivo";
 
+  // Detect STOCK letter (A, C, T). Accepts "STOCK A", "STOCK: A", "STOCK\nA".
+  let stock: StockLetter | null = null;
+  const stockM = /\bSTOCK\b[^A-Z0-9]*([ACT])\b/.exec(text);
+  if (stockM) {
+    stock = stockM[1] as StockLetter;
+  } else {
+    // Fallback: isolated letter A/C/T on its own line/token near "STOCK" section
+    const altM = /\b([ACT])\b\s*(?:STOCK|\bSTK\b)/.exec(text);
+    if (altM) stock = altM[1] as StockLetter;
+  }
+  const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
+  if (!stock) warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
+
+
   let ingreso: number;
   let coste: number;
   let beneficio_real: number;
