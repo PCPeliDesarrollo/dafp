@@ -299,6 +299,7 @@ export function SalesDashboard() {
 
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnap = useGastos();
+  const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
   const filteredGastos = useMemo(() => {
     if (!gastosSnap.rows.length) return [];
     if (rango === "todo") return gastosSnap.rows;
