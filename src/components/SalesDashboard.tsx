@@ -304,19 +304,28 @@ export function SalesDashboard() {
   const filteredGastos = useMemo(() => {
     if (!gastosSnap.rows.length) return [];
     if (rango === "todo") return gastosSnap.rows;
-    if (!rows.length) return gastosSnap.rows;
-    const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
-    const todayIso = sortedDates[sortedDates.length - 1];
-    const todayDate = new Date(todayIso);
-    if (rango === "hoy") return gastosSnap.rows.filter((g) => g.fecha === todayIso);
-    if (rango === "semana") {
-      const start = new Date(todayDate);
-      start.setDate(todayDate.getDate() - 6);
-      return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
+    const now = new Date();
+    if (rango === "mes") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return gastosSnap.rows.filter((g) => {
+        const d = new Date(g.fecha);
+        return d >= start && d < end;
+      });
     }
-    const start = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
+    // For "hoy" / "semana" anchor on max date in sales dataset (falls back to now)
+    const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
+    const anchorIso = sortedDates[sortedDates.length - 1];
+    const anchor = anchorIso ? new Date(anchorIso) : now;
+    if (rango === "hoy") {
+      const iso = anchorIso ?? now.toISOString().slice(0, 10);
+      return gastosSnap.rows.filter((g) => g.fecha === iso);
+    }
+    const start = new Date(anchor);
+    start.setDate(anchor.getDate() - 6);
     return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
   }, [gastosSnap.rows, rows, rango]);
+
 
   const gastosTiendaCash = filteredGastos
     .filter((g) => g.categoria === "tienda" && g.fuente === "efectivo")
