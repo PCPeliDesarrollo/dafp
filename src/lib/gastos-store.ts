@@ -1,0 +1,164 @@
+import { useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type GastoCategoria = "personales" | "tienda";
+export type GastoFuente = "efectivo" | "banco";
+
+export type Gasto = {
+  id: string;
+  fecha: string; // ISO
+  monto: number; // positivo, EUR
+  concepto: string;
+  categoria: GastoCategoria;
+  fuente: GastoFuente;
+  referencia?: string | null;
+};
+
+type Snapshot = {
+  rows: Gasto[];
+  loaded: boolean;
+};
+
+const listeners = new Set<() => void>();
+let snapshot: Snapshot = { rows: [], loaded: false };
+let loadStarted = false;
+
+function emit() {
+  listeners.forEach((l) => l());
+}
+
+async function loadFromCloud() {
+  const { data, error } = await supabase
+    .from("gastos")
+    .select("id, fecha, monto, concepto, categoria, fuente, referencia")
+    .order("fecha", { ascending: false });
+  if (error) {
+    console.error("Error cargando gastos:", error);
+    snapshot = { ...snapshot, loaded: true };
+    emit();
+    return;
+  }
+  snapshot = {
+    rows: (data ?? []).map((r: any) => ({
+      id: r.id,
+      fecha: r.fecha,
+      monto: Number(r.monto),
+      concepto: r.concepto ?? "",
+      categoria: (r.categoria ?? "tienda") as GastoCategoria,
+      fuente: (r.fuente ?? "efectivo") as GastoFuente,
+      referencia: r.referencia ?? null,
+    })),
+    loaded: true,
+  };
+  emit();
+}
+
+function ensureLoaded() {
+  if (loadStarted || typeof window === "undefined") return;
+  loadStarted = true;
+  loadFromCloud();
+  const channel = supabase
+    .channel("gastos-store")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "gastos" },
+      () => loadFromCloud(),
+    )
+    .subscribe();
+  window.addEventListener("beforeunload", () => {
+    supabase.removeChannel(channel);
+  });
+}
+
+function makeId() {
+  return `g-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export const gastosStore = {
+  get: (): Snapshot => {
+    ensureLoaded();
+    return snapshot;
+  },
+  subscribe: (l: () => void) => {
+    listeners.add(l);
+    return () => listeners.delete(l);
+  },
+
+  addManual: async (input: {
+    fecha: string;
+    monto: number;
+    concepto: string;
+    categoria: GastoCategoria;
+  }) => {
+    const row: Gasto = {
+      id: makeId(),
+      fecha: input.fecha,
+      monto: Math.abs(input.monto),
+      concepto: input.concepto,
+      categoria: input.categoria,
+      fuente: "efectivo",
+      referencia: null,
+    };
+    const { error } = await supabase.from("gastos").insert({
+      id: row.id,
+      fecha: row.fecha,
+      monto: row.monto,
+      concepto: row.concepto,
+      categoria: row.categoria,
+      fuente: row.fuente,
+    } as any);
+    if (error) throw error;
+    snapshot = { rows: [row, ...snapshot.rows], loaded: true };
+    emit();
+  },
+
+  bulkUpsertBank: async (
+    items: { fecha: string; monto: number; concepto: string; referencia: string }[],
+  ) => {
+    if (!items.length) return { added: 0 };
+    const payload = items.map((it) => ({
+      id: `bank-${it.referencia}`,
+      fecha: it.fecha,
+      monto: Math.abs(it.monto),
+      concepto: it.concepto,
+      categoria: "tienda" as const,
+      fuente: "banco" as const,
+      referencia: it.referencia,
+    }));
+    const existing = new Set(snapshot.rows.map((r) => r.id));
+    const { error } = await supabase
+      .from("gastos")
+      .upsert(payload as any, { onConflict: "id" });
+    if (error) throw error;
+    await loadFromCloud();
+    const added = payload.filter((p) => !existing.has(p.id)).length;
+    return { added };
+  },
+
+  remove: async (id: string) => {
+    const { error } = await supabase.from("gastos").delete().eq("id", id);
+    if (error) throw error;
+    snapshot = { rows: snapshot.rows.filter((r) => r.id !== id), loaded: true };
+    emit();
+  },
+};
+
+const SERVER_SNAPSHOT: Snapshot = { rows: [], loaded: false };
+
+export function useGastos(): Snapshot {
+  return useSyncExternalStore(
+    gastosStore.subscribe,
+    gastosStore.get,
+    () => SERVER_SNAPSHOT,
+  );
+}
+
+export const CATEGORIA_LABEL: Record<GastoCategoria, string> = {
+  personales: "Gastos Personales",
+  tienda: "Gastos Tienda",
+};
+
+export const FUENTE_LABEL: Record<GastoFuente, string> = {
+  efectivo: "Efectivo (Caja)",
+  banco: "Banco (CSV)",
+};
