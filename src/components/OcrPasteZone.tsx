@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { parseAlbaranText, METODO_PAGO_LABEL, type ParsedAlbaran } from "@/lib/albaran-parser";
+import { parseAlbaranText, type ParsedAlbaran } from "@/lib/albaran-parser";
 import { ventasStore } from "@/lib/ventas-store";
 
 const eur = new Intl.NumberFormat("es-ES", {
