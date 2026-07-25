@@ -60,11 +60,6 @@ function sumAllValues(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);
 }
 
-// Suma TODAS las apariciones de "KEYWORD <num>" en el texto.
-function sumAllAfter(text: string, keywordRe: string): number {
-  return collectAllAfter(text, keywordRe).reduce((a, b) => a + b, 0);
-}
-
 
 function collectAllAfter(text: string, keywordRe: string): number[] {
   const re = new RegExp(
@@ -234,6 +229,14 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     /ALBAR[ÁA]N\s*(?:N[ºO°]?\.?)?\s*([0-9]+\s*#\s*[0-9]+)/i.exec(text) ||
     /\b([0-9]{1,4}\s*#\s*[0-9]{2,6})\b/.exec(text);
   if (numM) numero = numM[1].replace(/\s+/g, "");
+  else {
+    // El OCR pierde a veces el "#": "ALBARÁN Nº 100404" → "10#0404"
+    const altNum = /ALBAR[\u00c1A]N\s*(?:N[\u00baO\u00b0]?\.?)?\s*([0-9]{5,8})\b/i.exec(text);
+    if (altNum) {
+      const raw = altNum[1];
+      numero = `${raw.slice(0, raw.length - 4)}#${raw.slice(-4)}`;
+    }
+  }
 
   // 8) STOCK
   let stock: StockLetter | null = null;
