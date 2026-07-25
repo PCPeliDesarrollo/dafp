@@ -142,20 +142,25 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
   // 1) TOTAL del albarán = importe cobrado en EFECTIVO (base del albarán).
-  //    Si no hay TOTAL, cae al keyword PVP.
+  //    Si no hay TOTAL, se suma la columna "Total Línea" de la captura,
+  //    y en último caso el keyword PVP.
   let totalAlbaran: number | null = findLastTotal(text);
+  if (totalAlbaran == null) totalAlbaran = sumTotalLineaColumn(text);
   if (totalAlbaran == null) totalAlbaran = firstNumberAfter(text, "PVP");
 
-  // 2) PVD = suma de todas las anotaciones "PDV|PVD X" (coste)
-  let pvdSum =
-    sumAllAfter(text, "PDV") +
-    sumAllAfter(text, "PVD") +
-    sumAllAfter(text, "COSTE");
+  // 2) PVD = suma de las anotaciones "PDV|PVD|COSTE X" (coste).
+  //    Se priorizan las anotaciones que van solas en su línea para no
+  //    duplicar valores que también aparecen en la descripción del artículo.
+  let pvdValues = [
+    ...collectPreferLines(text, "PDV"),
+    ...collectPreferLines(text, "PVD"),
+    ...collectPreferLines(text, "COSTE"),
+  ];
 
   // 3) Cobros ADICIONALES por tarjeta / banco anotados en comentarios
   //    ("TPV 6" bajo la línea = 6€ extra cobrados con tarjeta, encima del TOTAL).
-  const tpv_amount = round2(sumAllAfter(text, TPV_RE));
-  const banco_amount = round2(sumAllAfter(text, BANCO_RE));
+  const tpv_amount = round2(sumAllValues(collectPreferLines(text, TPV_RE)));
+  const banco_amount = round2(sumAllValues(collectPreferLines(text, BANCO_RE)));
 
   // Fallback: venta manual "PDV 2 TPV 6" sin TOTAL → sólo hay cobro por tarjeta.
   if (totalAlbaran == null && (tpv_amount > 0 || banco_amount > 0)) {
@@ -168,9 +173,29 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   // 4) Efectivo = TOTAL del albarán. PVP final = efectivo + TPV + BANCO.
   const efectivo_amount = round2(Math.max(0, totalAlbaran ?? 0));
   const pvp = round2(efectivo_amount + tpv_amount + banco_amount);
+
+  // 4b) El OCR pierde a veces el punto decimal del coste ("PVD 3.14" → "PVD 314").
+  //     Si el coste supera el PVP, se reparan esos enteros dividiendo por 100.
+  let pvdSum = sumAllValues(pvdValues);
+  if (pvp > 0 && pvdSum > pvp) {
+    const repaired = pvdValues.map((v) =>
+      Number.isInteger(v) && v >= 100 ? v / 100 : v,
+    );
+    const repairedSum = sumAllValues(repaired);
+    if (repairedSum <= pvp) {
+      pvdValues = repaired;
+      pvdSum = repairedSum;
+      warnings.push(
+        "Se corrigieron decimales del PVD mal leídos por el OCR; revisa el coste.",
+      );
+    } else {
+      warnings.push("El PVD detectado es mayor que el PVP; revisa la captura.");
+    }
+  }
   const pvd = round2(pvdSum);
 
   if (pvdSum === 0) warnings.push("No se detectó PVD/PDV; coste = 0.");
+
 
   // 5) ENTREGA (pago parcial global sobre un PVP mayor)
   const entregaVal = firstNumberAfter(text, "ENTREGA");
