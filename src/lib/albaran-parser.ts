@@ -58,23 +58,52 @@ function firstNumberAfter(text: string, keyword: string): number | null {
 
 // Suma TODAS las apariciones de "KEYWORD <num>" en el texto.
 function sumAllAfter(text: string, keywordRe: string): number {
+  return collectAllAfter(text, keywordRe).reduce((a, b) => a + b, 0);
+}
+
+function collectAllAfter(text: string, keywordRe: string): number[] {
   const re = new RegExp(
     `(?:^|[^A-Z0-9])${keywordRe}(?![A-Z])[^\\d\\-]{0,10}([\\-]?\\d+(?:[.,]\\d+)?)`,
     "gi",
   );
-  let total = 0;
+  const out: number[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     const n = parseNum(m[1]);
-    if (n != null && n > 0) total += n;
+    if (n != null && n > 0) out.push(n);
   }
-  return total;
+  return out;
 }
 
+// Valores de "KEYWORD <num>" que aparecen SOLOS al principio de una línea
+// (las anotaciones manuales del albarán). Evita contar dos veces el mismo
+// importe cuando la palabra clave también aparece dentro de la descripción
+// del artículo ("redmi watch 5 active 1 tpv 50" + línea "TPV 50").
+function collectLineLeading(text: string, keywordRe: string): number[] {
+  const lineRe = new RegExp(
+    `^[^A-Z0-9]{0,3}${keywordRe}(?![A-Z])[^\\d\\-]{0,10}([\\-]?\\d+(?:[.,]\\d+)?)\\s*$`,
+    "i",
+  );
+  const out: number[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const m = lineRe.exec(line.trim());
+    if (m) {
+      const n = parseNum(m[1]);
+      if (n != null && n > 0) out.push(n);
+    }
+  }
+  return out;
+}
+
+// Prefiere las anotaciones de línea; si no hay ninguna, usa el texto completo.
+function collectPreferLines(text: string, keywordRe: string): number[] {
+  const lines = collectLineLeading(text, keywordRe);
+  return lines.length > 0 ? lines : collectAllAfter(text, keywordRe);
+}
 
 // Último "TOTAL ... <num>" del texto (típicamente el TOTAL (€) del pie).
 function findLastTotal(text: string): number | null {
-  const re = /\bTOTAL\b(?:\s*\(?\s*€?\s*\)?)?\s*[:.]?\s*([\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?)/gi;
+  const re = /\bTOTAL\b(?!\s*L[ÍI]NEA)(?:\s*\(?\s*€?\s*\)?)?\s*[:.]?\s*([\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?)/gi;
   let last: number | null = null;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
@@ -83,6 +112,29 @@ function findLastTotal(text: string): number | null {
   }
   return last;
 }
+
+// Fallback: suma de la columna "Total Línea" de la captura del albarán.
+// En el OCR esa columna aparece como un bloque de números sueltos justo
+// después del encabezado "TOTAL LINEA" (los importes de impuesto llevan "%").
+function sumTotalLineaColumn(text: string): number | null {
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const headerIdx = lines.findIndex((l) => /TOTAL\s*L[ÍI]NEA/i.test(l));
+  if (headerIdx === -1) return null;
+  let total = 0;
+  let found = 0;
+  for (const line of lines.slice(headerIdx + 1)) {
+    if (!line) continue;
+    if (line.includes("%")) continue; // columna Impuesto
+    const m = /^[\-]?\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d+)?$/.exec(line);
+    if (!m) continue;
+    const n = parseNum(line);
+    if (n == null) continue;
+    total += n;
+    found++;
+  }
+  return found > 0 ? total : null;
+}
+
 
 export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const text = normalizeFinancialText((rawText ?? "").toUpperCase());
