@@ -56,10 +56,15 @@ function firstNumberAfter(text: string, keyword: string): number | null {
   return m ? parseNum(m[1]) : null;
 }
 
+function sumAllValues(values: number[]): number {
+  return values.reduce((a, b) => a + b, 0);
+}
+
 // Suma TODAS las apariciones de "KEYWORD <num>" en el texto.
 function sumAllAfter(text: string, keywordRe: string): number {
   return collectAllAfter(text, keywordRe).reduce((a, b) => a + b, 0);
 }
+
 
 function collectAllAfter(text: string, keywordRe: string): number[] {
   const re = new RegExp(
