@@ -231,7 +231,7 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   if (numM) numero = numM[1].replace(/\s+/g, "");
   else {
     // El OCR pierde a veces el "#": "ALBARÁN Nº 100404" → "10#0404"
-    const altNum = /ALBAR[\u00c1A]N\s*(?:N[\u00baO\u00b0]?\.?)?\s*([0-9]{5,8})\b/i.exec(text);
+    const altNum = /ALBAR[\u00c1A]N[^0-9]{0,6}([0-9]{5,8})\b/i.exec(text);
     if (altNum) {
       const raw = altNum[1];
       numero = `${raw.slice(0, raw.length - 4)}#${raw.slice(-4)}`;
