@@ -135,6 +135,13 @@ export const gastosStore = {
     return { added };
   },
 
+  clear: async () => {
+    const { error } = await supabase.from("gastos").delete().neq("id", "");
+    if (error) throw error;
+    snapshot = { rows: [], loaded: true };
+    emit();
+  },
+
   remove: async (id: string) => {
     const { error } = await supabase.from("gastos").delete().eq("id", id);
     if (error) throw error;
