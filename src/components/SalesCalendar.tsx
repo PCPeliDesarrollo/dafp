@@ -111,16 +111,19 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
 
   const selectedRows = byDay.get(selected) ?? [];
   const totalDia = selectedRows.reduce((a, r) => a + r.total_venta, 0);
+  const beneficioDia = selectedRows.reduce((a, r) => a + (r.beneficio ?? 0), 0);
   const nAlb = selectedRows.length;
   const selectedGastos = gastosByDay.get(selected) ?? [];
   const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
+  const netoDia = beneficioDia - gastosDia;
 
 
   const porComercial = useMemo(() => {
-    const m = new Map<string, { total: number; n: number }>();
+    const m = new Map<string, { total: number; beneficio: number; n: number }>();
     for (const r of selectedRows) {
-      const cur = m.get(r.empleado) ?? { total: 0, n: 0 };
+      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       cur.n += 1;
       m.set(r.empleado, cur);
     }
