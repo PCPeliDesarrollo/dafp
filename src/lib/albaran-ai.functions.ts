@@ -73,6 +73,20 @@ export const readAlbaranImage = createServerFn({ method: "POST" })
         ? v.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)
         : [];
 
+    // PVD anotado es coste POR UNIDAD → se multiplica por la cantidad de la línea.
+    const pvdItems: number[] = Array.isArray(parsed?.pvd_items)
+      ? parsed.pvd_items
+          .map((it: any) => {
+            const valor = Number(it?.valor);
+            const cantRaw = Number(it?.cantidad);
+            const cant = Number.isFinite(cantRaw) && cantRaw > 0 ? cantRaw : 1;
+            return Number.isFinite(valor) && valor > 0
+              ? Math.round(valor * cant * 100) / 100
+              : 0;
+          })
+          .filter((n: number) => n > 0)
+      : nums(parsed?.pvd_values);
+
     const stock = ["A", "C", "T"].includes(parsed?.stock) ? parsed.stock : null;
 
     return {
@@ -82,7 +96,8 @@ export const readAlbaranImage = createServerFn({ method: "POST" })
         : null,
       stock,
       total: Number.isFinite(Number(parsed?.total)) ? Number(parsed.total) : null,
-      pvd_values: nums(parsed?.pvd_values),
+      pvd_values: pvdItems,
+
       tpv_values: nums(parsed?.tpv_values),
       banco_values: nums(parsed?.banco_values),
       entrega: Number.isFinite(Number(parsed?.entrega)) && Number(parsed.entrega) > 0
