@@ -23,6 +23,7 @@ import {
   Landmark,
   PiggyBank,
   ShoppingBag,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -40,7 +41,18 @@ import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { ventasStore } from "@/lib/ventas-store";
-import { useGastos } from "@/lib/gastos-store";
+import { useGastos, gastosStore } from "@/lib/gastos-store";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { METODO_PAGO_LABEL, getMetodoBreakdown, type MetodoPago } from "@/lib/albaran-parser";
 import {
   Select,
@@ -504,6 +516,40 @@ export function SalesDashboard() {
                 </Button>
               }
             />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 gap-2 rounded-xl border-destructive/40 text-xs font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Borrar todo
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Borrar todos los datos?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Se eliminarán todas las ventas (albaranes) y todos los gastos
+                    guardados en la nube. Esta acción no se puede deshacer: tendrás
+                    que volver a subir las capturas y los movimientos del banco.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      await ventasStore.clear();
+                      await gastosStore.clear();
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Sí, borrar todo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             {source === "csv" && (
               <Button
                 variant="ghost"
