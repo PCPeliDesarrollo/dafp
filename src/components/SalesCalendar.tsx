@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp } from "lucide-react";
 import { getMetodoBreakdown } from "@/lib/albaran-parser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,16 +111,19 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
 
   const selectedRows = byDay.get(selected) ?? [];
   const totalDia = selectedRows.reduce((a, r) => a + r.total_venta, 0);
+  const beneficioDia = selectedRows.reduce((a, r) => a + (r.beneficio ?? 0), 0);
   const nAlb = selectedRows.length;
   const selectedGastos = gastosByDay.get(selected) ?? [];
   const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
+  const netoDia = beneficioDia - gastosDia;
 
 
   const porComercial = useMemo(() => {
-    const m = new Map<string, { total: number; n: number }>();
+    const m = new Map<string, { total: number; beneficio: number; n: number }>();
     for (const r of selectedRows) {
-      const cur = m.get(r.empleado) ?? { total: 0, n: 0 };
+      const cur = m.get(r.empleado) ?? { total: 0, beneficio: 0, n: 0 };
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       cur.n += 1;
       m.set(r.empleado, cur);
     }
@@ -266,12 +269,20 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                 })}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                     <Euro className="h-3 w-3" /> Ingresos
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{eur.format(totalDia)}</div>
+                </div>
+                <div className="rounded-lg border border-primary/40 bg-primary/5 p-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <TrendingUp className="h-3 w-3" /> Beneficio
+                  </div>
+                  <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                    {eur.format(beneficioDia)}
+                  </div>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -288,6 +299,21 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                   </div>
                 </div>
               </div>
+
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-border/50 bg-background/40 px-2.5 py-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Neto real del día (beneficio − gastos)
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-semibold tabular-nums",
+                    netoDia >= 0 ? "text-primary" : "text-destructive",
+                  )}
+                >
+                  {eur.format(netoDia)}
+                </span>
+              </div>
+
 
 
               {/* Por comercial */}
@@ -308,6 +334,9 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                         <span className="flex items-center gap-2">
                           <span className="text-muted-foreground">{e.n} alb.</span>
                           <span className="font-semibold tabular-nums">{eur.format(e.total)}</span>
+                          <span className="font-semibold tabular-nums text-primary">
+                            +{eurP.format(e.beneficio)}
+                          </span>
                         </span>
                       </div>
                     ))}
