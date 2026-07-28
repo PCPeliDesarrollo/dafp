@@ -269,12 +269,20 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                 })}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                     <Euro className="h-3 w-3" /> Ingresos
                   </div>
                   <div className="mt-1 text-sm font-semibold tabular-nums">{eur.format(totalDia)}</div>
+                </div>
+                <div className="rounded-lg border border-primary/40 bg-primary/5 p-2">
+                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <TrendingUp className="h-3 w-3" /> Beneficio
+                  </div>
+                  <div className="mt-1 text-sm font-semibold tabular-nums text-primary">
+                    {eur.format(beneficioDia)}
+                  </div>
                 </div>
                 <div className="rounded-lg border border-border/50 bg-background/40 p-2">
                   <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -291,6 +299,21 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                   </div>
                 </div>
               </div>
+
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-border/50 bg-background/40 px-2.5 py-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Neto real del día (beneficio − gastos)
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-semibold tabular-nums",
+                    netoDia >= 0 ? "text-primary" : "text-destructive",
+                  )}
+                >
+                  {eur.format(netoDia)}
+                </span>
+              </div>
+
 
 
               {/* Por comercial */}
