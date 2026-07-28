@@ -285,6 +285,71 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   };
 }
 
+// Construye un ParsedAlbaran a partir de valores ya extraídos (p. ej. por IA),
+// aplicando exactamente la misma lógica de cálculo que el parser de texto.
+export function composeAlbaran(input: {
+  total: number | null;
+  pvd_values: number[];
+  tpv_values: number[];
+  banco_values: number[];
+  entrega: number | null;
+  stock: StockLetter | null;
+  fecha: string | null;
+  numero: string | null;
+}): ParsedAlbaran {
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const warnings: string[] = [];
+
+  const tpv_amount = round2(sumAllValues(input.tpv_values));
+  const banco_amount = round2(sumAllValues(input.banco_values));
+  const efectivo_amount = round2(Math.max(0, input.total ?? 0));
+  const pvp = round2(efectivo_amount + tpv_amount + banco_amount);
+  const pvd = round2(sumAllValues(input.pvd_values));
+
+  if (input.total == null) warnings.push("No se detectó el TOTAL del albarán.");
+  if (pvd === 0) warnings.push("No se detectó PVD/PDV; coste = 0.");
+  if (pvd > pvp) warnings.push("El PVD detectado es mayor que el PVP; revisa la captura.");
+
+  let ingreso = pvp;
+  let coste = pvd;
+  let beneficio_real = pvp - pvd;
+  let entrega: number | null = null;
+  if (input.entrega != null && input.entrega > 0 && pvp > 0) {
+    entrega = input.entrega;
+    ingreso = input.entrega;
+    coste = input.entrega * (pvd / pvp);
+    beneficio_real = input.entrega * ((pvp - pvd) / pvp);
+  }
+
+  const metodo_pago: MetodoPago =
+    efectivo_amount >= tpv_amount && efectivo_amount >= banco_amount
+      ? "efectivo"
+      : tpv_amount >= banco_amount
+      ? "tpv"
+      : "banco";
+
+  if (!input.stock)
+    warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
+
+  return {
+    pvp,
+    pvd,
+    entrega: entrega != null ? round2(entrega) : null,
+    metodo_pago,
+    efectivo_amount,
+    tpv_amount,
+    banco_amount,
+    ingreso: round2(ingreso),
+    coste: round2(coste),
+    beneficio_real: round2(beneficio_real),
+    stock: input.stock,
+    empleado: input.stock ? STOCK_TO_EMPLEADO[input.stock] : null,
+    fecha: input.fecha,
+    numero: input.numero,
+    warnings,
+  };
+}
+
 export const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
   efectivo: "Efectivo (Caja)",
   tpv: "Tarjeta (TPV)",
