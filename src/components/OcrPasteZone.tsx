@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { parseAlbaranText, type ParsedAlbaran } from "@/lib/albaran-parser";
+import {
+  composeAlbaran,
+  parseAlbaranText,
+  type ParsedAlbaran,
+  type StockLetter,
+} from "@/lib/albaran-parser";
+import { readAlbaranImage } from "@/lib/albaran-ai.functions";
 import { ventasStore } from "@/lib/ventas-store";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -22,6 +28,15 @@ type Status =
   | { kind: "saved"; parsed: ParsedAlbaran }
   | { kind: "error"; message: string };
 
+function fileToDataUrl(file: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function OcrPasteZone() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
@@ -29,8 +44,35 @@ export function OcrPasteZone() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const runOcr = useCallback(async (source: File | Blob | string) => {
-    setStatus({ kind: "ocr", progress: 0 });
+  const runOcr = useCallback(async (source: File | Blob) => {
+    setStatus({ kind: "ocr", progress: 5 });
+    // 1) Lectura con IA (visión): mucho más fiable que el OCR clásico.
+    try {
+      const imageDataUrl = await fileToDataUrl(source);
+      setStatus({ kind: "ocr", progress: 40 });
+      const v = await readAlbaranImage({ data: { imageDataUrl } });
+      const parsed = composeAlbaran({
+        total: v.total,
+        pvd_values: v.pvd_values,
+        tpv_values: v.tpv_values,
+        banco_values: v.banco_values,
+        entrega: v.entrega,
+        stock: (v.stock as StockLetter | null) ?? null,
+        fecha: v.fecha,
+        numero: v.numero,
+      });
+      if (parsed.fecha) setFechaOverride(parsed.fecha);
+      setStatus({
+        kind: "parsed",
+        parsed,
+        text: `Lectura con IA:\n${JSON.stringify(v, null, 2)}`,
+      });
+      return;
+    } catch (err) {
+      console.error("AI vision error, fallback a OCR local", err);
+    }
+
+    // 2) Fallback: OCR local con Tesseract.
     try {
       const { default: Tesseract } = await import("tesseract.js");
       const { data } = await Tesseract.recognize(source as any, "spa+eng", {
@@ -62,6 +104,7 @@ export function OcrPasteZone() {
     },
     [runOcr],
   );
+
 
   // Ctrl+V / Cmd+V global paste
   useEffect(() => {
