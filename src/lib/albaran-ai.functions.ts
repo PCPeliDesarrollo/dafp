@@ -18,14 +18,14 @@ export type AlbaranVision = {
 
 const SYSTEM = `Eres un lector experto de albaranes de venta españoles.
 Devuelve SOLO un JSON válido con esta forma exacta:
-{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|null,"total":number|null,"pvd_values":number[],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
+{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
 
 Reglas:
 - "numero": el número de albarán tal cual, por ejemplo "10#0355".
 - "fecha": la fecha del albarán.
 - "stock": la letra del cliente "STOCK A" / "STOCK C" / "STOCK T".
 - "total": el TOTAL (€) del pie del albarán (base imponible + impuestos).
-- "pvd_values": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste). Respeta los decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15). Incluye los ceros solo si están escritos.
+- "pvd_items": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste POR UNIDAD). Para cada una, "valor" es el número anotado con sus decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15) y "cantidad" es la columna "Cant" de la línea de artículo a la que pertenece esa anotación (si no la ves, usa 1). NO multipliques tú: devuelve valor y cantidad por separado.
 - "tpv_values": TODAS las anotaciones manuales "TPV" bajo las líneas (cobros con tarjeta). No incluyas números que estén dentro del texto de la descripción del artículo si ya están anotados debajo; cada anotación cuenta una sola vez.
 - "banco_values": anotaciones "BANCO" o transferencias.
 - "entrega": si hay una anotación "ENTREGA", su importe; si no, null.
@@ -73,6 +73,20 @@ export const readAlbaranImage = createServerFn({ method: "POST" })
         ? v.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0)
         : [];
 
+    // PVD anotado es coste POR UNIDAD → se multiplica por la cantidad de la línea.
+    const pvdItems: number[] = Array.isArray(parsed?.pvd_items)
+      ? parsed.pvd_items
+          .map((it: any) => {
+            const valor = Number(it?.valor);
+            const cantRaw = Number(it?.cantidad);
+            const cant = Number.isFinite(cantRaw) && cantRaw > 0 ? cantRaw : 1;
+            return Number.isFinite(valor) && valor > 0
+              ? Math.round(valor * cant * 100) / 100
+              : 0;
+          })
+          .filter((n: number) => n > 0)
+      : nums(parsed?.pvd_values);
+
     const stock = ["A", "C", "T"].includes(parsed?.stock) ? parsed.stock : null;
 
     return {
@@ -82,7 +96,8 @@ export const readAlbaranImage = createServerFn({ method: "POST" })
         : null,
       stock,
       total: Number.isFinite(Number(parsed?.total)) ? Number(parsed.total) : null,
-      pvd_values: nums(parsed?.pvd_values),
+      pvd_values: pvdItems,
+
       tpv_values: nums(parsed?.tpv_values),
       banco_values: nums(parsed?.banco_values),
       entrega: Number.isFinite(Number(parsed?.entrega)) && Number(parsed.entrega) > 0
