@@ -18,14 +18,14 @@ export type AlbaranVision = {
 
 const SYSTEM = `Eres un lector experto de albaranes de venta españoles.
 Devuelve SOLO un JSON válido con esta forma exacta:
-{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|null,"total":number|null,"pvd_values":number[],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
+{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
 
 Reglas:
 - "numero": el número de albarán tal cual, por ejemplo "10#0355".
 - "fecha": la fecha del albarán.
 - "stock": la letra del cliente "STOCK A" / "STOCK C" / "STOCK T".
 - "total": el TOTAL (€) del pie del albarán (base imponible + impuestos).
-- "pvd_values": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste). Respeta los decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15). Incluye los ceros solo si están escritos.
+- "pvd_items": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste POR UNIDAD). Para cada una, "valor" es el número anotado con sus decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15) y "cantidad" es la columna "Cant" de la línea de artículo a la que pertenece esa anotación (si no la ves, usa 1). NO multipliques tú: devuelve valor y cantidad por separado.
 - "tpv_values": TODAS las anotaciones manuales "TPV" bajo las líneas (cobros con tarjeta). No incluyas números que estén dentro del texto de la descripción del artículo si ya están anotados debajo; cada anotación cuenta una sola vez.
 - "banco_values": anotaciones "BANCO" o transferencias.
 - "entrega": si hay una anotación "ENTREGA", su importe; si no, null.
