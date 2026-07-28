@@ -334,6 +334,9 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                         <span className="flex items-center gap-2">
                           <span className="text-muted-foreground">{e.n} alb.</span>
                           <span className="font-semibold tabular-nums">{eur.format(e.total)}</span>
+                          <span className="font-semibold tabular-nums text-primary">
+                            +{eurP.format(e.beneficio)}
+                          </span>
                         </span>
                       </div>
                     ))}
