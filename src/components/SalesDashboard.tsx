@@ -787,8 +787,11 @@ export function SalesDashboard() {
 
         {/* Zona de pegado / OCR de albaranes */}
         <section className="mt-6">
-          <OcrPasteZone />
+          <SectionErrorBoundary title="No se pudo procesar la captura del albarán">
+            <OcrPasteZone />
+          </SectionErrorBoundary>
         </section>
+
 
 
 
