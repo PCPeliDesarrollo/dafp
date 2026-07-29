@@ -11,7 +11,18 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Iniciar sesión" }] }),
+  head: () => ({
+    meta: [
+      { title: "Iniciar sesión | Dashboard PCP" },
+      { name: "description", content: "Acceso privado al dashboard de ventas y gastos de PCP." },
+      { property: "og:title", content: "Iniciar sesión | Dashboard PCP" },
+      { property: "og:description", content: "Acceso privado al dashboard de ventas y gastos de PCP." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Iniciar sesión | Dashboard PCP" },
+      { name: "twitter:description", content: "Acceso privado al dashboard de ventas y gastos de PCP." },
+    ],
+  }),
 });
 
 function AuthPage() {
