@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   composeAlbaran,
-  parseAlbaranText,
   type ParsedAlbaran,
   type StockLetter,
 } from "@/lib/albaran-parser";
