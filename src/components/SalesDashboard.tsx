@@ -37,6 +37,7 @@ import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
 import { CsvImportDialog } from "./CsvImportDialog";
 import { SalesCalendar } from "./SalesCalendar";
 import { OcrPasteZone } from "./OcrPasteZone";
+import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
