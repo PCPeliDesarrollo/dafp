@@ -75,20 +75,21 @@ export function OcrPasteZone() {
 
   const runOcr = useCallback(async (source: File | Blob) => {
     setStatus({ kind: "ocr", progress: 5 });
+    let aiError: string | null = null;
     // 1) Lectura con IA (visión): mucho más fiable que el OCR clásico.
     try {
-      const imageDataUrl = await fileToDataUrl(source);
+      const imageDataUrl = await toCompactDataUrl(source);
       setStatus({ kind: "ocr", progress: 40 });
       const v = await readAlbaranImage({ data: { imageDataUrl } });
       const parsed = composeAlbaran({
-        total: v.total,
-        pvd_values: v.pvd_values,
-        tpv_values: v.tpv_values,
-        banco_values: v.banco_values,
-        entrega: v.entrega,
-        stock: (v.stock as StockLetter | null) ?? null,
-        fecha: v.fecha,
-        numero: v.numero,
+        total: v?.total ?? null,
+        pvd_values: v?.pvd_values ?? [],
+        tpv_values: v?.tpv_values ?? [],
+        banco_values: v?.banco_values ?? [],
+        entrega: v?.entrega ?? null,
+        stock: (v?.stock as StockLetter | null) ?? null,
+        fecha: v?.fecha ?? null,
+        numero: v?.numero ?? null,
       });
       if (parsed.fecha) setFechaOverride(parsed.fecha);
       setStatus({
@@ -98,6 +99,7 @@ export function OcrPasteZone() {
       });
       return;
     } catch (err) {
+      aiError = err instanceof Error ? err.message : String(err);
       console.error("AI vision error, fallback a OCR local", err);
     }
 
@@ -111,17 +113,20 @@ export function OcrPasteZone() {
           }
         },
       });
-      const parsed = parseAlbaranText(data.text ?? "");
+      const parsed = parseAlbaranText(data?.text ?? "");
       if (parsed.fecha) setFechaOverride(parsed.fecha);
-      setStatus({ kind: "parsed", parsed, text: data.text ?? "" });
+      setStatus({ kind: "parsed", parsed, text: data?.text ?? "" });
     } catch (err) {
       console.error("OCR error", err);
       setStatus({
         kind: "error",
-        message: err instanceof Error ? err.message : "Error leyendo la imagen",
+        message:
+          (aiError ? `Lectura con IA falló: ${aiError}. ` : "") +
+          (err instanceof Error ? err.message : "Error leyendo la imagen"),
       });
     }
   }, []);
+
 
   const handleFile = useCallback(
     (file: File) => {
