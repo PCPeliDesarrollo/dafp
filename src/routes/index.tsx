@@ -17,6 +17,14 @@ export const Route = createFileRoute("/")({
         content:
           "Panel visual de ventas, beneficios y clasificación del equipo comercial en tiempo real.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Dashboard de Ventas y Rendimiento" },
+      {
+        name: "twitter:description",
+        content:
+          "Panel visual de ventas, beneficios y clasificación del equipo comercial en tiempo real.",
+      },
     ],
   }),
   component: () => (

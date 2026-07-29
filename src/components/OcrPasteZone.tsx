@@ -75,12 +75,11 @@ export function OcrPasteZone() {
 
   const runOcr = useCallback(async (source: File | Blob) => {
     setStatus({ kind: "ocr", progress: 5 });
-    let aiError: string | null = null;
-    // 1) Lectura con IA (visión): mucho más fiable que el OCR clásico.
     try {
       const imageDataUrl = await toCompactDataUrl(source);
       setStatus({ kind: "ocr", progress: 40 });
       const v = await readAlbaranImage({ data: { imageDataUrl } });
+      setStatus({ kind: "ocr", progress: 85 });
       const parsed = composeAlbaran({
         total: v?.total ?? null,
         pvd_values: v?.pvd_values ?? [],
@@ -99,30 +98,10 @@ export function OcrPasteZone() {
       });
       return;
     } catch (err) {
-      aiError = err instanceof Error ? err.message : String(err);
-      console.error("AI vision error, fallback a OCR local", err);
-    }
-
-    // 2) Fallback: OCR local con Tesseract.
-    try {
-      const { default: Tesseract } = await import("tesseract.js");
-      const { data } = await Tesseract.recognize(source as any, "spa+eng", {
-        logger: (m: any) => {
-          if (m.status === "recognizing text") {
-            setStatus({ kind: "ocr", progress: Math.round((m.progress ?? 0) * 100) });
-          }
-        },
-      });
-      const parsed = parseAlbaranText(data?.text ?? "");
-      if (parsed.fecha) setFechaOverride(parsed.fecha);
-      setStatus({ kind: "parsed", parsed, text: data?.text ?? "" });
-    } catch (err) {
-      console.error("OCR error", err);
+      console.error("AI vision error", err);
       setStatus({
         kind: "error",
-        message:
-          (aiError ? `Lectura con IA falló: ${aiError}. ` : "") +
-          (err instanceof Error ? err.message : "Error leyendo la imagen"),
+        message: err instanceof Error ? err.message : "Error leyendo la imagen",
       });
     }
   }, []);
