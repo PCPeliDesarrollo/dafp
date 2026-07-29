@@ -37,6 +37,35 @@ function fileToDataUrl(file: Blob): Promise<string> {
   });
 }
 
+/**
+ * Reduce la captura antes de enviarla al servidor: las capturas de móvil pesan
+ * varios MB y hacían fallar la petición. Si algo falla, devuelve el original.
+ */
+async function toCompactDataUrl(source: Blob, maxSide = 1800): Promise<string> {
+  const original = await fileToDataUrl(source);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("imagen no válida"));
+      el.src = original;
+    });
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    if (scale >= 1 && original.length < 1_200_000) return original;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return original;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const out = canvas.toDataURL("image/jpeg", 0.85);
+    return out.length > 30 ? out : original;
+  } catch {
+    return original;
+  }
+}
+
+
 export function OcrPasteZone() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
