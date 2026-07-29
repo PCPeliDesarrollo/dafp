@@ -87,8 +87,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Dashboard de Ventas y Rendimiento" },
       { name: "twitter:description", content: "Panel visual de ventas, beneficios y clasificación del equipo comercial en tiempo real." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b129d0c6-5eca-4ff1-8980-14226201c9b2/id-preview-27699544--727adc5f-7d93-442f-9aa7-cc61b53cc6ff.lovable.app-1784133266298.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b129d0c6-5eca-4ff1-8980-14226201c9b2/id-preview-27699544--727adc5f-7d93-442f-9aa7-cc61b53cc6ff.lovable.app-1784133266298.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
