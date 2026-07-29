@@ -37,6 +37,35 @@ function fileToDataUrl(file: Blob): Promise<string> {
   });
 }
 
+/**
+ * Reduce la captura antes de enviarla al servidor: las capturas de móvil pesan
+ * varios MB y hacían fallar la petición. Si algo falla, devuelve el original.
+ */
+async function toCompactDataUrl(source: Blob, maxSide = 1800): Promise<string> {
+  const original = await fileToDataUrl(source);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("imagen no válida"));
+      el.src = original;
+    });
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    if (scale >= 1 && original.length < 1_200_000) return original;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return original;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const out = canvas.toDataURL("image/jpeg", 0.85);
+    return out.length > 30 ? out : original;
+  } catch {
+    return original;
+  }
+}
+
+
 export function OcrPasteZone() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
@@ -46,20 +75,21 @@ export function OcrPasteZone() {
 
   const runOcr = useCallback(async (source: File | Blob) => {
     setStatus({ kind: "ocr", progress: 5 });
+    let aiError: string | null = null;
     // 1) Lectura con IA (visión): mucho más fiable que el OCR clásico.
     try {
-      const imageDataUrl = await fileToDataUrl(source);
+      const imageDataUrl = await toCompactDataUrl(source);
       setStatus({ kind: "ocr", progress: 40 });
       const v = await readAlbaranImage({ data: { imageDataUrl } });
       const parsed = composeAlbaran({
-        total: v.total,
-        pvd_values: v.pvd_values,
-        tpv_values: v.tpv_values,
-        banco_values: v.banco_values,
-        entrega: v.entrega,
-        stock: (v.stock as StockLetter | null) ?? null,
-        fecha: v.fecha,
-        numero: v.numero,
+        total: v?.total ?? null,
+        pvd_values: v?.pvd_values ?? [],
+        tpv_values: v?.tpv_values ?? [],
+        banco_values: v?.banco_values ?? [],
+        entrega: v?.entrega ?? null,
+        stock: (v?.stock as StockLetter | null) ?? null,
+        fecha: v?.fecha ?? null,
+        numero: v?.numero ?? null,
       });
       if (parsed.fecha) setFechaOverride(parsed.fecha);
       setStatus({
@@ -69,6 +99,7 @@ export function OcrPasteZone() {
       });
       return;
     } catch (err) {
+      aiError = err instanceof Error ? err.message : String(err);
       console.error("AI vision error, fallback a OCR local", err);
     }
 
@@ -82,17 +113,20 @@ export function OcrPasteZone() {
           }
         },
       });
-      const parsed = parseAlbaranText(data.text ?? "");
+      const parsed = parseAlbaranText(data?.text ?? "");
       if (parsed.fecha) setFechaOverride(parsed.fecha);
-      setStatus({ kind: "parsed", parsed, text: data.text ?? "" });
+      setStatus({ kind: "parsed", parsed, text: data?.text ?? "" });
     } catch (err) {
       console.error("OCR error", err);
       setStatus({
         kind: "error",
-        message: err instanceof Error ? err.message : "Error leyendo la imagen",
+        message:
+          (aiError ? `Lectura con IA falló: ${aiError}. ` : "") +
+          (err instanceof Error ? err.message : "Error leyendo la imagen"),
       });
     }
   }, []);
+
 
   const handleFile = useCallback(
     (file: File) => {
