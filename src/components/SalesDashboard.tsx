@@ -572,6 +572,15 @@ export function SalesDashboard() {
                 Restablecer demo
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              className="h-10 gap-2 rounded-xl border-border/60 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Cerrar sesión
+            </Button>
           </div>
         </header>
 
