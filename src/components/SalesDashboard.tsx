@@ -230,12 +230,18 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export function SalesDashboard() {
+  const navigate = useNavigate();
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("mes");
   const [monthAnchor, setMonthAnchor] = useState<string>(() => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   });
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  }
 
   const rows = data ?? [];
   const filtered = useMemo(
