@@ -24,7 +24,10 @@ import {
   PiggyBank,
   ShoppingBag,
   Trash2,
+  LogOut,
 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -227,12 +230,18 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export function SalesDashboard() {
+  const navigate = useNavigate();
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
   const [rango, setRango] = useState<RangoKey>("mes");
   const [monthAnchor, setMonthAnchor] = useState<string>(() => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   });
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth" });
+  }
 
   const rows = data ?? [];
   const filtered = useMemo(
@@ -563,6 +572,15 @@ export function SalesDashboard() {
                 Restablecer demo
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              className="h-10 gap-2 rounded-xl border-border/60 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Cerrar sesión
+            </Button>
           </div>
         </header>
 
