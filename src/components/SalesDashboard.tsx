@@ -972,8 +972,17 @@ export function SalesDashboard() {
                         )}
                       </div>
                       <div className="flex items-baseline gap-4 text-sm">
-                        <span className="font-semibold tabular-nums">
-                          {eur.format(emp.total)}
+                        <span className="text-right">
+                          <span className="mr-1 text-xs text-muted-foreground">Ingresos</span>
+                          <span className="font-semibold tabular-nums">
+                            {eur.format(emp.total)}
+                          </span>
+                        </span>
+                        <span className="text-right">
+                          <span className="mr-1 text-xs text-muted-foreground">Beneficio</span>
+                          <span className="font-semibold tabular-nums text-success">
+                            {eur.format(emp.beneficio)}
+                          </span>
                         </span>
                       </div>
                     </div>
