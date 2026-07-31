@@ -291,16 +291,18 @@ export function SalesDashboard() {
     const todayDate = today ? new Date(today) : new Date();
     const monthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
     const mensuales = rows.filter((r) => new Date(r.fecha) >= monthStart);
-    const map = new Map<string, { total: number }>();
+    const map = new Map<string, { total: number; beneficio: number }>();
     for (const r of mensuales) {
-      const cur = map.get(r.empleado) ?? { total: 0 };
+      const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       map.set(r.empleado, cur);
     }
     return Array.from(map.entries())
       .map(([empleado, v]) => ({
         empleado,
         total: v.total,
+        beneficio: v.beneficio,
         progreso: Math.min(100, (v.total / EMPLEADO_OBJETIVO_MENSUAL) * 100),
       }))
       .sort((a, b) => b.total - a.total);
