@@ -291,16 +291,18 @@ export function SalesDashboard() {
     const todayDate = today ? new Date(today) : new Date();
     const monthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
     const mensuales = rows.filter((r) => new Date(r.fecha) >= monthStart);
-    const map = new Map<string, { total: number }>();
+    const map = new Map<string, { total: number; beneficio: number }>();
     for (const r of mensuales) {
-      const cur = map.get(r.empleado) ?? { total: 0 };
+      const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
       cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
       map.set(r.empleado, cur);
     }
     return Array.from(map.entries())
       .map(([empleado, v]) => ({
         empleado,
         total: v.total,
+        beneficio: v.beneficio,
         progreso: Math.min(100, (v.total / EMPLEADO_OBJETIVO_MENSUAL) * 100),
       }))
       .sort((a, b) => b.total - a.total);
@@ -970,8 +972,17 @@ export function SalesDashboard() {
                         )}
                       </div>
                       <div className="flex items-baseline gap-4 text-sm">
-                        <span className="font-semibold tabular-nums">
-                          {eur.format(emp.total)}
+                        <span className="text-right">
+                          <span className="mr-1 text-xs text-muted-foreground">Ingresos</span>
+                          <span className="font-semibold tabular-nums">
+                            {eur.format(emp.total)}
+                          </span>
+                        </span>
+                        <span className="text-right">
+                          <span className="mr-1 text-xs text-muted-foreground">Beneficio</span>
+                          <span className="font-semibold tabular-nums text-success">
+                            {eur.format(emp.beneficio)}
+                          </span>
                         </span>
                       </div>
                     </div>
