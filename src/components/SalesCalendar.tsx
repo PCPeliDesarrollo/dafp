@@ -1,5 +1,17 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp } from "lucide-react";
+
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { getMetodoBreakdown } from "@/lib/albaran-parser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +72,15 @@ function buildMonthGrid(year: number, month: number) {
   return cells;
 }
 
-export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gasto[] }) {
+export function SalesCalendar({
+  rows,
+  gastos = [],
+  onDeleteVenta,
+}: {
+  rows: VentaRow[];
+  gastos?: Gasto[];
+  onDeleteVenta?: (id: string) => Promise<void> | void;
+}) {
   // Group gastos by ISO date
   const gastosByDay = useMemo(() => {
     const m = new Map<string, Gasto[]>();
@@ -370,6 +390,40 @@ export function SalesCalendar({ rows, gastos = [] }: { rows: VentaRow[]; gastos?
                           <div className="text-right">
                             <div className="font-semibold tabular-nums">{eurP.format(r.total_venta)}</div>
                           </div>
+                          {onDeleteVenta && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                  aria-label={`Eliminar albarán ${r.id}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar este albarán?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Se borrará {r.id} ({r.empleado} · {eurP.format(r.total_venta)}) del{" "}
+                                    {selected}. Podrás volver a subir la captura corregida.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => {
+                                      void onDeleteVenta(r.id);
+                                    }}
+                                  >
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       ))}
                   </div>
