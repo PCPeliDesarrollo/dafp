@@ -67,6 +67,7 @@ async function toCompactDataUrl(source: Blob, maxSide = 1800): Promise<string> {
 
 
 export function OcrPasteZone() {
+  const ventasStore = getVentasStore(useEmpresa());
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
   const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
