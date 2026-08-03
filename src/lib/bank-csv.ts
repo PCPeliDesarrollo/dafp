@@ -126,7 +126,9 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
       (dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null) ?? today;
     const concepto =
       (conceptIdx >= 0 ? (r[conceptIdx] ?? "").trim() : "") || "Movimiento bancario";
-    const referencia = `${fileName}|${i}|${fecha}|${n.toFixed(2)}|${concepto.slice(0, 40)}`
+    // Referencia estable (sin nombre de archivo ni nº de fila) para que
+    // reimportar el mismo extracto no duplique nada.
+    const referencia = `${fecha}|${n.toFixed(2)}|${concepto.slice(0, 40)}`
       .toLowerCase()
       .replace(/[^a-z0-9|\-.]/g, "_");
     const item = { fecha, monto: Math.abs(n), concepto, referencia };
