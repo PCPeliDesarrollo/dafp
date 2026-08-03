@@ -429,11 +429,62 @@ export function SalesDashboard() {
     .reduce((a, g) => a + g.monto, 0);
   const dineroNetoReal = ingresosRealesTotal - gastosTiendaTotal - gastosPersonales;
 
+  // ---- Detalle de KPIs: de dónde sale cada cantidad ----
+  const rangoLabel = RANGOS.find((r) => r.key === rango)?.label ?? "";
+  const ventaConcepto = (r: VentaRow) => {
+    const num = String(r.id ?? "").replace(/^alb-/, "");
+    return `Albarán ${num || "s/n"} · ${r.empleado}`;
+  };
+  const ventaItems = (rs: VentaRow[]) =>
+    rs
+      .slice()
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+      .map((r) => ({
+        id: String(r.id),
+        fecha: r.fecha,
+        concepto: ventaConcepto(r),
+        importe: r.total_venta,
+      }));
 
+  const showMetodoDetalle = (mp: MetodoPago) => {
+    const items = filtered
+      .map((r) => ({ r, bd: getMetodoBreakdown(r) }))
+      .filter(({ bd }) => bd[mp] > 0)
+      .sort((a, b) => (a.r.fecha < b.r.fecha ? 1 : -1))
+      .map(({ r, bd }) => ({
+        id: String(r.id),
+        fecha: r.fecha,
+        concepto: ventaConcepto(r),
+        detalle: `Total albarán ${eurP.format(r.total_venta)} · cobrado por ${METODO_PAGO_LABEL[mp]} ${eurP.format(bd[mp])}`,
+        importe: bd[mp],
+      }));
+    setKpiDetail({
+      title: `${METODO_PAGO_LABEL[mp]} · ${rangoLabel}`,
+      formula:
+        mp === "banco"
+          ? "Movimientos contados en positivo como cobro por transferencia/banco (nota BANCO en el albarán o ingreso importado del extracto)."
+          : mp === "tpv"
+            ? "Importes cobrados con tarjeta (nota TPV en el albarán), sumados por encima del efectivo."
+            : "Parte del albarán cobrada en efectivo (TOTAL del albarán menos lo anotado como TPV/BANCO).",
+      total: desglosePago[mp].ingreso,
+      items,
+    });
+  };
 
-
-
-
+  const dineroNetoItems = [
+    ...ventaItems(filtered),
+    ...filteredGastos
+      .slice()
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+      .map((g) => ({
+        id: `g-${g.id}`,
+        fecha: g.fecha,
+        concepto: g.concepto || (g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"),
+        detalle: `${g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"} · ${g.fuente === "banco" ? "banco" : "efectivo"}`,
+        importe: g.monto,
+        negativo: true,
+      })),
+  ];
 
 
   if (isLoading) {
