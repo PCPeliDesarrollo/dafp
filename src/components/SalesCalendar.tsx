@@ -378,6 +378,40 @@ export function SalesCalendar({
                           <div className="text-right">
                             <div className="font-semibold tabular-nums">{eurP.format(r.total_venta)}</div>
                           </div>
+                          {onDeleteVenta && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                                  aria-label={`Eliminar albarán ${r.id}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar este albarán?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Se borrará {r.id} ({r.empleado} · {eurP.format(r.total_venta)}) del{" "}
+                                    {selected}. Podrás volver a subir la captura corregida.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => {
+                                      void onDeleteVenta(r.id);
+                                    }}
+                                  >
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       ))}
                   </div>
