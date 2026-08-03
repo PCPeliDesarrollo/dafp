@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Landmark, Loader2, Upload } from "lucide-react";
-import type { BankExpense } from "@/lib/bank-csv";
+import type { BankExpense, BankIncome } from "@/lib/bank-csv";
 import { parseBankFile } from "@/lib/bank-file";
 import { getGastosStore } from "@/lib/gastos-store";
+import { getVentasStore } from "@/lib/ventas-store";
 import { useEmpresa } from "@/lib/empresa";
+import type { VentaRow } from "@/lib/dashboard-mock";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -16,23 +18,31 @@ const eur = new Intl.NumberFormat("es-ES", {
 });
 
 export function GastosBankImport() {
-  const gastosStore = getGastosStore(useEmpresa());
+  const empresa = useEmpresa();
+  const gastosStore = getGastosStore(empresa);
+  const ventasStore = getVentasStore(empresa);
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{
     file: string;
     expenses: BankExpense[];
-    ignored: number;
+    incomes: BankIncome[];
+    ignoredCard: number;
   } | null>(null);
 
   const onFile = async (file: File) => {
     setBusy(true);
     try {
       const res = await parseBankFile(file);
-      if (!res.expenses.length) {
-        toast.error("No se detectaron cargos negativos en el archivo");
+      if (!res.expenses.length && !res.incomes.length) {
+        toast.error("No se detectaron movimientos en el archivo");
         setPreview(null);
       } else {
-        setPreview({ file: file.name, expenses: res.expenses, ignored: res.ignoredPositives });
+        setPreview({
+          file: file.name,
+          expenses: res.expenses,
+          incomes: res.incomes,
+          ignoredCard: res.ignoredCard,
+        });
       }
     } catch (err: any) {
       toast.error(err?.message ?? "No se pudo leer el archivo");
@@ -45,21 +55,54 @@ export function GastosBankImport() {
     if (!preview) return;
     setBusy(true);
     try {
-      const { added } = await gastosStore.bulkUpsertBank(preview.expenses);
+      let added = 0;
+      if (preview.expenses.length) {
+        const res = await gastosStore.bulkUpsertBank(preview.expenses);
+        added = res.added;
+      }
+      let ingresos = 0;
+      if (preview.incomes.length) {
+        const rows: VentaRow[] = preview.incomes.map((it) => ({
+          id: `bank-${it.referencia}`,
+          fecha: it.fecha,
+          empleado: "Banco",
+          total_venta: it.monto,
+          beneficio: 0,
+          metodo_pago: "banco",
+          pvp: it.monto,
+          pvd: null,
+          entrega: null,
+          efectivo_amount: 0,
+          tpv_amount: 0,
+          banco_amount: it.monto,
+        }));
+        const res = await ventasStore.setImported(rows, preview.file);
+        ingresos = res.added + res.updated;
+      }
       toast.success(
-        `Importados ${added} nuevos cargos como Gastos Tienda (Banco)`,
+        `Importados ${added} cargos como Gastos Tienda (Banco) y ${ingresos} ingresos como ventas (Banco)`,
       );
       setPreview(null);
     } catch (err: any) {
-      toast.error(err?.message ?? "No se pudieron guardar los gastos");
+      toast.error(err?.message ?? "No se pudieron guardar los movimientos");
     } finally {
       setBusy(false);
     }
   };
 
-  const total = preview
+  const totalGastos = preview
     ? preview.expenses.reduce((a, e) => a + e.monto, 0)
     : 0;
+  const totalIngresos = preview
+    ? preview.incomes.reduce((a, e) => a + e.monto, 0)
+    : 0;
+
+  const filas = preview
+    ? [
+        ...preview.incomes.map((e) => ({ ...e, tipo: "ingreso" as const })),
+        ...preview.expenses.map((e) => ({ ...e, tipo: "gasto" as const })),
+      ]
+    : [];
 
   return (
     <Card className="gradient-card border-border/50 shadow-elevated">
@@ -83,8 +126,9 @@ export function GastosBankImport() {
               {busy ? "Analizando archivo…" : "Sube el extracto bancario (.xlsx, .xls, .csv o .pdf)"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Se ignoran los ingresos (positivos). Solo se importan los cargos
-              (negativos) como Gastos Tienda (Banco).
+              Los cargos (negativos) entran como Gastos Tienda (Banco) y los
+              ingresos como ventas (Banco). Solo se ignoran los cobros con
+              tarjeta/TPV, que ya se anotan a mano.
             </p>
             <input
               type="file"
@@ -105,12 +149,19 @@ export function GastosBankImport() {
             <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs">
               <span className="truncate font-medium">{preview.file}</span>
               <span className="text-muted-foreground">
-                {preview.expenses.length} cargos · {preview.ignored} ingresos ignorados
+                {preview.expenses.length} cargos · {preview.incomes.length} ingresos ·{" "}
+                {preview.ignoredCard} cobros con tarjeta ignorados
               </span>
             </div>
-            <div className="rounded-lg border border-info/40 bg-info/5 p-3 text-sm">
-              Total a importar como <strong>Gastos Tienda (Banco)</strong>:{" "}
-              <span className="font-semibold tabular-nums">{eur.format(total)}</span>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-info/40 bg-info/5 p-3 text-sm">
+                Gastos Tienda (Banco):{" "}
+                <span className="font-semibold tabular-nums">{eur.format(totalGastos)}</span>
+              </div>
+              <div className="rounded-lg border border-success/40 bg-success/5 p-3 text-sm">
+                Ingresos (Banco):{" "}
+                <span className="font-semibold tabular-nums">{eur.format(totalIngresos)}</span>
+              </div>
             </div>
             <div className="max-h-56 overflow-auto rounded-lg border border-border/60">
               <table className="w-full text-xs">
@@ -118,14 +169,23 @@ export function GastosBankImport() {
                   <tr>
                     <th className="px-2 py-1 text-left">Fecha</th>
                     <th className="px-2 py-1 text-left">Concepto</th>
+                    <th className="px-2 py-1 text-left">Tipo</th>
                     <th className="px-2 py-1 text-right">Importe</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.expenses.slice(0, 50).map((e, i) => (
+                  {filas.slice(0, 80).map((e, i) => (
                     <tr key={i} className="border-t border-border/40">
                       <td className="px-2 py-1 tabular-nums">{e.fecha}</td>
-                      <td className="px-2 py-1 truncate max-w-[240px]">{e.concepto}</td>
+                      <td className="px-2 py-1 truncate max-w-[220px]">{e.concepto}</td>
+                      <td
+                        className={cn(
+                          "px-2 py-1",
+                          e.tipo === "ingreso" ? "text-success" : "text-muted-foreground",
+                        )}
+                      >
+                        {e.tipo === "ingreso" ? "Ingreso" : "Gasto"}
+                      </td>
                       <td className="px-2 py-1 text-right tabular-nums">
                         {eur.format(e.monto)}
                       </td>
@@ -140,7 +200,7 @@ export function GastosBankImport() {
               </Button>
               <Button onClick={confirm} disabled={busy} className="gap-2">
                 {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Importar {preview.expenses.length} cargos
+                Importar {filas.length} movimientos
               </Button>
             </div>
           </div>
