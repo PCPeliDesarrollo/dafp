@@ -44,8 +44,9 @@ import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
-import { ventasStore } from "@/lib/ventas-store";
-import { useGastos, gastosStore } from "@/lib/gastos-store";
+import { getVentasStore } from "@/lib/ventas-store";
+import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
+import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -231,7 +232,12 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export function SalesDashboard() {
   const navigate = useNavigate();
-  const { data, isLoading, source, fileName, importedAt } = useDashboardVentas();
+  const vista = useVista();
+  const esGeneral = vista === "general";
+  const empresaLabel = esGeneral ? "General" : EMPRESAS[vista].label;
+  const ventasStore = getVentasStore(esGeneral ? EMPRESA_KEYS[0] : vista);
+  const gastosStore = getGastosStore(esGeneral ? EMPRESA_KEYS[0] : vista);
+  const { data, isLoading, source, fileName, importedAt } = useDashboardVentas(vista);
   const [rango, setRango] = useState<RangoKey>("mes");
   const [monthAnchor, setMonthAnchor] = useState<string>(() => {
     const n = new Date();
@@ -348,7 +354,9 @@ export function SalesDashboard() {
   );
 
   // ------- Gastos (respeta el mismo filtro de rango) -------
-  const gastosSnap = useGastos();
+  const gastosSnapEmpresa = useGastos(esGeneral ? EMPRESA_KEYS[0] : vista);
+  const gastosSnapGeneral = useGastosGeneral();
+  const gastosSnap = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
   const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
   const filteredGastos = useMemo(() => {
     if (!gastosSnap.rows.length) return [];
@@ -443,7 +451,7 @@ export function SalesDashboard() {
               Panel en vivo
             </div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Ventas y Rendimiento
+              Ventas y Rendimiento · {empresaLabel}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Vista general del equipo comercial ·{" "}
@@ -517,6 +525,7 @@ export function SalesDashboard() {
               </SelectContent>
             </Select>
 
+            {!esGeneral && (
             <CsvImportDialog
               trigger={
                 <Button
@@ -528,6 +537,8 @@ export function SalesDashboard() {
                 </Button>
               }
             />
+            )}
+            {!esGeneral && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -541,7 +552,7 @@ export function SalesDashboard() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>¿Borrar todos los datos?</AlertDialogTitle>
+                  <AlertDialogTitle>¿Borrar todos los datos de {empresaLabel}?</AlertDialogTitle>
                   <AlertDialogDescription>
                     Se eliminarán todas las ventas (albaranes) y todos los gastos
                     guardados en la nube. Esta acción no se puede deshacer: tendrás
@@ -562,7 +573,8 @@ export function SalesDashboard() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            {source === "csv" && (
+            )}
+            {!esGeneral && source === "csv" && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -801,17 +813,21 @@ export function SalesDashboard() {
         </section>
 
         {/* Formularios de gastos: caja manual + importador CSV bancario */}
+        {!esGeneral && (
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           <GastosCashForm />
           <GastosBankImport />
         </section>
+        )}
 
         {/* Zona de pegado / OCR de albaranes */}
+        {!esGeneral && (
         <section className="mt-6">
           <SectionErrorBoundary title="No se pudo procesar la captura del albarán">
             <OcrPasteZone />
           </SectionErrorBoundary>
         </section>
+        )}
 
 
 
