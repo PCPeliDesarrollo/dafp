@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { EMPLEADO_OBJETIVO_MENSUAL, type VentaRow } from "@/lib/dashboard-mock";
 import { CsvImportDialog } from "./CsvImportDialog";
+import { toast } from "sonner";
 import { SalesCalendar } from "./SalesCalendar";
 import { OcrPasteZone } from "./OcrPasteZone";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
