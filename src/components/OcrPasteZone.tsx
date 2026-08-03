@@ -65,6 +65,23 @@ async function toCompactDataUrl(source: Blob, maxSide = 1800): Promise<string> {
   }
 }
 
+/**
+ * Huella corta de los importes del albarán. Se usa sólo cuando la captura no
+ * trae número de albarán: dos albaranes del mismo día y comercial con importes
+ * distintos generan ids distintos (no se sobreescriben), mientras que volver a
+ * subir la misma captura genera el mismo id y actualiza la venta.
+ */
+function fingerprint(p: ParsedAlbaran): string {
+  const parts = [p.pvp, p.pvd, p.entrega ?? 0, p.tpv_amount, p.banco_amount]
+    .map((n) => Math.round(Number(n ?? 0) * 100))
+    .join("-");
+  let h = 0;
+  for (let i = 0; i < parts.length; i++) h = (h * 31 + parts.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
+}
+
+
+
 
 export function OcrPasteZone() {
   const ventasStore = getVentasStore(useEmpresa());
@@ -153,11 +170,14 @@ export function OcrPasteZone() {
     try {
       const p = status.parsed;
       const fecha = fechaOverride ?? new Date().toISOString().slice(0, 10);
-      // ID estable: si hay nº de albarán se usa siempre ese; si no, la
-      // combinación fecha+comercial. Nunca depende de importes, así que volver
-      // a subir la misma captura (aunque cambien PVP/PVD) ACTUALIZA la venta
-      // en lugar de crear un duplicado.
-      const id = p.numero ? `alb-${p.numero}` : `alb-${fecha}-${p.empleado}`;
+      // ID estable: si hay nº de albarán se usa siempre ese (misma captura =
+      // misma venta, se actualiza). Si NO hay número, se añade una huella con
+      // los importes: así dos albaranes distintos del mismo día y comercial
+      // NO se machacan entre sí, pero volver a subir el mismo sí se actualiza.
+      const id = p.numero
+        ? `alb-${p.numero}`
+        : `alb-${fecha}-${p.empleado}-${fingerprint(p)}`;
+
       await ventasStore.setImported(
         [
           {
