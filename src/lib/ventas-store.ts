@@ -219,6 +219,18 @@ function createVentasStore(empresa: EmpresaKey) {
     },
 
 
+    /** Elimina un albarán concreto por id. */
+    remove: async (id: string) => {
+      const { error } = await supabase.from(table as any).delete().eq("id", id);
+      if (error) {
+        console.error(`Error eliminando venta en ${table}:`, error);
+        throw error;
+      }
+      const rows = (snapshot.rows ?? []).filter((r) => r.id !== id);
+      snapshot = { ...snapshot, rows: rows.length ? rows : null };
+      emit();
+    },
+
     clear: async () => {
 
       const { error } = await supabase.from(table as any).delete().neq("id", "");
