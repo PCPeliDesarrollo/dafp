@@ -1210,6 +1210,8 @@ export function SalesDashboard() {
         categoria={gastosDialog ?? "tienda"}
         gastos={gastosSnap.rows}
       />
+      <KpiDetailDialog detail={kpiDetail} onOpenChange={(v) => !v && setKpiDetail(null)} />
+
     </div>
   );
 }
