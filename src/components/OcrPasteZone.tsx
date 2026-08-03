@@ -153,11 +153,14 @@ export function OcrPasteZone() {
     try {
       const p = status.parsed;
       const fecha = fechaOverride ?? new Date().toISOString().slice(0, 10);
-      // ID estable: si hay nº de albarán se usa siempre ese; si no, la
-      // combinación fecha+comercial. Nunca depende de importes, así que volver
-      // a subir la misma captura (aunque cambien PVP/PVD) ACTUALIZA la venta
-      // en lugar de crear un duplicado.
-      const id = p.numero ? `alb-${p.numero}` : `alb-${fecha}-${p.empleado}`;
+      // ID estable: si hay nº de albarán se usa siempre ese (misma captura =
+      // misma venta, se actualiza). Si NO hay número, se añade una huella con
+      // los importes: así dos albaranes distintos del mismo día y comercial
+      // NO se machacan entre sí, pero volver a subir el mismo sí se actualiza.
+      const id = p.numero
+        ? `alb-${p.numero}`
+        : `alb-${fecha}-${p.empleado}-${fingerprint(p)}`;
+
       await ventasStore.setImported(
         [
           {
