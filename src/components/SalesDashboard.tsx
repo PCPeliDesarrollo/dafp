@@ -1018,6 +1018,13 @@ export function SalesDashboard() {
                   </div>
                 </div>
               ))}
+              {leaderboard.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No hay ventas registradas en este mes. Cambia el mes en el selector de arriba
+                  para ver otra clasificación.
+                </p>
+              )}
+
             </CardContent>
           </Card>
         </section>
