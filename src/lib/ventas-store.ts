@@ -174,7 +174,35 @@ function createVentasStore(empresa: EmpresaKey) {
       return { added, updated, total: snapshot.rows!.length };
     },
 
+    /**
+     * Elimina ventas antiguas de la misma fecha y comercial que quedaron
+     * guardadas con un id inestable (formato antiguo `ocr-...`), para que un
+     * albarán nunca aparezca duplicado en el mismo día.
+     */
+    dropLegacyDuplicates: async (fecha: string, empleado: string, keepId: string) => {
+      const { error } = await supabase
+        .from(table as any)
+        .delete()
+        .eq("fecha", fecha)
+        .eq("empleado", empleado)
+        .like("id", "ocr-%")
+        .neq("id", keepId);
+
+      if (error) {
+        console.error(`Error limpiando duplicados en ${table}:`, error);
+        return;
+      }
+
+      const rows = (snapshot.rows ?? []).filter(
+        (r) =>
+          !(r.id.startsWith("ocr-") && r.fecha === fecha && r.empleado === empleado && r.id !== keepId),
+      );
+      snapshot = { ...snapshot, rows: rows.length ? rows : null };
+      emit();
+    },
+
     clear: async () => {
+
       const { error } = await supabase.from(table as any).delete().neq("id", "");
       if (error) {
         console.error(`Error borrando ${table}:`, error);
