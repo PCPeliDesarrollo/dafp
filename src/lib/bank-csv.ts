@@ -112,7 +112,8 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
   const conceptIdx = detectConceptColumn(parsed.headers, amountIdx, dateIdx);
 
   const expenses: BankExpense[] = [];
-  let ignoredPositives = 0;
+  const incomes: BankIncome[] = [];
+  let ignoredCard = 0;
   const today = new Date().toISOString().slice(0, 10);
 
   parsed.rows.forEach((r, i) => {
@@ -120,11 +121,7 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     const raw = (r[amountIdx] ?? "").trim();
     if (!raw) return;
     const n = parseNumber(raw);
-    if (!Number.isFinite(n)) return;
-    if (n >= 0) {
-      ignoredPositives++;
-      return;
-    }
+    if (!Number.isFinite(n) || n === 0) return;
     const fecha =
       (dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null) ?? today;
     const concepto =
@@ -132,8 +129,22 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     const referencia = `${fileName}|${i}|${fecha}|${n.toFixed(2)}|${concepto.slice(0, 40)}`
       .toLowerCase()
       .replace(/[^a-z0-9|\-.]/g, "_");
-    expenses.push({ fecha, monto: Math.abs(n), concepto, referencia });
+    const item = { fecha, monto: Math.abs(n), concepto, referencia };
+    if (n < 0) {
+      expenses.push(item);
+    } else if (isCardIncome(concepto)) {
+      ignoredCard++;
+    } else {
+      incomes.push(item);
+    }
   });
 
-  return { expenses, ignoredPositives, totalRows: parsed.rows.length };
+  return {
+    expenses,
+    incomes,
+    ignoredCard,
+    ignoredPositives: ignoredCard,
+    totalRows: parsed.rows.length,
+  };
 }
+
