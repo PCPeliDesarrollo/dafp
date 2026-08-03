@@ -250,21 +250,14 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   if (!stock)
     warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
 
-  // 9) Cálculo ingreso / coste / beneficio (respeta ENTREGA si aplica)
-  let ingreso: number;
-  let coste: number;
-  let beneficio_real: number;
-  let entrega: number | null = null;
-  if (entregaVal != null && entregaVal > 0 && pvp > 0) {
-    entrega = entregaVal;
-    ingreso = entregaVal;
-    coste = entregaVal * (pvd / pvp);
-    beneficio_real = entregaVal * ((pvp - pvd) / pvp);
-  } else {
-    ingreso = pvp;
-    coste = pvd;
-    beneficio_real = pvp - pvd;
-  }
+  // 9) Cálculo ingreso / coste / beneficio.
+  // La ENTREGA es sólo informativa: NO reduce el importe de la venta.
+  const ingreso = pvp;
+  const coste = pvd;
+  const beneficio_real = pvp - pvd;
+  const entrega: number | null =
+    entregaVal != null && entregaVal > 0 ? entregaVal : null;
+
 
   return {
     pvp: round2(pvp),
@@ -310,16 +303,13 @@ export function composeAlbaran(input: {
   if (pvd === 0) warnings.push("No se detectó PVD/PDV; coste = 0.");
   if (pvd > pvp) warnings.push("El PVD detectado es mayor que el PVP; revisa la captura.");
 
-  let ingreso = pvp;
-  let coste = pvd;
-  let beneficio_real = pvp - pvd;
-  let entrega: number | null = null;
-  if (input.entrega != null && input.entrega > 0 && pvp > 0) {
-    entrega = input.entrega;
-    ingreso = input.entrega;
-    coste = input.entrega * (pvd / pvp);
-    beneficio_real = input.entrega * ((pvp - pvd) / pvp);
-  }
+  // La ENTREGA es sólo informativa: NO reduce el importe de la venta.
+  const ingreso = pvp;
+  const coste = pvd;
+  const beneficio_real = pvp - pvd;
+  const entrega: number | null =
+    input.entrega != null && input.entrega > 0 ? input.entrega : null;
+
 
   const metodo_pago: MetodoPago =
     efectivo_amount >= tpv_amount && efectivo_amount >= banco_amount
