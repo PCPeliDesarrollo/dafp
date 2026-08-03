@@ -295,12 +295,10 @@ export function SalesDashboard() {
     });
   }, [rows]);
 
-  // Leaderboard: mes actual
+  // Leaderboard: mes seleccionado en el selector de mes
   const leaderboard = useMemo(() => {
     if (!rows.length) return [];
-    const todayDate = today ? new Date(today) : new Date();
-    const monthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    const mensuales = rows.filter((r) => new Date(r.fecha) >= monthStart);
+    const mensuales = rows.filter((r) => (r.fecha ?? "").slice(0, 7) === monthAnchor);
     const map = new Map<string, { total: number; beneficio: number }>();
     for (const r of mensuales) {
       const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
@@ -316,7 +314,8 @@ export function SalesDashboard() {
         progreso: Math.min(100, (v.total / EMPLEADO_OBJETIVO_MENSUAL) * 100),
       }))
       .sort((a, b) => b.total - a.total);
-  }, [rows, today]);
+  }, [rows, monthAnchor]);
+
 
   // Desglose por método de pago (sobre `filtered`, respeta el filtro de rango)
   const desglosePago = useMemo(() => {
