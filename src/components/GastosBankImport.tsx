@@ -56,32 +56,48 @@ export function GastosBankImport() {
     setBusy(true);
     try {
       let added = 0;
+      let omitidos = 0;
       if (preview.expenses.length) {
         const res = await gastosStore.bulkUpsertBank(preview.expenses);
         added = res.added;
+        omitidos += res.skipped;
       }
       let ingresos = 0;
       if (preview.incomes.length) {
-        const rows: VentaRow[] = preview.incomes.map((it) => ({
-          id: `bank-${it.referencia}`,
-          fecha: it.fecha,
-          empleado: "Banco",
-          total_venta: it.monto,
-          beneficio: 0,
-          metodo_pago: "banco",
-          pvp: it.monto,
-          pvd: null,
-          entrega: null,
-          efectivo_amount: 0,
-          tpv_amount: 0,
-          banco_amount: it.monto,
-        }));
-        const res = await ventasStore.setImported(rows, preview.file);
-        ingresos = res.added + res.updated;
+        // Huella por contenido: si ya existe ese ingreso bancario (misma fecha
+        // e importe) no se vuelve a crear.
+        const existentes = new Set(
+          (ventasStore.get().rows ?? [])
+            .filter((r) => r.empleado === "Banco")
+            .map((r) => `${r.fecha}|${r.total_venta.toFixed(2)}`),
+        );
+        const nuevos = preview.incomes.filter(
+          (it) => !existentes.has(`${it.fecha}|${it.monto.toFixed(2)}`),
+        );
+        omitidos += preview.incomes.length - nuevos.length;
+        if (nuevos.length) {
+          const rows: VentaRow[] = nuevos.map((it) => ({
+            id: `bank-${it.referencia}`,
+            fecha: it.fecha,
+            empleado: "Banco",
+            total_venta: it.monto,
+            beneficio: 0,
+            metodo_pago: "banco",
+            pvp: it.monto,
+            pvd: null,
+            entrega: null,
+            efectivo_amount: 0,
+            tpv_amount: 0,
+            banco_amount: it.monto,
+          }));
+          const res = await ventasStore.setImported(rows, preview.file);
+          ingresos = res.added + res.updated;
+        }
       }
       toast.success(
-        `Importados ${added} cargos como Gastos Tienda (Banco) y ${ingresos} ingresos como ventas (Banco)`,
+        `Nuevos: ${added} cargos y ${ingresos} ingresos · ${omitidos} ya estaban registrados`,
       );
+
       setPreview(null);
     } catch (err: any) {
       toast.error(err?.message ?? "No se pudieron guardar los movimientos");
