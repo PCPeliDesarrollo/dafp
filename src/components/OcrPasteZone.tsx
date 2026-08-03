@@ -65,6 +65,23 @@ async function toCompactDataUrl(source: Blob, maxSide = 1800): Promise<string> {
   }
 }
 
+/**
+ * Huella corta de los importes del albarán. Se usa sólo cuando la captura no
+ * trae número de albarán: dos albaranes del mismo día y comercial con importes
+ * distintos generan ids distintos (no se sobreescriben), mientras que volver a
+ * subir la misma captura genera el mismo id y actualiza la venta.
+ */
+function fingerprint(p: ParsedAlbaran): string {
+  const parts = [p.pvp, p.pvd, p.entrega ?? 0, p.tpv_amount, p.banco_amount]
+    .map((n) => Math.round(Number(n ?? 0) * 100))
+    .join("-");
+  let h = 0;
+  for (let i = 0; i < parts.length; i++) h = (h * 31 + parts.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
+}
+
+
+
 
 export function OcrPasteZone() {
   const ventasStore = getVentasStore(useEmpresa());
