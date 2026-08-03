@@ -7,11 +7,37 @@ export type BankExpense = {
   referencia: string;
 };
 
+export type BankIncome = BankExpense; // monto positivo (abono)
+
 export type BankImportResult = {
   expenses: BankExpense[];
+  incomes: BankIncome[];
+  /** Abonos ignorados por ser cobros con tarjeta/TPV (ya contabilizados). */
+  ignoredCard: number;
   ignoredPositives: number;
   totalRows: number;
 };
+
+/** Abonos que NO se importan: cobros con tarjeta / TPV ya registrados a mano. */
+const CARD_HINTS = [
+  "tarjeta",
+  "tpv",
+  "visa",
+  "mastercard",
+  "redsys",
+  "comercio",
+  "datafono",
+  "datafonos",
+];
+
+export function isCardIncome(concepto: string): boolean {
+  const n = concepto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return CARD_HINTS.some((h) => n.includes(h));
+}
+
 
 /**
  * Detects the most likely "amount" column: the numeric column that contains at
