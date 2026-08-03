@@ -775,8 +775,16 @@ export function SalesDashboard() {
                   ? "border-primary/40 bg-primary/5"
                   : "border-info/40 bg-info/5";
             return (
-              <Card key={mp} className={cn("border shadow-elevated", accent)}>
+              <Card
+                key={mp}
+                onClick={() => showMetodoDetalle(mp)}
+                className={cn(
+                  "cursor-pointer border shadow-elevated transition-opacity hover:opacity-90",
+                  accent,
+                )}
+              >
                 <CardContent className="p-5">
+
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold">{METODO_PAGO_LABEL[mp]}</p>
                     <Badge variant="outline" className="text-[10px]">
