@@ -101,20 +101,24 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function isoDaysAgo(rows: VentaRow[]): { today: string; yesterday: string } {
-  const dates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
-  return {
-    today: dates[dates.length - 1] ?? "",
-    yesterday: dates[dates.length - 2] ?? "",
-  };
+function localIso(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Hoy y ayer reales del calendario (no la última fecha con datos). */
+function isoDaysAgo(_rows: VentaRow[]): { today: string; yesterday: string } {
+  const now = new Date();
+  const yest = new Date(now);
+  yest.setDate(now.getDate() - 1);
+  return { today: localIso(now), yesterday: localIso(yest) };
 }
 
 function filterByRange(rows: VentaRow[], rango: RangoKey, monthAnchor: string) {
   if (!rows.length) return rows;
-  const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
-  const today = sortedDates[sortedDates.length - 1];
+  const today = localIso(new Date());
   const todayDate = new Date(today);
   if (rango === "hoy") return rows.filter((r) => r.fecha === today);
+
   if (rango === "semana") {
     const start = new Date(todayDate);
     start.setDate(todayDate.getDate() - 6);
@@ -372,18 +376,17 @@ export function SalesDashboard() {
       });
     }
 
-    // For "hoy" / "semana" anchor on max date in sales dataset (falls back to now)
-    const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
-    const anchorIso = sortedDates[sortedDates.length - 1];
-    const anchor = anchorIso ? new Date(anchorIso) : now;
+    // "hoy" / "semana" se anclan al día real de calendario
+    const anchor = now;
     if (rango === "hoy") {
-      const iso = anchorIso ?? now.toISOString().slice(0, 10);
+      const iso = localIso(now);
       return gastosSnap.rows.filter((g) => g.fecha === iso);
     }
     const start = new Date(anchor);
     start.setDate(anchor.getDate() - 6);
     return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
   }, [gastosSnap.rows, rows, rango, monthAnchor]);
+
 
   // Available months from ventas + gastos + current month for the picker
   const availableMonths = useMemo(() => {
