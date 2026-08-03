@@ -45,6 +45,8 @@ import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
+import { KpiDetailDialog, type KpiDetail } from "./KpiDetailDialog";
+
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
 import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
@@ -151,12 +153,14 @@ function KpiCard({
   delta,
   icon: Icon,
   accent,
+  onClick,
 }: {
   title: string;
   value: string;
   delta: number;
   icon: React.ComponentType<{ className?: string }>;
   accent: "primary" | "accent" | "warning" | "info";
+  onClick?: () => void;
 }) {
   const up = delta >= 0;
   const accentBg =
@@ -174,12 +178,19 @@ function KpiCard({
         ? "text-info"
         : "text-primary-foreground";
   return (
-    <Card className="relative overflow-hidden gradient-card border-border/50 shadow-elevated">
+    <Card
+      onClick={onClick}
+      className={cn(
+        "relative overflow-hidden gradient-card border-border/50 shadow-elevated",
+        onClick && "cursor-pointer transition-colors hover:border-primary/50",
+      )}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-20 blur-3xl gradient-primary"
       />
       <CardContent className="p-6">
+
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -362,6 +373,8 @@ export function SalesDashboard() {
   const gastosSnapGeneral = useGastosGeneral();
   const gastosSnap = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
   const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
+  const [kpiDetail, setKpiDetail] = useState<KpiDetail | null>(null);
+
   const filteredGastos = useMemo(() => {
     if (!gastosSnap.rows.length) return [];
     if (rango === "todo") return gastosSnap.rows;
@@ -420,11 +433,62 @@ export function SalesDashboard() {
     .reduce((a, g) => a + g.monto, 0);
   const dineroNetoReal = ingresosRealesTotal - gastosTiendaTotal - gastosPersonales;
 
+  // ---- Detalle de KPIs: de dónde sale cada cantidad ----
+  const rangoLabel = RANGOS.find((r) => r.key === rango)?.label ?? "";
+  const ventaConcepto = (r: VentaRow) => {
+    const num = String(r.id ?? "").replace(/^alb-/, "");
+    return `Albarán ${num || "s/n"} · ${r.empleado}`;
+  };
+  const ventaItems = (rs: VentaRow[]) =>
+    rs
+      .slice()
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+      .map((r) => ({
+        id: String(r.id),
+        fecha: r.fecha,
+        concepto: ventaConcepto(r),
+        importe: r.total_venta,
+      }));
 
+  const showMetodoDetalle = (mp: MetodoPago) => {
+    const items = filtered
+      .map((r) => ({ r, bd: getMetodoBreakdown(r) }))
+      .filter(({ bd }) => bd[mp] > 0)
+      .sort((a, b) => (a.r.fecha < b.r.fecha ? 1 : -1))
+      .map(({ r, bd }) => ({
+        id: String(r.id),
+        fecha: r.fecha,
+        concepto: ventaConcepto(r),
+        detalle: `Total albarán ${eurP.format(r.total_venta)} · cobrado por ${METODO_PAGO_LABEL[mp]} ${eurP.format(bd[mp])}`,
+        importe: bd[mp],
+      }));
+    setKpiDetail({
+      title: `${METODO_PAGO_LABEL[mp]} · ${rangoLabel}`,
+      formula:
+        mp === "banco"
+          ? "Movimientos contados en positivo como cobro por transferencia/banco (nota BANCO en el albarán o ingreso importado del extracto)."
+          : mp === "tpv"
+            ? "Importes cobrados con tarjeta (nota TPV en el albarán), sumados por encima del efectivo."
+            : "Parte del albarán cobrada en efectivo (TOTAL del albarán menos lo anotado como TPV/BANCO).",
+      total: desglosePago[mp].ingreso,
+      items,
+    });
+  };
 
-
-
-
+  const dineroNetoItems = [
+    ...ventaItems(filtered),
+    ...filteredGastos
+      .slice()
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+      .map((g) => ({
+        id: `g-${g.id}`,
+        fecha: g.fecha,
+        concepto: g.concepto || (g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"),
+        detalle: `${g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"} · ${g.fuente === "banco" ? "banco" : "efectivo"}`,
+        importe: g.monto,
+        negativo: true,
+      })),
+  ];
 
 
   if (isLoading) {
@@ -609,6 +673,14 @@ export function SalesDashboard() {
             delta={variacion(totalHoy, totalAyer)}
             icon={Euro}
             accent="primary"
+            onClick={() =>
+              setKpiDetail({
+                title: "Total Vendido Hoy",
+                formula: "Suma del TOTAL (PVP) de los albaranes con fecha de hoy.",
+                total: totalHoy,
+                items: ventaItems(todayRows),
+              })
+            }
           />
           <KpiCard
             title="Nº Ventas Hoy"
@@ -616,12 +688,33 @@ export function SalesDashboard() {
             delta={variacion(ventasHoy, ventasAyer)}
             icon={ReceiptText}
             accent="info"
+            onClick={() =>
+              setKpiDetail({
+                title: "Nº Ventas Hoy",
+                formula: "Número de albaranes registrados con fecha de hoy.",
+                total: ventasHoy,
+                totalLabel: "Albaranes contados",
+                countMode: true,
+                items: ventaItems(todayRows),
+              })
+            }
           />
         </section>
 
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
-          <Card className="gradient-card border-border/50 shadow-elevated">
+          <Card
+            className="cursor-pointer gradient-card border-border/50 shadow-elevated transition-colors hover:border-primary/50"
+            onClick={() =>
+              setKpiDetail({
+                title: `Total Ingresos Reales · ${rangoLabel}`,
+                formula:
+                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
+                total: ingresosRealesTotal,
+                items: ventaItems(filtered),
+              })
+            }
+          >
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 Total Ingresos Reales · {RANGOS.find((r) => r.key === rango)?.label}
@@ -630,11 +723,31 @@ export function SalesDashboard() {
                 {eurP.format(ingresosRealesTotal)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Incluye entregas parciales al valor cobrado
+                Incluye entregas parciales al valor cobrado · pulsa para ver el detalle
               </p>
             </CardContent>
           </Card>
-          <Card className="border-success/40 bg-success/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
+            onClick={() =>
+              setKpiDetail({
+                title: `Beneficio Real · ${rangoLabel}`,
+                formula: "Beneficio de cada albarán = PVP total − PVD (coste × cantidad).",
+                total: beneficioRealTotal,
+                items: filtered
+                  .filter((r) => (r.beneficio ?? 0) !== 0)
+                  .slice()
+                  .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+                  .map((r) => ({
+                    id: `b-${r.id}`,
+                    fecha: r.fecha,
+                    concepto: ventaConcepto(r),
+                    detalle: `PVP ${eurP.format(r.total_venta)} · beneficio`,
+                    importe: r.beneficio ?? 0,
+                  })),
+              })
+            }
+          >
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
@@ -650,6 +763,7 @@ export function SalesDashboard() {
         </section>
 
 
+
         {/* Desglose por método de pago */}
         <section className="mt-4 grid gap-4 md:grid-cols-3">
           {(["efectivo", "tpv", "banco"] as MetodoPago[]).map((mp) => {
@@ -661,8 +775,16 @@ export function SalesDashboard() {
                   ? "border-primary/40 bg-primary/5"
                   : "border-info/40 bg-info/5";
             return (
-              <Card key={mp} className={cn("border shadow-elevated", accent)}>
+              <Card
+                key={mp}
+                onClick={() => showMetodoDetalle(mp)}
+                className={cn(
+                  "cursor-pointer border shadow-elevated transition-opacity hover:opacity-90",
+                  accent,
+                )}
+              >
                 <CardContent className="p-5">
+
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold">{METODO_PAGO_LABEL[mp]}</p>
                     <Badge variant="outline" className="text-[10px]">
@@ -696,7 +818,18 @@ export function SalesDashboard() {
 
         {/* Resumen global de tesorería (Ingresos - Gastos = Dinero Neto Real) */}
         <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-success/40 bg-success/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
+            onClick={() =>
+              setKpiDetail({
+                title: `Total Ingresos Reales · ${rangoLabel}`,
+                formula:
+                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
+                total: ingresosRealesTotal,
+                items: ventaItems(filtered),
+              })
+            }
+          >
             <CardContent className="p-5">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Total Ingresos Reales
@@ -709,7 +842,10 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-warning/40 bg-warning/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-warning/40 bg-warning/5 shadow-elevated transition-colors hover:border-warning/70"
+            onClick={() => setGastosDialog("tienda")}
+          >
             <CardContent className="p-5">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Total Gastos Tienda
@@ -722,7 +858,10 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-destructive/40 bg-destructive/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-destructive/40 bg-destructive/5 shadow-elevated transition-colors hover:border-destructive/70"
+            onClick={() => setGastosDialog("personales")}
+          >
             <CardContent className="p-5">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Total Gastos Personales
@@ -735,7 +874,18 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card className="relative overflow-hidden gradient-primary text-primary-foreground shadow-glow">
+          <Card
+            className="relative cursor-pointer overflow-hidden gradient-primary text-primary-foreground shadow-glow transition-opacity hover:opacity-90"
+            onClick={() =>
+              setKpiDetail({
+                title: `Dinero Neto Real · ${rangoLabel}`,
+                formula:
+                  "Ingresos de albaranes (en verde) − gastos de tienda y personales (en rojo) del periodo.",
+                total: dineroNetoReal,
+                items: dineroNetoItems,
+              })
+            }
+          >
             <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <CardContent className="p-5">
               <p className="flex items-center gap-1 text-[10px] uppercase tracking-widest opacity-90">
@@ -753,6 +903,7 @@ export function SalesDashboard() {
             </CardContent>
           </Card>
         </section>
+
 
         {/* Desglose de gastos por categoría */}
         <section className="mt-4 grid gap-4 md:grid-cols-2">
@@ -1059,6 +1210,8 @@ export function SalesDashboard() {
         categoria={gastosDialog ?? "tienda"}
         gastos={gastosSnap.rows}
       />
+      <KpiDetailDialog detail={kpiDetail} onOpenChange={(v) => !v && setKpiDetail(null)} />
+
     </div>
   );
 }
