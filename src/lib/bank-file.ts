@@ -7,6 +7,8 @@ import {
   type BankImportResult,
 } from "./bank-csv";
 import { parseDate, parseNumber } from "./csv-import";
+import { extractPdfText } from "./pdf-import";
+
 
 
 const HEADER_HINTS = ["fecha", "importe", "monto", "concepto", "movim", "detalle", "descrip"];
