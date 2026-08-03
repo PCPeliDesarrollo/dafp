@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Landmark, Wallet } from "lucide-react";
 import {
-  gastosStore,
+  getGastosStore,
   type Gasto,
   type GastoCategoria,
   FUENTE_LABEL,
 } from "@/lib/gastos-store";
+import { useEmpresa } from "@/lib/empresa";
 import { toast } from "sonner";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -39,6 +40,7 @@ export function GastosListDialog({
   categoria: GastoCategoria;
   gastos: Gasto[];
 }) {
+  const gastosStore = getGastosStore(useEmpresa());
   const [busyId, setBusyId] = useState<string | null>(null);
   const filtered = useMemo(
     () =>

@@ -11,10 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Wallet, Loader2 } from "lucide-react";
-import { gastosStore, type GastoCategoria } from "@/lib/gastos-store";
+import { getGastosStore, type GastoCategoria } from "@/lib/gastos-store";
+import { useEmpresa } from "@/lib/empresa";
 import { toast } from "sonner";
 
 export function GastosCashForm() {
+  const gastosStore = getGastosStore(useEmpresa());
   const [monto, setMonto] = useState("");
   const [concepto, setConcepto] = useState("");
   const [categoria, setCategoria] = useState<GastoCategoria>("tienda");

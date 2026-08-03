@@ -11,7 +11,8 @@ import {
   type StockLetter,
 } from "@/lib/albaran-parser";
 import { readAlbaranImage } from "@/lib/albaran-ai.functions";
-import { ventasStore } from "@/lib/ventas-store";
+import { getVentasStore } from "@/lib/ventas-store";
+import { useEmpresa } from "@/lib/empresa";
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",

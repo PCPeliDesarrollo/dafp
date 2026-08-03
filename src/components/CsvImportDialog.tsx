@@ -45,7 +45,8 @@ import {
   type AlbaranRow,
   type StockMap,
 } from "@/lib/pdf-import";
-import { ventasStore } from "@/lib/ventas-store";
+import { getVentasStore } from "@/lib/ventas-store";
+import { useEmpresa } from "@/lib/empresa";
 import type { VentaRow } from "@/lib/dashboard-mock";
 
 /* -------------------------------------------------------------------------- */
