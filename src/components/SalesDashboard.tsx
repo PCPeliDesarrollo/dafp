@@ -818,7 +818,18 @@ export function SalesDashboard() {
 
         {/* Resumen global de tesorería (Ingresos - Gastos = Dinero Neto Real) */}
         <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-success/40 bg-success/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
+            onClick={() =>
+              setKpiDetail({
+                title: `Total Ingresos Reales · ${rangoLabel}`,
+                formula:
+                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
+                total: ingresosRealesTotal,
+                items: ventaItems(filtered),
+              })
+            }
+          >
             <CardContent className="p-5">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Total Ingresos Reales
@@ -831,7 +842,10 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-warning/40 bg-warning/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-warning/40 bg-warning/5 shadow-elevated transition-colors hover:border-warning/70"
+            onClick={() => setGastosDialog("tienda")}
+          >
             <CardContent className="p-5">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Total Gastos Tienda
@@ -844,7 +858,10 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-destructive/40 bg-destructive/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-destructive/40 bg-destructive/5 shadow-elevated transition-colors hover:border-destructive/70"
+            onClick={() => setGastosDialog("personales")}
+          >
             <CardContent className="p-5">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                 Total Gastos Personales
@@ -857,7 +874,18 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card className="relative overflow-hidden gradient-primary text-primary-foreground shadow-glow">
+          <Card
+            className="relative cursor-pointer overflow-hidden gradient-primary text-primary-foreground shadow-glow transition-opacity hover:opacity-90"
+            onClick={() =>
+              setKpiDetail({
+                title: `Dinero Neto Real · ${rangoLabel}`,
+                formula:
+                  "Ingresos de albaranes (en verde) − gastos de tienda y personales (en rojo) del periodo.",
+                total: dineroNetoReal,
+                items: dineroNetoItems,
+              })
+            }
+          >
             <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <CardContent className="p-5">
               <p className="flex items-center gap-1 text-[10px] uppercase tracking-widest opacity-90">
@@ -875,6 +903,7 @@ export function SalesDashboard() {
             </CardContent>
           </Card>
         </section>
+
 
         {/* Desglose de gastos por categoría */}
         <section className="mt-4 grid gap-4 md:grid-cols-2">
