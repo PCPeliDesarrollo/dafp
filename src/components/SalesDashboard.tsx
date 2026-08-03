@@ -935,7 +935,24 @@ export function SalesDashboard() {
 
         {/* Calendario */}
         <section className="mt-6">
-          <SalesCalendar rows={rows} gastos={gastosSnap.rows} />
+          <SalesCalendar
+            rows={rows}
+            gastos={gastosSnap.rows}
+            onDeleteVenta={async (id) => {
+              try {
+                if (esGeneral) {
+                  await Promise.all(
+                    EMPRESA_KEYS.map((k) => getVentasStore(k).remove(id)),
+                  );
+                } else {
+                  await ventasStore.remove(id);
+                }
+                toast.success(`Albarán ${id} eliminado`);
+              } catch {
+                toast.error("No se pudo eliminar el albarán");
+              }
+            }}
+          />
         </section>
 
         {/* Leaderboard */}
