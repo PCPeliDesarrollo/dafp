@@ -152,13 +152,17 @@ export function OcrPasteZone() {
     setStatus({ kind: "saving", parsed: status.parsed, text: status.text });
     try {
       const p = status.parsed;
+      const fecha = fechaOverride ?? new Date().toISOString().slice(0, 10);
+      // ID estable: si hay nº de albarán se usa siempre ese; si no, la
+      // combinación fecha+comercial. Nunca depende de importes, así que volver
+      // a subir la misma captura (aunque cambien PVP/PVD) ACTUALIZA la venta
+      // en lugar de crear un duplicado.
+      const id = p.numero ? `alb-${p.numero}` : `alb-${fecha}-${p.empleado}`;
       await ventasStore.setImported(
         [
           {
-            id: p.numero
-              ? `alb-${p.numero}`
-              : `ocr-${(fechaOverride ?? new Date().toISOString().slice(0, 10))}-${p.empleado}-${p.pvp}-${p.pvd}`,
-            fecha: fechaOverride ?? new Date().toISOString().slice(0, 10),
+            id,
+            fecha,
             empleado: p.empleado!,
             total_venta: p.ingreso,
             beneficio: p.beneficio_real,
@@ -173,6 +177,8 @@ export function OcrPasteZone() {
         ],
         "Albarán (OCR)",
       );
+      await ventasStore.dropLegacyDuplicates(fecha, p.empleado!, id);
+
       setStatus({ kind: "saved", parsed: p });
     } catch (err) {
       setStatus({
