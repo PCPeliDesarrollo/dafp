@@ -295,12 +295,10 @@ export function SalesDashboard() {
     });
   }, [rows]);
 
-  // Leaderboard: mes actual
+  // Leaderboard: mes seleccionado en el selector de mes
   const leaderboard = useMemo(() => {
     if (!rows.length) return [];
-    const todayDate = today ? new Date(today) : new Date();
-    const monthStart = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    const mensuales = rows.filter((r) => new Date(r.fecha) >= monthStart);
+    const mensuales = rows.filter((r) => (r.fecha ?? "").slice(0, 7) === monthAnchor);
     const map = new Map<string, { total: number; beneficio: number }>();
     for (const r of mensuales) {
       const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
@@ -316,7 +314,8 @@ export function SalesDashboard() {
         progreso: Math.min(100, (v.total / EMPLEADO_OBJETIVO_MENSUAL) * 100),
       }))
       .sort((a, b) => b.total - a.total);
-  }, [rows, today]);
+  }, [rows, monthAnchor]);
+
 
   // Desglose por método de pago (sobre `filtered`, respeta el filtro de rango)
   const desglosePago = useMemo(() => {
@@ -945,7 +944,12 @@ export function SalesDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <Trophy className="h-4 w-4 text-warning" />
-                Clasificación del mes
+                Clasificación de{" "}
+                {new Date(`${monthAnchor}-01T00:00:00`).toLocaleDateString("es-ES", {
+                  month: "long",
+                  year: "numeric",
+                })}
+
                 <Badge
                   variant="outline"
                   className="ml-auto border-border/60 text-muted-foreground"
@@ -1014,6 +1018,13 @@ export function SalesDashboard() {
                   </div>
                 </div>
               ))}
+              {leaderboard.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No hay ventas registradas en este mes. Cambia el mes en el selector de arriba
+                  para ver otra clasificación.
+                </p>
+              )}
+
             </CardContent>
           </Card>
         </section>
