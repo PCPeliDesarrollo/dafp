@@ -1,54 +1,37 @@
-import { useQuery } from "@tanstack/react-query";
-import { generateMockVentas, type VentaRow } from "./dashboard-mock";
 import { useVentasImport } from "./ventas-store";
+import { EMPRESA_KEYS, type VistaKey } from "./empresa";
+import type { VentaRow } from "./dashboard-mock";
 
 /**
- * Hook to fetch dashboard sales data.
- *
- * Data source priority:
- *  1. Ventas guardadas en Lovable Cloud (sincronizadas en tiempo real).
- *  2. Datos de demostración (mientras no haya ventas importadas).
+ * Hook to fetch dashboard sales data for a given company (or the combined
+ * "general" view). Data comes from Lovable Cloud in realtime.
  */
-export function useDashboardVentas() {
-  const imported = useVentasImport();
+export function useDashboardVentas(vista: VistaKey) {
+  const fjv = useVentasImport(EMPRESA_KEYS[0]);
+  const pcp = useVentasImport(EMPRESA_KEYS[1]);
 
-  const query = useQuery<VentaRow[]>({
-    queryKey: ["dashboard_ventas_mock"],
-    queryFn: async () => generateMockVentas(),
-    staleTime: 60_000,
-    // Only fall back to mock data once the cloud fetch finished with no rows
-    enabled: imported.loaded && !imported.rows,
-  });
-
-  if (imported.rows) {
+  if (vista === "general") {
+    const rows: VentaRow[] = [...(fjv.rows ?? []), ...(pcp.rows ?? [])].sort((a, b) =>
+      a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0,
+    );
+    const loaded = fjv.loaded && pcp.loaded;
     return {
-      data: imported.rows,
-      isLoading: false,
+      data: loaded ? rows : undefined,
+      isLoading: !loaded,
       isError: false,
-      source: "csv" as const,
-      importedAt: imported.importedAt,
-      fileName: imported.fileName,
+      source: (rows.length ? "csv" : "mock") as "csv" | "mock",
+      importedAt: fjv.importedAt ?? pcp.importedAt,
+      fileName: null as string | null,
     };
   }
 
-  // While the cloud fetch is in flight, show a loading state instead of mock
-  if (!imported.loaded) {
-    return {
-      data: undefined,
-      isLoading: true,
-      isError: false,
-      source: "mock" as const,
-      importedAt: null,
-      fileName: null,
-    };
-  }
-
+  const snap = vista === "pcp" ? pcp : fjv;
   return {
-    data: query.data,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    source: "mock" as const,
-    importedAt: null,
-    fileName: null,
+    data: snap.loaded ? (snap.rows ?? []) : undefined,
+    isLoading: !snap.loaded,
+    isError: false,
+    source: (snap.rows ? "csv" : "mock") as "csv" | "mock",
+    importedAt: snap.importedAt,
+    fileName: snap.fileName,
   };
 }
