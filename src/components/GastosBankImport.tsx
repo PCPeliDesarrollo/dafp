@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Landmark, Loader2, Upload } from "lucide-react";
 import type { BankExpense } from "@/lib/bank-csv";
 import { parseBankFile } from "@/lib/bank-file";
-import { gastosStore } from "@/lib/gastos-store";
+import { getGastosStore } from "@/lib/gastos-store";
+import { useEmpresa } from "@/lib/empresa";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ const eur = new Intl.NumberFormat("es-ES", {
 });
 
 export function GastosBankImport() {
+  const gastosStore = getGastosStore(useEmpresa());
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{
     file: string;

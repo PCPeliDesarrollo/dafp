@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Landmark, Wallet } from "lucide-react";
 import {
-  gastosStore,
+  getGastosStore,
   type Gasto,
   type GastoCategoria,
   FUENTE_LABEL,
 } from "@/lib/gastos-store";
+import { useEmpresa, useVista } from "@/lib/empresa";
 import { toast } from "sonner";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -39,6 +40,8 @@ export function GastosListDialog({
   categoria: GastoCategoria;
   gastos: Gasto[];
 }) {
+  const gastosStore = getGastosStore(useEmpresa());
+  const puedeBorrar = useVista() !== "general";
   const [busyId, setBusyId] = useState<string | null>(null);
   const filtered = useMemo(
     () =>
@@ -119,6 +122,7 @@ export function GastosListDialog({
                       {eur.format(g.monto)}
                     </td>
                     <td className="px-3 py-2 text-right">
+                      {puedeBorrar && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -129,6 +133,7 @@ export function GastosListDialog({
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
+                      )}
                     </td>
                   </tr>
                 ))}

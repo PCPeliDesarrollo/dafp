@@ -50,7 +50,97 @@ export type Database = {
         }
         Relationships: []
       }
+      gastos_pcp: {
+        Row: {
+          categoria: string
+          concepto: string
+          created_at: string
+          fecha: string
+          fuente: string
+          id: string
+          monto: number
+          referencia: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string
+          concepto?: string
+          created_at?: string
+          fecha?: string
+          fuente?: string
+          id: string
+          monto?: number
+          referencia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          concepto?: string
+          created_at?: string
+          fecha?: string
+          fuente?: string
+          id?: string
+          monto?: number
+          referencia?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ventas: {
+        Row: {
+          banco_amount: number | null
+          beneficio: number
+          created_at: string
+          efectivo_amount: number | null
+          empleado: string
+          entrega: number | null
+          fecha: string
+          id: string
+          metodo_pago: string
+          pvd: number | null
+          pvp: number | null
+          raw_text: string | null
+          total_venta: number
+          tpv_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          banco_amount?: number | null
+          beneficio?: number
+          created_at?: string
+          efectivo_amount?: number | null
+          empleado: string
+          entrega?: number | null
+          fecha: string
+          id: string
+          metodo_pago?: string
+          pvd?: number | null
+          pvp?: number | null
+          raw_text?: string | null
+          total_venta?: number
+          tpv_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          banco_amount?: number | null
+          beneficio?: number
+          created_at?: string
+          efectivo_amount?: number | null
+          empleado?: string
+          entrega?: number | null
+          fecha?: string
+          id?: string
+          metodo_pago?: string
+          pvd?: number | null
+          pvp?: number | null
+          raw_text?: string | null
+          total_venta?: number
+          tpv_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ventas_pcp: {
         Row: {
           banco_amount: number | null
           beneficio: number

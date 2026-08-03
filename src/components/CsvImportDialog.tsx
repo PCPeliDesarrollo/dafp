@@ -45,7 +45,8 @@ import {
   type AlbaranRow,
   type StockMap,
 } from "@/lib/pdf-import";
-import { ventasStore } from "@/lib/ventas-store";
+import { getVentasStore } from "@/lib/ventas-store";
+import { useEmpresa } from "@/lib/empresa";
 import type { VentaRow } from "@/lib/dashboard-mock";
 
 /* -------------------------------------------------------------------------- */
@@ -62,6 +63,7 @@ const FIELD_LABELS: { key: keyof ColumnMap; label: string; required: boolean }[]
 type ImportedInfo = { added: number; updated: number; total: number; name: string };
 
 function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) {
+  const ventasStore = getVentasStore(useEmpresa());
   const [fileName, setFileName] = useState("");
   const [parsed, setParsed] = useState<CsvParseResult | null>(null);
   const [map, setMap] = useState<ColumnMap>({
@@ -208,6 +210,7 @@ function CsvPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) 
 /* -------------------------------------------------------------------------- */
 
 function PdfPanel({ onImported }: { onImported: (info: ImportedInfo) => void }) {
+  const ventasStore = getVentasStore(useEmpresa());
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [albaranes, setAlbaranes] = useState<AlbaranRow[] | null>(null);
