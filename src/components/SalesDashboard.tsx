@@ -944,7 +944,12 @@ export function SalesDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <Trophy className="h-4 w-4 text-warning" />
-                Clasificación del mes
+                Clasificación de{" "}
+                {new Date(`${monthAnchor}-01T00:00:00`).toLocaleDateString("es-ES", {
+                  month: "long",
+                  year: "numeric",
+                })}
+
                 <Badge
                   variant="outline"
                   className="ml-auto border-border/60 text-muted-foreground"
