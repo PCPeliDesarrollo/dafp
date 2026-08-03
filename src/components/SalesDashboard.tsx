@@ -151,12 +151,14 @@ function KpiCard({
   delta,
   icon: Icon,
   accent,
+  onClick,
 }: {
   title: string;
   value: string;
   delta: number;
   icon: React.ComponentType<{ className?: string }>;
   accent: "primary" | "accent" | "warning" | "info";
+  onClick?: () => void;
 }) {
   const up = delta >= 0;
   const accentBg =
@@ -174,12 +176,19 @@ function KpiCard({
         ? "text-info"
         : "text-primary-foreground";
   return (
-    <Card className="relative overflow-hidden gradient-card border-border/50 shadow-elevated">
+    <Card
+      onClick={onClick}
+      className={cn(
+        "relative overflow-hidden gradient-card border-border/50 shadow-elevated",
+        onClick && "cursor-pointer transition-colors hover:border-primary/50",
+      )}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-20 blur-3xl gradient-primary"
       />
       <CardContent className="p-6">
+
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
