@@ -106,7 +106,7 @@ async function parsePdf(file: File, fileName: string): Promise<BankImportResult>
       .replace(/\s{2,}/g, " ")
       .trim();
     if (!concepto) concepto = "Movimiento bancario";
-    const referencia = `${fileName}|${i}|${fecha}|${monto.toFixed(2)}|${concepto.slice(0, 40)}`
+    const referencia = `${fecha}|${monto.toFixed(2)}|${concepto.slice(0, 40)}`
       .toLowerCase()
       .replace(/[^a-z0-9|\-.]/g, "_");
     const item = { fecha, monto: Math.abs(monto), concepto, referencia };

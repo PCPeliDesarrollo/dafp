@@ -119,8 +119,23 @@ function createGastosStore(empresa: EmpresaKey) {
     bulkUpsertBank: async (
       items: { fecha: string; monto: number; concepto: string; referencia: string }[],
     ) => {
-      if (!items.length) return { added: 0 };
-      const payload = items.map((it) => ({
+      if (!items.length) return { added: 0, skipped: 0 };
+      // Huella por contenido: si ya tenemos ese movimiento (misma fecha,
+      // importe y concepto) no se vuelve a insertar, aunque su id sea antiguo.
+      const fp = (fecha: string, monto: number, concepto: string) =>
+        `${fecha}|${Math.abs(monto).toFixed(2)}|${concepto.trim().slice(0, 40).toLowerCase()}`;
+      const existingFp = new Set(
+        snapshot.rows
+          .filter((r) => r.fuente === "banco")
+          .map((r) => fp(r.fecha, r.monto, r.concepto)),
+      );
+      const fresh = items.filter(
+        (it) => !existingFp.has(fp(it.fecha, it.monto, it.concepto)),
+      );
+      const skipped = items.length - fresh.length;
+      if (!fresh.length) return { added: 0, skipped };
+
+      const payload = fresh.map((it) => ({
         id: `bank-${it.referencia}`,
         fecha: it.fecha,
         monto: Math.abs(it.monto),
@@ -136,8 +151,9 @@ function createGastosStore(empresa: EmpresaKey) {
       if (error) throw error;
       await loadFromCloud();
       const added = payload.filter((p) => !existing.has(p.id)).length;
-      return { added };
+      return { added, skipped };
     },
+
 
     clear: async () => {
       const { error } = await supabase.from(table as any).delete().neq("id", "");
