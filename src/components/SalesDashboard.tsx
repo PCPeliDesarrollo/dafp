@@ -376,18 +376,17 @@ export function SalesDashboard() {
       });
     }
 
-    // For "hoy" / "semana" anchor on max date in sales dataset (falls back to now)
-    const sortedDates = Array.from(new Set(rows.map((r) => r.fecha))).sort();
-    const anchorIso = sortedDates[sortedDates.length - 1];
-    const anchor = anchorIso ? new Date(anchorIso) : now;
+    // "hoy" / "semana" se anclan al día real de calendario
+    const anchor = now;
     if (rango === "hoy") {
-      const iso = anchorIso ?? now.toISOString().slice(0, 10);
+      const iso = localIso(now);
       return gastosSnap.rows.filter((g) => g.fecha === iso);
     }
     const start = new Date(anchor);
     start.setDate(anchor.getDate() - 6);
     return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
   }, [gastosSnap.rows, rows, rango, monthAnchor]);
+
 
   // Available months from ventas + gastos + current month for the picker
   const availableMonths = useMemo(() => {
