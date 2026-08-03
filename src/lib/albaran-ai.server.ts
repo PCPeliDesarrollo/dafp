@@ -15,7 +15,7 @@ Devuelve SOLO un JSON válido con esta forma exacta:
 
 Reglas:
 - "numero": el número de albarán tal cual, por ejemplo "10#0355".
-- "fecha": la fecha del albarán.
+- "fecha": copia exclusivamente la fecha impresa en el campo principal "Fecha" de la cabecera del albarán. Comprueba con cuidado día y mes; no uses fechas de líneas, comentarios ni otras referencias. No cambies el día. Si no es perfectamente legible, devuelve null.
 - "stock": la letra del cliente "STOCK A" / "STOCK C" / "STOCK T".
 - "total": el TOTAL (€) del pie del albarán (base imponible + impuestos). Si no aparece un TOTAL final claro, usa la suma de la columna "Total Línea".
 - "pvd_items": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste POR UNIDAD). Para cada una, "valor" es el número anotado con sus decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15) y "cantidad" es la columna "Cant" de la línea de artículo a la que pertenece esa anotación (si no la ves, usa 1). NO multipliques tú: devuelve valor y cantidad por separado.

@@ -108,7 +108,10 @@ export function OcrPasteZone() {
         fecha: v?.fecha ?? null,
         numero: v?.numero ?? null,
       });
-      if (parsed.fecha) setFechaOverride(parsed.fecha);
+       // Sustituye siempre la fecha de la lectura anterior. Si la IA no ve una
+       // fecha, dejamos el selector sin override en vez de reutilizar por error
+       // la fecha del albarán previamente procesado.
+       setFechaOverride(parsed.fecha);
       setStatus({
         kind: "parsed",
         parsed,
