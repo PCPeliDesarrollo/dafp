@@ -176,10 +176,13 @@ function createVentasStore(empresa: EmpresaKey) {
 
     /**
      * Elimina ventas antiguas de la misma fecha y comercial que quedaron
-     * guardadas con un id inestable (formato antiguo `ocr-...`), para que un
-     * albarán nunca aparezca duplicado en el mismo día.
+     * guardadas con un id inestable (formato antiguo `ocr-...` o el id sin
+     * huella `alb-<fecha>-<empleado>`), para que un albarán no aparezca
+     * duplicado. Nunca borra albaranes con número propio.
      */
     dropLegacyDuplicates: async (fecha: string, empleado: string, keepId: string) => {
+      const legacyIds = [`alb-${fecha}-${empleado}`].filter((id) => id !== keepId);
+
       const { error } = await supabase
         .from(table as any)
         .delete()
@@ -190,16 +193,31 @@ function createVentasStore(empresa: EmpresaKey) {
 
       if (error) {
         console.error(`Error limpiando duplicados en ${table}:`, error);
-        return;
+      }
+
+      if (legacyIds.length) {
+        const { error: legacyError } = await supabase
+          .from(table as any)
+          .delete()
+          .in("id", legacyIds);
+        if (legacyError) {
+          console.error(`Error limpiando ids antiguos en ${table}:`, legacyError);
+        }
       }
 
       const rows = (snapshot.rows ?? []).filter(
         (r) =>
-          !(r.id.startsWith("ocr-") && r.fecha === fecha && r.empleado === empleado && r.id !== keepId),
+          !(
+            r.id !== keepId &&
+            r.fecha === fecha &&
+            r.empleado === empleado &&
+            (r.id.startsWith("ocr-") || legacyIds.includes(r.id))
+          ),
       );
       snapshot = { ...snapshot, rows: rows.length ? rows : null };
       emit();
     },
+
 
     clear: async () => {
 
