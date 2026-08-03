@@ -371,6 +371,8 @@ export function SalesDashboard() {
   const gastosSnapGeneral = useGastosGeneral();
   const gastosSnap = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
   const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
+  const [kpiDetail, setKpiDetail] = useState<KpiDetail | null>(null);
+
   const filteredGastos = useMemo(() => {
     if (!gastosSnap.rows.length) return [];
     if (rango === "todo") return gastosSnap.rows;
