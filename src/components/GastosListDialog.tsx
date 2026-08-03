@@ -15,7 +15,7 @@ import {
   type GastoCategoria,
   FUENTE_LABEL,
 } from "@/lib/gastos-store";
-import { useEmpresa } from "@/lib/empresa";
+import { useEmpresa, useVista } from "@/lib/empresa";
 import { toast } from "sonner";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -41,6 +41,7 @@ export function GastosListDialog({
   gastos: Gasto[];
 }) {
   const gastosStore = getGastosStore(useEmpresa());
+  const puedeBorrar = useVista() !== "general";
   const [busyId, setBusyId] = useState<string | null>(null);
   const filtered = useMemo(
     () =>
@@ -121,6 +122,7 @@ export function GastosListDialog({
                       {eur.format(g.monto)}
                     </td>
                     <td className="px-3 py-2 text-right">
+                      {puedeBorrar && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -131,6 +133,7 @@ export function GastosListDialog({
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
