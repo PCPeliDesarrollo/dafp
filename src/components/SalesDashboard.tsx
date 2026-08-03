@@ -673,6 +673,14 @@ export function SalesDashboard() {
             delta={variacion(totalHoy, totalAyer)}
             icon={Euro}
             accent="primary"
+            onClick={() =>
+              setKpiDetail({
+                title: "Total Vendido Hoy",
+                formula: "Suma del TOTAL (PVP) de los albaranes con fecha de hoy.",
+                total: totalHoy,
+                items: ventaItems(todayRows),
+              })
+            }
           />
           <KpiCard
             title="Nº Ventas Hoy"
@@ -680,12 +688,33 @@ export function SalesDashboard() {
             delta={variacion(ventasHoy, ventasAyer)}
             icon={ReceiptText}
             accent="info"
+            onClick={() =>
+              setKpiDetail({
+                title: "Nº Ventas Hoy",
+                formula: "Número de albaranes registrados con fecha de hoy.",
+                total: ventasHoy,
+                totalLabel: "Albaranes contados",
+                countMode: true,
+                items: ventaItems(todayRows),
+              })
+            }
           />
         </section>
 
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
-          <Card className="gradient-card border-border/50 shadow-elevated">
+          <Card
+            className="cursor-pointer gradient-card border-border/50 shadow-elevated transition-colors hover:border-primary/50"
+            onClick={() =>
+              setKpiDetail({
+                title: `Total Ingresos Reales · ${rangoLabel}`,
+                formula:
+                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
+                total: ingresosRealesTotal,
+                items: ventaItems(filtered),
+              })
+            }
+          >
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 Total Ingresos Reales · {RANGOS.find((r) => r.key === rango)?.label}
@@ -694,11 +723,31 @@ export function SalesDashboard() {
                 {eurP.format(ingresosRealesTotal)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Incluye entregas parciales al valor cobrado
+                Incluye entregas parciales al valor cobrado · pulsa para ver el detalle
               </p>
             </CardContent>
           </Card>
-          <Card className="border-success/40 bg-success/5 shadow-elevated">
+          <Card
+            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
+            onClick={() =>
+              setKpiDetail({
+                title: `Beneficio Real · ${rangoLabel}`,
+                formula: "Beneficio de cada albarán = PVP total − PVD (coste × cantidad).",
+                total: beneficioRealTotal,
+                items: filtered
+                  .filter((r) => (r.beneficio ?? 0) !== 0)
+                  .slice()
+                  .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+                  .map((r) => ({
+                    id: `b-${r.id}`,
+                    fecha: r.fecha,
+                    concepto: ventaConcepto(r),
+                    detalle: `PVP ${eurP.format(r.total_venta)} · beneficio`,
+                    importe: r.beneficio ?? 0,
+                  })),
+              })
+            }
+          >
             <CardContent className="p-6">
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
@@ -712,6 +761,7 @@ export function SalesDashboard() {
             </CardContent>
           </Card>
         </section>
+
 
 
         {/* Desglose por método de pago */}
