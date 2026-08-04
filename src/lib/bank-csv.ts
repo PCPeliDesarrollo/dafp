@@ -15,6 +15,8 @@ export type BankImportResult = {
   /** Abonos ignorados por ser cobros con tarjeta/TPV (ya contabilizados). */
   ignoredCard: number;
   ignoredPositives: number;
+  /** Apuntes ignorados por nota manual ("NO RESTAR", "no contar"…). */
+  ignoredNota?: number;
   /** Apuntes descartados por no poder leer su fecha (nunca se inventa). */
   sinFecha: number;
   totalRows: number;
