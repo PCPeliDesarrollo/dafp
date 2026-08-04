@@ -55,6 +55,11 @@ export function KpiDetailDialog({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    setRemoved(new Set());
+  }, [detail?.title]);
+
+
   const handleDelete = async (it: KpiDetailItem) => {
     if (!onDelete) return;
     setBusyId(it.id);
