@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -5,6 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -23,6 +26,9 @@ export type KpiDetailItem = {
   importe: number;
   /** true = resta al total (gastos) */
   negativo?: boolean;
+  /** Origen real del movimiento, para poder eliminarlo */
+  sourceKind?: "venta" | "gasto";
+  sourceId?: string;
 };
 
 export type KpiDetail = {
@@ -34,6 +40,7 @@ export type KpiDetail = {
   /** Cuando el KPI es un contador (nº de ventas) en lugar de un importe */
   countMode?: boolean;
 };
+
 
 export function KpiDetailDialog({
   detail,
