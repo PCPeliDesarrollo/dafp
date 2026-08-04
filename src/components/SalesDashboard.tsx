@@ -45,7 +45,7 @@ import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
-import { KpiDetailDialog, type KpiDetail } from "./KpiDetailDialog";
+import { KpiDetailDialog, type KpiDetail, type KpiDetailItem } from "./KpiDetailDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
@@ -459,6 +459,8 @@ export function SalesDashboard() {
         fecha: r.fecha,
         concepto: ventaConcepto(r),
         importe: r.total_venta,
+        sourceKind: "venta" as const,
+        sourceId: String(r.id),
       }));
 
   const showMetodoDetalle = (mp: MetodoPago) => {
@@ -472,6 +474,8 @@ export function SalesDashboard() {
         concepto: ventaConcepto(r),
         detalle: `Total albarán ${eurP.format(r.total_venta)} · cobrado por ${METODO_PAGO_LABEL[mp]} ${eurP.format(bd[mp])}`,
         importe: bd[mp],
+        sourceKind: "venta" as const,
+        sourceId: String(r.id),
       }));
     setKpiDetail({
       title: `${METODO_PAGO_LABEL[mp]} · ${rangoLabel}`,
@@ -498,8 +502,35 @@ export function SalesDashboard() {
         detalle: `${g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"} · ${g.fuente === "banco" ? "banco" : "efectivo"}`,
         importe: g.monto,
         negativo: true,
+        sourceKind: "gasto" as const,
+        sourceId: g.id,
       })),
   ];
+
+  /** Borra el movimiento real (albarán o gasto) desde el detalle de un KPI. */
+  const deleteKpiItem = async (item: KpiDetailItem) => {
+    if (!item.sourceKind || !item.sourceId) return;
+    const id = item.sourceId;
+    try {
+      if (item.sourceKind === "venta") {
+        if (esGeneral) {
+          await Promise.all(EMPRESA_KEYS.map((k) => getVentasStore(k).remove(id)));
+        } else {
+          await ventasStore.remove(id);
+        }
+      } else {
+        if (esGeneral) {
+          await Promise.all(EMPRESA_KEYS.map((k) => getGastosStore(k).remove(id)));
+        } else {
+          await gastosStore.remove(id);
+        }
+      }
+      toast.success("Movimiento eliminado");
+    } catch {
+      toast.error("No se pudo eliminar el movimiento");
+    }
+  };
+
 
 
   if (isLoading) {
@@ -755,6 +786,8 @@ export function SalesDashboard() {
                     concepto: ventaConcepto(r),
                     detalle: `PVP ${eurP.format(r.total_venta)} · beneficio`,
                     importe: r.beneficio ?? 0,
+                    sourceKind: "venta" as const,
+                    sourceId: String(r.id),
                   })),
               })
             }
@@ -1221,7 +1254,11 @@ export function SalesDashboard() {
         categoria={gastosDialog ?? "tienda"}
         gastos={gastosSnap.rows}
       />
-      <KpiDetailDialog detail={kpiDetail} onOpenChange={(v) => !v && setKpiDetail(null)} />
+      <KpiDetailDialog
+        detail={kpiDetail}
+        onOpenChange={(v) => !v && setKpiDetail(null)}
+        onDelete={deleteKpiItem}
+      />
 
     </div>
   );

@@ -15,7 +15,7 @@ import {
   type GastoCategoria,
   FUENTE_LABEL,
 } from "@/lib/gastos-store";
-import { useEmpresa, useVista } from "@/lib/empresa";
+import { useVista, EMPRESA_KEYS, type EmpresaKey } from "@/lib/empresa";
 import { toast } from "sonner";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -40,8 +40,10 @@ export function GastosListDialog({
   categoria: GastoCategoria;
   gastos: Gasto[];
 }) {
-  const gastosStore = getGastosStore(useEmpresa());
-  const puedeBorrar = useVista() !== "general";
+  const vista = useVista();
+  const esGeneral = vista === "general";
+  const gastosStore = getGastosStore(esGeneral ? EMPRESA_KEYS[0] : (vista as EmpresaKey));
+  const puedeBorrar = true;
   const [busyId, setBusyId] = useState<string | null>(null);
   const filtered = useMemo(
     () =>
@@ -55,7 +57,11 @@ export function GastosListDialog({
   const remove = async (id: string) => {
     setBusyId(id);
     try {
-      await gastosStore.remove(id);
+      if (esGeneral) {
+        await Promise.all(EMPRESA_KEYS.map((k) => getGastosStore(k).remove(id)));
+      } else {
+        await gastosStore.remove(id);
+      }
       toast.success("Gasto eliminado");
     } catch (e: any) {
       toast.error(e?.message ?? "No se pudo eliminar");
@@ -63,6 +69,7 @@ export function GastosListDialog({
       setBusyId(null);
     }
   };
+
 
   const title =
     categoria === "personales" ? "Gastos Personales" : "Gastos Tienda";

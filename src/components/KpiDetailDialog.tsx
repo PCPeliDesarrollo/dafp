@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -5,6 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -23,6 +26,9 @@ export type KpiDetailItem = {
   importe: number;
   /** true = resta al total (gastos) */
   negativo?: boolean;
+  /** Origen real del movimiento, para poder eliminarlo */
+  sourceKind?: "venta" | "gasto";
+  sourceId?: string;
 };
 
 export type KpiDetail = {
@@ -35,13 +41,36 @@ export type KpiDetail = {
   countMode?: boolean;
 };
 
+
 export function KpiDetailDialog({
   detail,
   onOpenChange,
+  onDelete,
 }: {
   detail: KpiDetail | null;
   onOpenChange: (open: boolean) => void;
+  /** Borra el movimiento real (venta o gasto). Si no se pasa, no se muestra la papelera. */
+  onDelete?: (item: KpiDetailItem) => Promise<void> | void;
 }) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setRemoved(new Set());
+  }, [detail?.title]);
+
+
+  const handleDelete = async (it: KpiDetailItem) => {
+    if (!onDelete) return;
+    setBusyId(it.id);
+    try {
+      await onDelete(it);
+      setRemoved((prev) => new Set(prev).add(it.id));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <Dialog open={!!detail} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl overflow-hidden">
@@ -73,7 +102,10 @@ export function KpiDetailDialog({
                   {detail.items.map((it) => (
                     <li
                       key={it.id}
-                      className="flex w-full items-start justify-between gap-3 rounded-lg border border-border/50 bg-card/40 px-3 py-2"
+                      className={cn(
+                        "flex w-full items-start justify-between gap-3 rounded-lg border border-border/50 bg-card/40 px-3 py-2",
+                        removed.has(it.id) && "opacity-40 line-through",
+                      )}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{it.concepto}</p>
@@ -99,6 +131,23 @@ export function KpiDetailDialog({
                         {it.negativo ? "−" : "+"}
                         {eurP.format(Math.abs(it.importe))}
                       </span>
+                      {onDelete && it.sourceKind && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 shrink-0 p-0 text-destructive hover:bg-destructive/10"
+                          disabled={busyId === it.id || removed.has(it.id)}
+                          onClick={() => handleDelete(it)}
+                          title="Eliminar movimiento"
+                        >
+                          {busyId === it.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      )}
+
                     </li>
                   ))}
                 </ul>
