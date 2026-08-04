@@ -63,7 +63,7 @@ export function KpiDetailDialog({
               </span>
             </div>
 
-            <ScrollArea className="max-h-[55vh] w-full pr-3">
+            <div className="max-h-[55vh] w-full min-w-0 overflow-y-auto overflow-x-hidden pr-2">
               {detail.items.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   No hay movimientos que compongan esta cantidad en el filtro actual.
@@ -103,7 +103,7 @@ export function KpiDetailDialog({
                   ))}
                 </ul>
               )}
-            </ScrollArea>
+            </div>
             <p className="text-[11px] text-muted-foreground">
               {detail.items.length} movimiento{detail.items.length === 1 ? "" : "s"} contado
               {detail.items.length === 1 ? "" : "s"}
