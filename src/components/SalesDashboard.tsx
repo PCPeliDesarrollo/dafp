@@ -1011,9 +1011,10 @@ export function SalesDashboard() {
           </Card>
         </section>
 
-        {/* Formularios de gastos: caja manual + importador CSV bancario */}
+        {/* Formularios: ingresos a mano + gastos de caja + importador bancario */}
         {!esGeneral && (
         <section className="mt-6 grid gap-4 md:grid-cols-2">
+          <IngresoManualForm />
           <GastosCashForm />
           <GastosBankImport />
         </section>
