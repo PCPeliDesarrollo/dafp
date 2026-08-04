@@ -786,6 +786,8 @@ export function SalesDashboard() {
                     concepto: ventaConcepto(r),
                     detalle: `PVP ${eurP.format(r.total_venta)} · beneficio`,
                     importe: r.beneficio ?? 0,
+                    sourceKind: "venta" as const,
+                    sourceId: String(r.id),
                   })),
               })
             }
