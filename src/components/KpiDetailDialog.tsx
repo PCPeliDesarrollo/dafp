@@ -56,10 +56,41 @@ export function KpiDetailDialog({
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     setRemoved(new Set());
+    setQuery("");
   }, [detail?.title]);
+
+  const visibleItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!detail) return [];
+    if (!q) return detail.items;
+    return detail.items.filter((it) => {
+      const fecha = it.fecha
+        ? new Date(it.fecha).toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "";
+      return [it.concepto, it.detalle ?? "", fecha, String(it.importe)]
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [detail, query]);
+
+  const visibleTotal = useMemo(
+    () =>
+      visibleItems.reduce(
+        (a, it) => a + (it.negativo ? -Math.abs(it.importe) : Math.abs(it.importe)),
+        0,
+      ),
+    [visibleItems],
+  );
+
 
 
   const handleDelete = async (it: KpiDetailItem) => {
