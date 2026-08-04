@@ -17,6 +17,8 @@ export type BankImportResult = {
   ignoredPositives: number;
   /** Apuntes descartados por no poder leer su fecha (nunca se inventa). */
   sinFecha: number;
+  totalRows: number;
+
 
 };
 
