@@ -47,14 +47,23 @@ export function GastosListDialog({
   const gastosStore = getGastosStore(esGeneral ? EMPRESA_KEYS[0] : (vista as EmpresaKey));
   const puedeBorrar = true;
   const [busyId, setBusyId] = useState<string | null>(null);
-  const filtered = useMemo(
-    () =>
-      gastos
-        .filter((g) => g.categoria === categoria)
-        .sort((a, b) => (a.fecha < b.fecha ? 1 : -1)),
-    [gastos, categoria],
-  );
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return gastos
+      .filter((g) => g.categoria === categoria)
+      .filter((g) => {
+        if (!q) return true;
+        const fecha = fmtDate.format(new Date(g.fecha));
+        return [g.concepto, FUENTE_LABEL[g.fuente], fecha, String(g.monto)]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      })
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }, [gastos, categoria, query]);
   const total = filtered.reduce((a, g) => a + g.monto, 0);
+
 
   const remove = async (id: string) => {
     setBusyId(id);
