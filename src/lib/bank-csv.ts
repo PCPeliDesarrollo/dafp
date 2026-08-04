@@ -133,16 +133,21 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
   const expenses: BankExpense[] = [];
   const incomes: BankIncome[] = [];
   let ignoredCard = 0;
-  const today = new Date().toISOString().slice(0, 10);
+  let sinFecha = 0;
 
-  parsed.rows.forEach((r, i) => {
+  parsed.rows.forEach((r) => {
     if (amountIdx < 0) return;
     const raw = (r[amountIdx] ?? "").trim();
     if (!raw) return;
     const n = parseNumber(raw);
     if (!Number.isFinite(n) || n === 0) return;
-    const fecha =
-      (dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null) ?? today;
+    // La fecha del banco es sagrada: si no se puede leer, NO se inventa
+    // (antes se usaba la fecha de hoy y los apuntes caían en el mes actual).
+    const fecha = dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null;
+    if (!fecha) {
+      sinFecha++;
+      return;
+    }
     const concepto =
       (conceptIdx >= 0 ? (r[conceptIdx] ?? "").trim() : "") || "Movimiento bancario";
     // Referencia estable (sin nombre de archivo ni nº de fila) para que
@@ -165,7 +170,9 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     incomes,
     ignoredCard,
     ignoredPositives: ignoredCard,
+    sinFecha,
     totalRows: parsed.rows.length,
   };
 }
+
 
