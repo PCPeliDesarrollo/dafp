@@ -27,6 +27,7 @@ export function GastosBankImport() {
     expenses: BankExpense[];
     incomes: BankIncome[];
     ignoredCard: number;
+    sinFecha: number;
   } | null>(null);
 
   const onFile = async (file: File) => {
@@ -42,7 +43,13 @@ export function GastosBankImport() {
           expenses: res.expenses,
           incomes: res.incomes,
           ignoredCard: res.ignoredCard,
+          sinFecha: res.sinFecha,
         });
+        if (res.sinFecha) {
+          toast.warning(
+            `${res.sinFecha} apuntes sin fecha legible: no se importan (nunca se colocan en el mes actual)`,
+          );
+        }
       }
     } catch (err: any) {
       toast.error(err?.message ?? "No se pudo leer el archivo");
@@ -167,6 +174,7 @@ export function GastosBankImport() {
               <span className="text-muted-foreground">
                 {preview.expenses.length} cargos · {preview.incomes.length} ingresos ·{" "}
                 {preview.ignoredCard} cobros con tarjeta ignorados
+                {preview.sinFecha ? ` · ${preview.sinFecha} sin fecha` : ""}
               </span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
