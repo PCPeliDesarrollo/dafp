@@ -28,6 +28,7 @@ export function GastosBankImport() {
     incomes: BankIncome[];
     ignoredCard: number;
     sinFecha: number;
+    ignoredNota: number;
   } | null>(null);
 
   const onFile = async (file: File) => {
@@ -44,6 +45,7 @@ export function GastosBankImport() {
           incomes: res.incomes,
           ignoredCard: res.ignoredCard,
           sinFecha: res.sinFecha,
+          ignoredNota: res.ignoredNota ?? 0,
         });
         if (res.sinFecha) {
           toast.warning(
@@ -175,6 +177,9 @@ export function GastosBankImport() {
                 {preview.expenses.length} cargos · {preview.incomes.length} ingresos ·{" "}
                 {preview.ignoredCard} cobros con tarjeta ignorados
                 {preview.sinFecha ? ` · ${preview.sinFecha} sin fecha` : ""}
+                {preview.ignoredNota
+                  ? ` · ${preview.ignoredNota} marcados "no restar"`
+                  : ""}
               </span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">

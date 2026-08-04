@@ -15,6 +15,8 @@ export type BankImportResult = {
   /** Abonos ignorados por ser cobros con tarjeta/TPV (ya contabilizados). */
   ignoredCard: number;
   ignoredPositives: number;
+  /** Apuntes ignorados por nota manual ("NO RESTAR", "no contar"…). */
+  ignoredNota?: number;
   /** Apuntes descartados por no poder leer su fecha (nunca se inventa). */
   sinFecha: number;
   totalRows: number;
@@ -128,16 +130,38 @@ function detectConceptColumn(headers: string[], amountIdx: number, dateIdx: numb
   return -1;
 }
 
+/** Notas manuales que indican que el apunte NO debe contabilizarse. */
+const SKIP_HINTS = ["no restar", "no contar", "no sumar", "ignorar"];
+
+function normTxt(s: string) {
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export function parseBankCsv(text: string, fileName: string): BankImportResult {
   const parsed = parseCSV(text);
   const amountIdx = detectAmountColumn(parsed.headers, parsed.rows);
   const dateIdx = detectDateColumn(parsed.headers, parsed.rows);
   const conceptIdx = detectConceptColumn(parsed.headers, amountIdx, dateIdx);
+  // Columnas de texto extra (beneficiario, observaciones, notas manuales sin
+  // encabezado…). Enriquecen el concepto y hacen la referencia única.
+  const balanceIdx = parsed.headers.findIndex((h) =>
+    normTxt(h).includes("saldo"),
+  );
+  const extraIdx = parsed.headers
+    .map((_, c) => c)
+    .filter(
+      (c) =>
+        c !== amountIdx && c !== dateIdx && c !== conceptIdx && c !== balanceIdx,
+    );
 
   const expenses: BankExpense[] = [];
   const incomes: BankIncome[] = [];
   let ignoredCard = 0;
   let sinFecha = 0;
+  let ignoredNota = 0;
 
   parsed.rows.forEach((r) => {
     if (amountIdx < 0) return;
@@ -145,6 +169,17 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     if (!raw) return;
     const n = parseNumber(raw);
     if (!Number.isFinite(n) || n === 0) return;
+
+    const extras = extraIdx
+      .map((c) => (r[c] ?? "").trim())
+      .filter((v) => v && !/^\d+([.,]\d+)?$/.test(v));
+
+    // Notas manuales tipo "NO RESTAR": el apunte se ignora por completo.
+    if (extras.some((v) => SKIP_HINTS.some((h) => normTxt(v).includes(h)))) {
+      ignoredNota++;
+      return;
+    }
+
     // La fecha del banco es sagrada: si no se puede leer, NO se inventa
     // (antes se usaba la fecha de hoy y los apuntes caían en el mes actual).
     const fecha = dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null;
@@ -152,11 +187,16 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
       sinFecha++;
       return;
     }
+    const base = (conceptIdx >= 0 ? (r[conceptIdx] ?? "").trim() : "") || "";
     const concepto =
-      (conceptIdx >= 0 ? (r[conceptIdx] ?? "").trim() : "") || "Movimiento bancario";
+      [base, ...extras]
+        .filter(Boolean)
+        .join(" · ")
+        .replace(/\s{2,}/g, " ")
+        .slice(0, 160) || "Movimiento bancario";
     // Referencia estable (sin nombre de archivo ni nº de fila) para que
     // reimportar el mismo extracto no duplique nada.
-    const referencia = `${fecha}|${n.toFixed(2)}|${concepto.slice(0, 40)}`
+    const referencia = `${fecha}|${n.toFixed(2)}|${concepto.slice(0, 60)}`
       .toLowerCase()
       .replace(/[^a-z0-9|\-.]/g, "_");
     const item = { fecha, monto: Math.abs(n), concepto, referencia };
@@ -174,9 +214,11 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     incomes,
     ignoredCard,
     ignoredPositives: ignoredCard,
+    ignoredNota,
     sinFecha,
     totalRows: parsed.rows.length,
   };
 }
+
 
 
