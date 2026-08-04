@@ -48,6 +48,7 @@ async function parseXlsx(file: File, fileName: string): Promise<BankImportResult
   const mergedIncomes: BankIncome[] = [];
   let ignoredCard = 0;
   let totalRows = 0;
+  let sinFecha = 0;
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
     const rows: any[][] = XLSX.utils.sheet_to_json(ws, {
@@ -65,6 +66,7 @@ async function parseXlsx(file: File, fileName: string): Promise<BankImportResult
     merged.push(...res.expenses);
     mergedIncomes.push(...res.incomes);
     ignoredCard += res.ignoredCard;
+    sinFecha += res.sinFecha;
     totalRows += res.totalRows;
   }
   return {
@@ -72,6 +74,7 @@ async function parseXlsx(file: File, fileName: string): Promise<BankImportResult
     incomes: mergedIncomes,
     ignoredCard,
     ignoredPositives: ignoredCard,
+    sinFecha,
     totalRows,
   };
 }
@@ -114,7 +117,7 @@ async function parsePdf(file: File, fileName: string): Promise<BankImportResult>
     else if (isCardIncome(concepto)) ignoredCard++;
     else incomes.push(item);
   });
-  return { expenses, incomes, ignoredCard, ignoredPositives: ignoredCard, totalRows };
+  return { expenses, incomes, ignoredCard, ignoredPositives: ignoredCard, sinFecha: 0, totalRows };
 }
 
 
