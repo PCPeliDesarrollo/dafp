@@ -98,10 +98,23 @@ export function GastosListDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por concepto, origen, fecha o importe…"
+            className="h-9 pl-9 text-sm"
+          />
+        </div>
+
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No hay movimientos en este rango.
+            {query.trim()
+              ? "Ningún gasto coincide con la búsqueda."
+              : "No hay movimientos en este rango."}
           </p>
+
         ) : (
           <div className="max-h-[60vh] overflow-auto rounded-lg border border-border/60">
             <table className="w-full text-sm">
