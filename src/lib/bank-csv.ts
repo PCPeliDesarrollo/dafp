@@ -15,7 +15,11 @@ export type BankImportResult = {
   /** Abonos ignorados por ser cobros con tarjeta/TPV (ya contabilizados). */
   ignoredCard: number;
   ignoredPositives: number;
+  /** Apuntes descartados por no poder leer su fecha (nunca se inventa). */
+  sinFecha: number;
   totalRows: number;
+
+
 };
 
 /** Abonos que NO se importan: cobros con tarjeta / TPV ya registrados a mano. */
@@ -68,13 +72,31 @@ function detectAmountColumn(headers: string[], rows: string[][]): number {
 }
 
 function detectDateColumn(headers: string[], rows: string[][]): number {
+  const norm = (s: string) =>
+    String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const countValid = (c: number) =>
+    rows.reduce((acc, r) => acc + (parseDate(r[c] ?? "") ? 1 : 0), 0);
+
+  // 1) Preferimos la columna cuyo encabezado habla de fecha (fecha operación,
+  //    fecha valor, f. contable…), siempre que contenga fechas reales.
+  const headerCandidates = headers
+    .map((h, c) => ({ c, n: norm(h) }))
+    .filter(({ n }) => n.includes("fecha") || /^f\.?\s|date/.test(n))
+    // "fecha operación/contable" manda sobre "fecha valor"
+    .sort((a, b) => {
+      const score = (n: string) =>
+        n.includes("opera") || n.includes("contable") ? 2 : 1;
+      return score(b.n) - score(a.n);
+    });
+  for (const { c } of headerCandidates) {
+    if (countValid(c) > 0) return c;
+  }
+
+  // 2) Si no hay encabezado claro, la columna con más fechas válidas.
   let bestIdx = -1;
   let bestCount = 0;
   for (let c = 0; c < headers.length; c++) {
-    let ok = 0;
-    for (const r of rows) {
-      if (parseDate(r[c] ?? "")) ok++;
-    }
+    const ok = countValid(c);
     if (ok > bestCount) {
       bestCount = ok;
       bestIdx = c;
@@ -82,6 +104,7 @@ function detectDateColumn(headers: string[], rows: string[][]): number {
   }
   return bestIdx;
 }
+
 
 function detectConceptColumn(headers: string[], amountIdx: number, dateIdx: number): number {
   const norm = (s: string) =>
@@ -114,16 +137,21 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
   const expenses: BankExpense[] = [];
   const incomes: BankIncome[] = [];
   let ignoredCard = 0;
-  const today = new Date().toISOString().slice(0, 10);
+  let sinFecha = 0;
 
-  parsed.rows.forEach((r, i) => {
+  parsed.rows.forEach((r) => {
     if (amountIdx < 0) return;
     const raw = (r[amountIdx] ?? "").trim();
     if (!raw) return;
     const n = parseNumber(raw);
     if (!Number.isFinite(n) || n === 0) return;
-    const fecha =
-      (dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null) ?? today;
+    // La fecha del banco es sagrada: si no se puede leer, NO se inventa
+    // (antes se usaba la fecha de hoy y los apuntes caían en el mes actual).
+    const fecha = dateIdx >= 0 ? parseDate(r[dateIdx] ?? "") : null;
+    if (!fecha) {
+      sinFecha++;
+      return;
+    }
     const concepto =
       (conceptIdx >= 0 ? (r[conceptIdx] ?? "").trim() : "") || "Movimiento bancario";
     // Referencia estable (sin nombre de archivo ni nº de fila) para que
@@ -146,7 +174,9 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     incomes,
     ignoredCard,
     ignoredPositives: ignoredCard,
+    sinFecha,
     totalRows: parsed.rows.length,
   };
 }
+
 
