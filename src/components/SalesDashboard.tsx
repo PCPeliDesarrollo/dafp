@@ -318,7 +318,10 @@ export function SalesDashboard() {
   // Leaderboard: mes seleccionado en el selector de mes
   const leaderboard = useMemo(() => {
     if (!rows.length) return [];
-    const mensuales = rows.filter((r) => (r.fecha ?? "").slice(0, 7) === monthAnchor);
+    const mensuales = rows.filter(
+      (r) => (r.fecha ?? "").slice(0, 7) === monthAnchor && isEmpleadoReal(r.empleado),
+    );
+
     const map = new Map<string, { total: number; beneficio: number }>();
     for (const r of mensuales) {
       const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
