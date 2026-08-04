@@ -7,8 +7,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Landmark, Wallet } from "lucide-react";
+import { Trash2, Landmark, Wallet, Search } from "lucide-react";
+
 import {
   getGastosStore,
   type Gasto,
@@ -45,14 +47,23 @@ export function GastosListDialog({
   const gastosStore = getGastosStore(esGeneral ? EMPRESA_KEYS[0] : (vista as EmpresaKey));
   const puedeBorrar = true;
   const [busyId, setBusyId] = useState<string | null>(null);
-  const filtered = useMemo(
-    () =>
-      gastos
-        .filter((g) => g.categoria === categoria)
-        .sort((a, b) => (a.fecha < b.fecha ? 1 : -1)),
-    [gastos, categoria],
-  );
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return gastos
+      .filter((g) => g.categoria === categoria)
+      .filter((g) => {
+        if (!q) return true;
+        const fecha = fmtDate.format(new Date(g.fecha));
+        return [g.concepto, FUENTE_LABEL[g.fuente], fecha, String(g.monto)]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      })
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }, [gastos, categoria, query]);
   const total = filtered.reduce((a, g) => a + g.monto, 0);
+
 
   const remove = async (id: string) => {
     setBusyId(id);
@@ -87,10 +98,23 @@ export function GastosListDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por concepto, origen, fecha o importe…"
+            className="h-9 pl-9 text-sm"
+          />
+        </div>
+
         {filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No hay movimientos en este rango.
+            {query.trim()
+              ? "Ningún gasto coincide con la búsqueda."
+              : "No hay movimientos en este rango."}
           </p>
+
         ) : (
           <div className="max-h-[60vh] overflow-auto rounded-lg border border-border/60">
             <table className="w-full text-sm">

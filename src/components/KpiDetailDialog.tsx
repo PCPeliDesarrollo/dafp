@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,10 +7,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Search, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
 
 const eurP = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -54,10 +56,41 @@ export function KpiDetailDialog({
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     setRemoved(new Set());
+    setQuery("");
   }, [detail?.title]);
+
+  const visibleItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!detail) return [];
+    if (!q) return detail.items;
+    return detail.items.filter((it) => {
+      const fecha = it.fecha
+        ? new Date(it.fecha).toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : "";
+      return [it.concepto, it.detalle ?? "", fecha, String(it.importe)]
+        .join(" ")
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [detail, query]);
+
+  const visibleTotal = useMemo(
+    () =>
+      visibleItems.reduce(
+        (a, it) => a + (it.negativo ? -Math.abs(it.importe) : Math.abs(it.importe)),
+        0,
+      ),
+    [visibleItems],
+  );
+
 
 
   const handleDelete = async (it: KpiDetailItem) => {
@@ -92,14 +125,37 @@ export function KpiDetailDialog({
               </span>
             </div>
 
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar por concepto, fecha o importe…"
+                className="h-9 pl-9 text-sm"
+              />
+            </div>
+            {query.trim() && (
+              <div className="flex items-baseline justify-between rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs">
+                <span className="text-muted-foreground">
+                  {visibleItems.length} resultado{visibleItems.length === 1 ? "" : "s"}
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {eurP.format(visibleTotal)}
+                </span>
+              </div>
+            )}
+
             <div className="max-h-[55vh] w-full min-w-0 overflow-y-auto overflow-x-hidden pr-2">
-              {detail.items.length === 0 ? (
+              {visibleItems.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  No hay movimientos que compongan esta cantidad en el filtro actual.
+                  {query.trim()
+                    ? "Ningún movimiento coincide con la búsqueda."
+                    : "No hay movimientos que compongan esta cantidad en el filtro actual."}
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {detail.items.map((it) => (
+                  {visibleItems.map((it) => (
+
                     <li
                       key={it.id}
                       className={cn(
