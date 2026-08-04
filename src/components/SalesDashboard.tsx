@@ -43,6 +43,7 @@ import { SalesCalendar } from "./SalesCalendar";
 import { OcrPasteZone } from "./OcrPasteZone";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
+import { IngresoManualForm } from "./IngresoManualForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { KpiDetailDialog, type KpiDetail, type KpiDetailItem } from "./KpiDetailDialog";
