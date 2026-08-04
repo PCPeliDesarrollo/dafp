@@ -92,7 +92,7 @@ export function KpiDetailDialog({
                       </div>
                       <span
                         className={cn(
-                          "shrink-0 text-sm font-semibold tabular-nums",
+                          "shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums",
                           it.negativo ? "text-destructive" : "text-success",
                         )}
                       >
