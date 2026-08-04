@@ -15,7 +15,9 @@ export type BankImportResult = {
   /** Abonos ignorados por ser cobros con tarjeta/TPV (ya contabilizados). */
   ignoredCard: number;
   ignoredPositives: number;
-  totalRows: number;
+  /** Apuntes descartados por no poder leer su fecha (nunca se inventa). */
+  sinFecha: number;
+
 };
 
 /** Abonos que NO se importan: cobros con tarjeta / TPV ya registrados a mano. */
