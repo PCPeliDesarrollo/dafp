@@ -45,7 +45,7 @@ import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
-import { KpiDetailDialog, type KpiDetail } from "./KpiDetailDialog";
+import { KpiDetailDialog, type KpiDetail, type KpiDetailItem } from "./KpiDetailDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
