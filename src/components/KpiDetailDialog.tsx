@@ -44,7 +44,7 @@ export function KpiDetailDialog({
 }) {
   return (
     <Dialog open={!!detail} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl overflow-hidden">
         <DialogHeader>
           <DialogTitle>{detail?.title}</DialogTitle>
           <DialogDescription>{detail?.formula}</DialogDescription>
@@ -63,7 +63,7 @@ export function KpiDetailDialog({
               </span>
             </div>
 
-            <ScrollArea className="max-h-[55vh] pr-3">
+            <ScrollArea className="max-h-[55vh] w-full pr-3">
               {detail.items.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   No hay movimientos que compongan esta cantidad en el filtro actual.
@@ -73,9 +73,9 @@ export function KpiDetailDialog({
                   {detail.items.map((it) => (
                     <li
                       key={it.id}
-                      className="flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-card/40 px-3 py-2"
+                      className="flex w-full items-start justify-between gap-3 rounded-lg border border-border/50 bg-card/40 px-3 py-2"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{it.concepto}</p>
                         <p className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                           {it.fecha && (
@@ -92,7 +92,7 @@ export function KpiDetailDialog({
                       </div>
                       <span
                         className={cn(
-                          "shrink-0 text-sm font-semibold tabular-nums",
+                          "shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums",
                           it.negativo ? "text-destructive" : "text-success",
                         )}
                       >
