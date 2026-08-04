@@ -97,7 +97,10 @@ export function KpiDetailDialog({
                   {detail.items.map((it) => (
                     <li
                       key={it.id}
-                      className="flex w-full items-start justify-between gap-3 rounded-lg border border-border/50 bg-card/40 px-3 py-2"
+                      className={cn(
+                        "flex w-full items-start justify-between gap-3 rounded-lg border border-border/50 bg-card/40 px-3 py-2",
+                        removed.has(it.id) && "opacity-40 line-through",
+                      )}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{it.concepto}</p>
@@ -123,6 +126,23 @@ export function KpiDetailDialog({
                         {it.negativo ? "−" : "+"}
                         {eurP.format(Math.abs(it.importe))}
                       </span>
+                      {onDelete && it.sourceKind && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 shrink-0 p-0 text-destructive hover:bg-destructive/10"
+                          disabled={busyId === it.id || removed.has(it.id)}
+                          onClick={() => handleDelete(it)}
+                          title="Eliminar movimiento"
+                        >
+                          {busyId === it.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      )}
+
                     </li>
                   ))}
                 </ul>
