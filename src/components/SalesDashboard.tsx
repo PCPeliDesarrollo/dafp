@@ -286,14 +286,22 @@ export function SalesDashboard() {
   const ventasHoy = todayRows.length;
   const ventasAyer = yestRows.length;
 
+  // "Banco" no es un empleado: sus ingresos no se atribuyen a nadie
+  const isEmpleadoReal = (nombre: string) =>
+    (nombre ?? "").trim().toLowerCase() !== "banco";
+
   // Bar chart: ventas hoy por empleado (respeta filtro seleccionado)
   const porEmpleado = useMemo(() => {
     const map = new Map<string, number>();
-    for (const r of filtered) map.set(r.empleado, (map.get(r.empleado) ?? 0) + r.total_venta);
+    for (const r of filtered) {
+      if (!isEmpleadoReal(r.empleado)) continue;
+      map.set(r.empleado, (map.get(r.empleado) ?? 0) + r.total_venta);
+    }
     return Array.from(map.entries())
       .map(([empleado, total]) => ({ empleado, total: Math.round(total) }))
       .sort((a, b) => b.total - a.total);
   }, [filtered]);
+
 
   // Line chart: últimos 15 días
   const evolucion = useMemo(() => {
