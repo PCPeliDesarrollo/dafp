@@ -45,10 +45,27 @@ export type KpiDetail = {
 export function KpiDetailDialog({
   detail,
   onOpenChange,
+  onDelete,
 }: {
   detail: KpiDetail | null;
   onOpenChange: (open: boolean) => void;
+  /** Borra el movimiento real (venta o gasto). Si no se pasa, no se muestra la papelera. */
+  onDelete?: (item: KpiDetailItem) => Promise<void> | void;
 }) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+
+  const handleDelete = async (it: KpiDetailItem) => {
+    if (!onDelete) return;
+    setBusyId(it.id);
+    try {
+      await onDelete(it);
+      setRemoved((prev) => new Set(prev).add(it.id));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <Dialog open={!!detail} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl overflow-hidden">
