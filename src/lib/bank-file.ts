@@ -49,6 +49,7 @@ async function parseXlsx(file: File, fileName: string): Promise<BankImportResult
   let ignoredCard = 0;
   let totalRows = 0;
   let sinFecha = 0;
+  let ignoredNota = 0;
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
     const rows: any[][] = XLSX.utils.sheet_to_json(ws, {
@@ -67,6 +68,7 @@ async function parseXlsx(file: File, fileName: string): Promise<BankImportResult
     mergedIncomes.push(...res.incomes);
     ignoredCard += res.ignoredCard;
     sinFecha += res.sinFecha;
+    ignoredNota += res.ignoredNota ?? 0;
     totalRows += res.totalRows;
   }
   return {
@@ -74,6 +76,7 @@ async function parseXlsx(file: File, fileName: string): Promise<BankImportResult
     incomes: mergedIncomes,
     ignoredCard,
     ignoredPositives: ignoredCard,
+    ignoredNota,
     sinFecha,
     totalRows,
   };
