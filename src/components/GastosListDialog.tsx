@@ -15,7 +15,7 @@ import {
   type GastoCategoria,
   FUENTE_LABEL,
 } from "@/lib/gastos-store";
-import { useEmpresa, useVista } from "@/lib/empresa";
+import { useVista, EMPRESA_KEYS, type EmpresaKey } from "@/lib/empresa";
 import { toast } from "sonner";
 
 const eur = new Intl.NumberFormat("es-ES", {
