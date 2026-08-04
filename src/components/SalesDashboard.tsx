@@ -43,6 +43,7 @@ import { SalesCalendar } from "./SalesCalendar";
 import { OcrPasteZone } from "./OcrPasteZone";
 import { SectionErrorBoundary } from "./SectionErrorBoundary";
 import { GastosCashForm } from "./GastosCashForm";
+import { IngresoManualForm } from "./IngresoManualForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { KpiDetailDialog, type KpiDetail, type KpiDetailItem } from "./KpiDetailDialog";
@@ -1010,9 +1011,10 @@ export function SalesDashboard() {
           </Card>
         </section>
 
-        {/* Formularios de gastos: caja manual + importador CSV bancario */}
+        {/* Formularios: ingresos a mano + gastos de caja + importador bancario */}
         {!esGeneral && (
         <section className="mt-6 grid gap-4 md:grid-cols-2">
+          <IngresoManualForm />
           <GastosCashForm />
           <GastosBankImport />
         </section>
