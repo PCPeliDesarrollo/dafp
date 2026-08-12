@@ -84,7 +84,8 @@ const RANGOS: { key: RangoKey; label: string }[] = [
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 const eurP = new Intl.NumberFormat("es-ES", {
   style: "currency",
