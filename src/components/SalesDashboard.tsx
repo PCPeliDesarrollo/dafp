@@ -84,11 +84,16 @@ const RANGOS: { key: RangoKey; label: string }[] = [
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 const eurP = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
+  maximumFractionDigits: 2,
+});
+const num = new Intl.NumberFormat("es-ES", {
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 const pct = new Intl.NumberFormat("es-ES", {
@@ -299,7 +304,7 @@ export function SalesDashboard() {
       map.set(r.empleado, (map.get(r.empleado) ?? 0) + r.total_venta);
     }
     return Array.from(map.entries())
-      .map(([empleado, total]) => ({ empleado, total: Math.round(total) }))
+      .map(([empleado, total]) => ({ empleado, total }))
       .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
@@ -311,7 +316,7 @@ export function SalesDashboard() {
       const day = rows.filter((r) => r.fecha === d);
       return {
         fecha: new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }),
-        ventas: Math.round(sumTotal(day)),
+        ventas: sumTotal(day),
       };
     });
   }, [rows]);
@@ -549,6 +554,96 @@ export function SalesDashboard() {
       </div>
     );
   }
+
+  const leaderboardCard = (
+    <Card className="gradient-card border-border/50 shadow-elevated">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <Trophy className="h-4 w-4 text-warning" />
+          Clasificación de{" "}
+          {new Date(`${monthAnchor}-01T00:00:00`).toLocaleDateString("es-ES", {
+      month: "long",
+      year: "numeric",
+          })}
+
+          <Badge
+      variant="outline"
+      className="ml-auto border-border/60 text-muted-foreground"
+          >
+      Objetivo: {eur.format(EMPLEADO_OBJETIVO_MENSUAL)}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {leaderboard.map((emp, idx) => (
+          <div
+      key={emp.empleado}
+      className={cn(
+        "group flex items-center gap-4 rounded-xl border border-transparent p-3 transition-colors",
+        "hover:border-border/60 hover:bg-muted/40",
+      )}
+          >
+      <div className="flex w-6 items-center justify-center text-sm font-semibold text-muted-foreground">
+        {idx + 1}
+      </div>
+      <Avatar className="h-11 w-11 border border-border/60">
+        <AvatarFallback
+          className={cn(
+            "text-sm font-semibold",
+            idx === 0
+        ? "gradient-primary text-primary-foreground"
+        : idx === 1
+          ? "gradient-accent text-accent-foreground"
+          : "bg-muted text-foreground",
+          )}
+        >
+          {initials(emp.empleado)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <div className="flex items-center gap-2">
+            <p className="font-medium">{emp.empleado}</p>
+            {idx === 0 && (
+        <Badge className="gradient-primary border-0 text-[10px] uppercase tracking-wider text-primary-foreground">
+          Top vendedor
+        </Badge>
+            )}
+          </div>
+          <div className="flex items-baseline gap-4 text-sm">
+            <span className="text-right">
+        <span className="mr-1 text-xs text-muted-foreground">Ingresos</span>
+        <span className="font-semibold tabular-nums">
+          {eur.format(emp.total)}
+        </span>
+            </span>
+            <span className="text-right">
+        <span className="mr-1 text-xs text-muted-foreground">Beneficio</span>
+        <span className="font-semibold tabular-nums text-success">
+          {eur.format(emp.beneficio)}
+        </span>
+            </span>
+          </div>
+        </div>
+        <div className="mt-2 flex items-center gap-3">
+          <Progress value={emp.progreso} className="h-2 flex-1" />
+          <span className="w-12 text-right text-xs font-medium tabular-nums text-muted-foreground">
+            {emp.progreso.toFixed(0)}%
+          </span>
+        </div>
+      </div>
+          </div>
+        ))}
+        {leaderboard.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+      No hay ventas registradas en este mes. Cambia el mes en el selector de arriba
+      para ver otra clasificación.
+          </p>
+        )}
+
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -1011,6 +1106,9 @@ export function SalesDashboard() {
           </Card>
         </section>
 
+        {/* Ranking de vendedores: en móvil justo debajo de los gastos */}
+        <section className="mt-6 lg:hidden">{leaderboardCard}</section>
+
         {/* Formularios: ingresos a mano + gastos de caja + importador bancario */}
         {!esGeneral && (
         <section className="mt-6 grid gap-4 md:grid-cols-2">
@@ -1065,7 +1163,7 @@ export function SalesDashboard() {
                   />
                   <YAxis
                     tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
-                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => num.format(v)}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1111,7 +1209,7 @@ export function SalesDashboard() {
                   />
                   <YAxis
                     tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
-                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => num.format(v)}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1153,96 +1251,8 @@ export function SalesDashboard() {
           />
         </section>
 
-        {/* Leaderboard */}
-        <section className="mt-6">
-          <Card className="gradient-card border-border/50 shadow-elevated">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                <Trophy className="h-4 w-4 text-warning" />
-                Clasificación de{" "}
-                {new Date(`${monthAnchor}-01T00:00:00`).toLocaleDateString("es-ES", {
-                  month: "long",
-                  year: "numeric",
-                })}
-
-                <Badge
-                  variant="outline"
-                  className="ml-auto border-border/60 text-muted-foreground"
-                >
-                  Objetivo: {eur.format(EMPLEADO_OBJETIVO_MENSUAL)}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {leaderboard.map((emp, idx) => (
-                <div
-                  key={emp.empleado}
-                  className={cn(
-                    "group flex items-center gap-4 rounded-xl border border-transparent p-3 transition-colors",
-                    "hover:border-border/60 hover:bg-muted/40",
-                  )}
-                >
-                  <div className="flex w-6 items-center justify-center text-sm font-semibold text-muted-foreground">
-                    {idx + 1}
-                  </div>
-                  <Avatar className="h-11 w-11 border border-border/60">
-                    <AvatarFallback
-                      className={cn(
-                        "text-sm font-semibold",
-                        idx === 0
-                          ? "gradient-primary text-primary-foreground"
-                          : idx === 1
-                            ? "gradient-accent text-accent-foreground"
-                            : "bg-muted text-foreground",
-                      )}
-                    >
-                      {initials(emp.empleado)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{emp.empleado}</p>
-                        {idx === 0 && (
-                          <Badge className="gradient-primary border-0 text-[10px] uppercase tracking-wider text-primary-foreground">
-                            Top vendedor
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-baseline gap-4 text-sm">
-                        <span className="text-right">
-                          <span className="mr-1 text-xs text-muted-foreground">Ingresos</span>
-                          <span className="font-semibold tabular-nums">
-                            {eur.format(emp.total)}
-                          </span>
-                        </span>
-                        <span className="text-right">
-                          <span className="mr-1 text-xs text-muted-foreground">Beneficio</span>
-                          <span className="font-semibold tabular-nums text-success">
-                            {eur.format(emp.beneficio)}
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-3">
-                      <Progress value={emp.progreso} className="h-2 flex-1" />
-                      <span className="w-12 text-right text-xs font-medium tabular-nums text-muted-foreground">
-                        {emp.progreso.toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {leaderboard.length === 0 && (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  No hay ventas registradas en este mes. Cambia el mes en el selector de arriba
-                  para ver otra clasificación.
-                </p>
-              )}
-
-            </CardContent>
-          </Card>
-        </section>
+        {/* Leaderboard (escritorio) */}
+        <section className="mt-6 hidden lg:block">{leaderboardCard}</section>
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
           {source === "csv"
