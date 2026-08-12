@@ -613,7 +613,7 @@ export function SalesDashboard() {
         </Badge>
             )}
           </div>
-          <div className="flex items-baseline gap-4 text-sm">
+          <div className="flex w-full min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm sm:w-auto">
             <span className="text-right">
         <span className="mr-1 text-xs text-muted-foreground">Ingresos</span>
         <span className="font-semibold tabular-nums">
