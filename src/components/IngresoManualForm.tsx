@@ -37,8 +37,9 @@ export function IngresoManualForm() {
       toast.error("Introduce un importe válido");
       return;
     }
-    const pvd = coste.trim() ? Number(coste.replace(",", ".")) : null;
-    if (pvd != null && (!Number.isFinite(pvd) || pvd < 0)) {
+    // Sin coste indicado => PVD 0, así el beneficio es el importe completo.
+    const pvd = coste.trim() ? Number(coste.replace(",", ".")) : 0;
+    if (!Number.isFinite(pvd) || pvd < 0) {
       toast.error("El coste (PVD) no es válido");
       return;
     }
@@ -56,7 +57,7 @@ export function IngresoManualForm() {
         fecha,
         empleado,
         total_venta: n,
-        beneficio: pvd != null ? n - pvd : 0,
+        beneficio: n - pvd,
         metodo_pago: metodo,
         pvp: n,
         pvd,
