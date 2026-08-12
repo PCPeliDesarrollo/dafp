@@ -48,6 +48,12 @@ const eurP = new Intl.NumberFormat("es-ES", {
   maximumFractionDigits: 2,
 });
 
+// Cifra compacta para las celdas del calendario (sin símbolo, cabe en móvil).
+const eurCell = new Intl.NumberFormat("es-ES", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
 const MONTHS = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -214,7 +220,13 @@ export function SalesCalendar({
 
             <div className="mt-1 grid grid-cols-7 gap-1">
               {cells.map((d, i) => {
-                if (!d) return <div key={i} className="aspect-square" />;
+                if (!d)
+                  return (
+                    <div
+                      key={i}
+                      className="min-h-[3.25rem] sm:aspect-square sm:min-h-0"
+                    />
+                  );
                 const iso = toISO(d);
                 const dayRows = byDay.get(iso) ?? [];
                 const total = dayRows.reduce((a, r) => a + r.total_venta, 0);
@@ -230,7 +242,7 @@ export function SalesCalendar({
                     type="button"
                     onClick={() => setSelected(iso)}
                     className={cn(
-                      "group relative aspect-square rounded-lg border p-1.5 text-left transition-all",
+                      "group relative min-h-[3.25rem] overflow-hidden rounded-lg border p-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
                       "flex flex-col justify-between",
                       isSelected
                         ? "border-primary/70 bg-primary/15 shadow-glow"
@@ -260,13 +272,15 @@ export function SalesCalendar({
                       {d.getDate()}
                     </span>
                     {(has || hasGastos) && (
-                      <span className="relative z-[1] flex flex-col gap-0.5 text-[10px] font-medium tabular-nums text-foreground">
+                      <span className="relative z-[1] flex w-full min-w-0 flex-col gap-0.5 text-[9px] font-medium leading-tight tabular-nums text-foreground sm:text-[10px]">
                         {has && (
-                          <span>{eur.format(total)}</span>
+                          <span className="block w-full truncate">
+                            {eurCell.format(total)}
+                          </span>
                         )}
                         {hasGastos && (
-                          <span className="text-destructive">
-                            −{eur.format(totalGastos)}
+                          <span className="block w-full truncate text-destructive">
+                            −{eurCell.format(totalGastos)}
                           </span>
                         )}
                       </span>
