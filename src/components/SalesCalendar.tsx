@@ -242,7 +242,7 @@ export function SalesCalendar({
                     type="button"
                     onClick={() => setSelected(iso)}
                     className={cn(
-                      "group relative min-h-[3.25rem] overflow-hidden rounded-lg border p-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
+                      "group relative min-h-[3.25rem] overflow-hidden rounded-lg border px-0.5 py-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
                       "flex flex-col justify-between",
                       isSelected
                         ? "border-primary/70 bg-primary/15 shadow-glow"
@@ -272,7 +272,7 @@ export function SalesCalendar({
                       {d.getDate()}
                     </span>
                     {(has || hasGastos) && (
-                      <span className="relative z-[1] flex w-full min-w-0 flex-col gap-0.5 text-[9px] font-medium leading-tight tabular-nums text-foreground sm:text-[10px]">
+                      <span className="relative z-[1] flex w-full min-w-0 flex-col gap-0.5 text-[8px] font-medium leading-tight tabular-nums text-foreground sm:text-[10px]">
                         {has && (
                           <span className="block w-full truncate">
                             {eurCell.format(total)}
