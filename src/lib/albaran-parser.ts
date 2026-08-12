@@ -3,12 +3,13 @@
 
 export type MetodoPago = "efectivo" | "tpv" | "banco";
 
-export type StockLetter = "A" | "C" | "T";
+export type StockLetter = "A" | "C" | "T" | "S";
 
 export const STOCK_TO_EMPLEADO: Record<StockLetter, string> = {
   A: "Ainhoa",
   C: "Cristina",
   T: "Tomás",
+  S: "Otros",
 };
 
 export type ParsedAlbaran = {
@@ -240,15 +241,15 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
 
   // 8) STOCK
   let stock: StockLetter | null = null;
-  const stockM = /\bSTOCK\b[^A-Z0-9]*([ACT])\b/.exec(text);
+  const stockM = /\bS?STOCK\b[^A-Z0-9]*([ACTS])\b/.exec(text);
   if (stockM) stock = stockM[1] as StockLetter;
   else {
-    const altM = /\b([ACT])\b\s*(?:STOCK|\bSTK\b)/.exec(text);
+    const altM = /\b([ACTS])\b\s*(?:S?STOCK|\bSTK\b)/.exec(text);
     if (altM) stock = altM[1] as StockLetter;
   }
   const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
   if (!stock)
-    warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
+    warnings.push("No se detectó STOCK (A/C/T/S); asigna el empleado manualmente.");
 
   // 9) Cálculo ingreso / coste / beneficio.
   // La ENTREGA es sólo informativa: NO reduce el importe de la venta.
@@ -319,7 +320,7 @@ export function composeAlbaran(input: {
       : "banco";
 
   if (!input.stock)
-    warnings.push("No se detectó STOCK (A/C/T); asigna el empleado manualmente.");
+    warnings.push("No se detectó STOCK (A/C/T/S); asigna el empleado manualmente.");
 
   return {
     pvp,

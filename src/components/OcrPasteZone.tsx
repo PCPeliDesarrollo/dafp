@@ -165,7 +165,7 @@ export function OcrPasteZone() {
     if (!status.parsed.empleado) {
       setStatus({
         kind: "error",
-        message: "No se pudo detectar el STOCK (A/C/T) en la imagen. Sube una captura más clara.",
+        message: "No se pudo detectar el STOCK (A/C/T/S) en la imagen. Sube una captura más clara.",
       });
       return;
     }

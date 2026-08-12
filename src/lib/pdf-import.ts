@@ -133,6 +133,7 @@ export const DEFAULT_STOCK_MAP: StockMap = {
   A: "Ainhoa",
   T: "Tomás",
   C: "Cristina",
+  S: "Otros",
 };
 
 export function albaranesToVentas(
