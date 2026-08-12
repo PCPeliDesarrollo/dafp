@@ -92,6 +92,10 @@ const eurP = new Intl.NumberFormat("es-ES", {
   currency: "EUR",
   maximumFractionDigits: 2,
 });
+const num = new Intl.NumberFormat("es-ES", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const pct = new Intl.NumberFormat("es-ES", {
   style: "percent",
   maximumFractionDigits: 1,
@@ -300,7 +304,7 @@ export function SalesDashboard() {
       map.set(r.empleado, (map.get(r.empleado) ?? 0) + r.total_venta);
     }
     return Array.from(map.entries())
-      .map(([empleado, total]) => ({ empleado, total: Math.round(total) }))
+      .map(([empleado, total]) => ({ empleado, total }))
       .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
@@ -312,7 +316,7 @@ export function SalesDashboard() {
       const day = rows.filter((r) => r.fecha === d);
       return {
         fecha: new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }),
-        ventas: Math.round(sumTotal(day)),
+        ventas: sumTotal(day),
       };
     });
   }, [rows]);
@@ -1066,7 +1070,7 @@ export function SalesDashboard() {
                   />
                   <YAxis
                     tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
-                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => num.format(v)}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1112,7 +1116,7 @@ export function SalesDashboard() {
                   />
                   <YAxis
                     tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }}
-                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) => num.format(v)}
                     axisLine={false}
                     tickLine={false}
                   />

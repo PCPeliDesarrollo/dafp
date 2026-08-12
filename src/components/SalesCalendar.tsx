@@ -39,7 +39,8 @@ import type { Gasto } from "@/lib/gastos-store";
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 const eurP = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -261,11 +262,11 @@ export function SalesCalendar({
                     {(has || hasGastos) && (
                       <span className="relative z-[1] flex flex-col gap-0.5 text-[10px] font-medium tabular-nums text-foreground">
                         {has && (
-                          <span>{total >= 1000 ? `${(total / 1000).toFixed(1)}k` : eur.format(total)}</span>
+                          <span>{eur.format(total)}</span>
                         )}
                         {hasGastos && (
                           <span className="text-destructive">
-                            −{totalGastos >= 1000 ? `${(totalGastos / 1000).toFixed(1)}k` : eur.format(totalGastos)}
+                            −{eur.format(totalGastos)}
                           </span>
                         )}
                       </span>
