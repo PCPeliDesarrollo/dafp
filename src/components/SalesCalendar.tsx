@@ -242,7 +242,7 @@ export function SalesCalendar({
                     type="button"
                     onClick={() => setSelected(iso)}
                     className={cn(
-                      "group relative min-h-[3.25rem] overflow-hidden rounded-lg border px-0.5 py-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
+                      "group relative min-h-[3.25rem] overflow-hidden rounded-lg border px-0.5 pb-2 pt-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
                       "flex flex-col justify-between",
                       isSelected
                         ? "border-primary/70 bg-primary/15 shadow-glow"
@@ -254,7 +254,7 @@ export function SalesCalendar({
                     {has && (
                       <span
                         aria-hidden
-                        className="pointer-events-none absolute inset-x-1 bottom-1 h-1 rounded-full bg-primary/70"
+                        className="pointer-events-none absolute inset-x-1 bottom-0.5 h-1 rounded-full bg-primary/70"
                         style={{ opacity: 0.35 + intensity * 0.65 }}
                       />
                     )}
