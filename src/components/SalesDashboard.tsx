@@ -298,13 +298,16 @@ export function SalesDashboard() {
 
   // Bar chart: ventas hoy por empleado (respeta filtro seleccionado)
   const porEmpleado = useMemo(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { total: number; beneficio: number }>();
     for (const r of filtered) {
       if (!isEmpleadoReal(r.empleado)) continue;
-      map.set(r.empleado, (map.get(r.empleado) ?? 0) + r.total_venta);
+      const cur = map.get(r.empleado) ?? { total: 0, beneficio: 0 };
+      cur.total += r.total_venta;
+      cur.beneficio += r.beneficio ?? 0;
+      map.set(r.empleado, cur);
     }
     return Array.from(map.entries())
-      .map(([empleado, total]) => ({ empleado, total }))
+      .map(([empleado, v]) => ({ empleado, total: v.total, beneficio: v.beneficio }))
       .sort((a, b) => b.total - a.total);
   }, [filtered]);
 
@@ -1175,8 +1178,40 @@ export function SalesDashboard() {
                     radius={[8, 8, 4, 4]}
                     maxBarSize={54}
                   />
+                  <Bar
+                    dataKey="beneficio"
+                    name="Beneficio"
+                    fill="var(--color-success)"
+                    radius={[8, 8, 4, 4]}
+                    maxBarSize={54}
+                  />
                 </BarChart>
               </ResponsiveContainer>
+              <div className="mt-3 space-y-1.5">
+                {porEmpleado.map((e) => (
+                  <div
+                    key={e.empleado}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 rounded-lg border border-border/50 bg-card/60 px-3 py-2 text-xs"
+                  >
+                    <span className="truncate font-medium text-foreground">{e.empleado}</span>
+                    <span className="flex items-baseline gap-3 tabular-nums">
+                      <span>
+                        <span className="mr-1 text-muted-foreground">Vendido</span>
+                        <span className="font-semibold">{eurP.format(e.total)}</span>
+                      </span>
+                      <span>
+                        <span className="mr-1 text-muted-foreground">Beneficio</span>
+                        <span className="font-semibold text-success">{eurP.format(e.beneficio)}</span>
+                      </span>
+                    </span>
+                  </div>
+                ))}
+                {porEmpleado.length === 0 && (
+                  <p className="py-2 text-center text-xs text-muted-foreground">
+                    No hay ventas de comerciales en este rango.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
 
