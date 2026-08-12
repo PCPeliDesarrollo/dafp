@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 type Metodo = "efectivo" | "tpv" | "banco";
 
-const EMPLEADOS = ["Ainhoa", "Cristina", "Tomás"];
+const EMPLEADOS = ["Ainhoa", "Cristina", "Tomás", "Otros"];
 
 export function IngresoManualForm() {
   const ventasStore = getVentasStore(useEmpresa());

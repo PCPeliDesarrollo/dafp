@@ -1,7 +1,7 @@
 export type AlbaranVision = {
   numero: string | null;
   fecha: string | null;
-  stock: "A" | "C" | "T" | null;
+  stock: "A" | "C" | "T" | "S" | null;
   total: number | null;
   pvd_values: number[];
   tpv_values: number[];
@@ -11,12 +11,12 @@ export type AlbaranVision = {
 
 const SYSTEM = `Eres un lector experto de albaranes de venta españoles.
 Devuelve SOLO un JSON válido con esta forma exacta:
-{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
+{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|"S"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
 
 Reglas:
 - "numero": el número de albarán tal cual, por ejemplo "10#0355".
 - "fecha": copia exclusivamente la fecha impresa en el campo principal "Fecha" de la cabecera del albarán. Comprueba con cuidado día y mes; no uses fechas de líneas, comentarios ni otras referencias. No cambies el día. Si no es perfectamente legible, devuelve null.
-- "stock": la letra del cliente "STOCK A" / "STOCK C" / "STOCK T".
+- "stock": la letra del cliente "STOCK A" / "STOCK C" / "STOCK T" / "STOCK S". Si el albarán indica "SSTOCK" (o "STOCK S"), devuelve "S".
 - "total": el TOTAL (€) del pie del albarán (base imponible + impuestos). Si no aparece un TOTAL final claro, usa la suma de la columna "Total Línea".
 - "pvd_items": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste POR UNIDAD). Para cada una, "valor" es el número anotado con sus decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15) y "cantidad" es la columna "Cant" de la línea de artículo a la que pertenece esa anotación (si no la ves, usa 1). NO multipliques tú: devuelve valor y cantidad por separado.
 - "tpv_values": TODAS las anotaciones manuales "TPV" bajo las líneas (cobros con tarjeta). No incluyas números que estén dentro del texto de la descripción del artículo si ya están anotados debajo; cada anotación cuenta una sola vez.
@@ -44,7 +44,7 @@ function normalizeVisionResult(parsed: any): AlbaranVision {
         .filter((n: number) => n > 0)
     : asPositiveNumbers(parsed?.pvd_values);
 
-  const stock = ["A", "C", "T"].includes(parsed?.stock) ? parsed.stock : null;
+  const stock = ["A", "C", "T", "S"].includes(parsed?.stock) ? parsed.stock : null;
 
   return {
     numero: typeof parsed?.numero === "string" ? parsed.numero.replace(/\s+/g, "") : null,
