@@ -224,7 +224,7 @@ export function SalesCalendar({
                   return (
                     <div
                       key={i}
-                      className="min-h-[3.25rem] sm:aspect-square sm:min-h-0"
+                      className="min-h-[3.75rem] sm:aspect-square sm:min-h-0"
                     />
                   );
                 const iso = toISO(d);
@@ -242,7 +242,7 @@ export function SalesCalendar({
                     type="button"
                     onClick={() => setSelected(iso)}
                     className={cn(
-                      "group relative min-h-[3.25rem] overflow-hidden rounded-lg border px-0.5 pb-2 pt-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
+                      "group relative min-h-[3.75rem] overflow-hidden rounded-lg border px-0.5 pb-2 pt-1 text-left transition-all sm:aspect-square sm:min-h-0 sm:p-1.5",
                       "flex flex-col justify-between",
                       isSelected
                         ? "border-primary/70 bg-primary/15 shadow-glow"
