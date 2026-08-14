@@ -31,7 +31,6 @@ const CARD_HINTS = [
   "visa",
   "mastercard",
   "redsys",
-  "comercio",
   "datafono",
   "datafonos",
 ];
@@ -43,6 +42,7 @@ export function isCardIncome(concepto: string): boolean {
     .replace(/[\u0300-\u036f]/g, "");
   return CARD_HINTS.some((h) => n.includes(h));
 }
+
 
 
 /**
