@@ -143,6 +143,13 @@ function normTxt(s: string) {
 export function parseBankCsv(text: string, fileName: string): BankImportResult {
   const parsed = parseCSV(text);
   const amountIdx = detectAmountColumn(parsed.headers, parsed.rows);
+  // Algunos extractos traen dos columnas separadas (Debe / Haber, Cargo /
+  // Abono, Importe salida / Importe entrada). Si existen, manda ese par: así
+  // los ingresos no se pierden por venir en positivo en otra columna.
+  const findCol = (re: RegExp) =>
+    parsed.headers.findIndex((h) => re.test(normTxt(h)));
+  const creditIdx = findCol(/haber|abono|ingreso|entrada|credito/);
+  const debitIdx = findCol(/debe|cargo|salida|debito|gasto/);
   const dateIdx = detectDateColumn(parsed.headers, parsed.rows);
   const conceptIdx = detectConceptColumn(parsed.headers, amountIdx, dateIdx);
   // Columnas de texto extra (beneficiario, observaciones, notas manuales sin
@@ -154,7 +161,12 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
     .map((_, c) => c)
     .filter(
       (c) =>
-        c !== amountIdx && c !== dateIdx && c !== conceptIdx && c !== balanceIdx,
+        c !== amountIdx &&
+        c !== dateIdx &&
+        c !== conceptIdx &&
+        c !== balanceIdx &&
+        c !== creditIdx &&
+        c !== debitIdx,
     );
 
   const expenses: BankExpense[] = [];
@@ -163,12 +175,30 @@ export function parseBankCsv(text: string, fileName: string): BankImportResult {
   let sinFecha = 0;
   let ignoredNota = 0;
 
+  const cell = (r: string[], c: number) => {
+    if (c < 0) return NaN;
+    const raw = (r[c] ?? "").trim();
+    if (!raw) return NaN;
+    const v = parseNumber(raw);
+    return Number.isFinite(v) ? v : NaN;
+  };
+
   parsed.rows.forEach((r) => {
-    if (amountIdx < 0) return;
-    const raw = (r[amountIdx] ?? "").trim();
-    if (!raw) return;
-    const n = parseNumber(raw);
+    let n = NaN;
+    if (creditIdx >= 0 || debitIdx >= 0) {
+      const cr = cell(r, creditIdx);
+      const db = cell(r, debitIdx);
+      if (Number.isFinite(cr) && cr !== 0) n = Math.abs(cr);
+      else if (Number.isFinite(db) && db !== 0) n = -Math.abs(db);
+    }
+    if (!Number.isFinite(n) || n === 0) {
+      if (amountIdx < 0) return;
+      const raw = (r[amountIdx] ?? "").trim();
+      if (!raw) return;
+      n = parseNumber(raw);
+    }
     if (!Number.isFinite(n) || n === 0) return;
+
 
     const extras = extraIdx
       .map((c) => (r[c] ?? "").trim())
