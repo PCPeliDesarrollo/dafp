@@ -73,17 +73,17 @@ export function GastosBankImport() {
       }
       let ingresos = 0;
       if (preview.incomes.length) {
-        // Huella por contenido: si ya existe ese ingreso bancario (misma fecha
-        // e importe) no se vuelve a crear.
+        // Huella estable por referencia del apunte (fecha + importe +
+        // concepto): reimportar el extracto no duplica, pero tampoco se
+        // descartan abonos distintos que coincidan en fecha e importe.
         const existentes = new Set(
-          (ventasStore.get().rows ?? [])
-            .filter((r) => r.empleado === "Banco")
-            .map((r) => `${r.fecha}|${r.total_venta.toFixed(2)}`),
+          (ventasStore.get().rows ?? []).map((r) => r.id),
         );
         const nuevos = preview.incomes.filter(
-          (it) => !existentes.has(`${it.fecha}|${it.monto.toFixed(2)}`),
+          (it) => !existentes.has(`bank-${it.referencia}`),
         );
         omitidos += preview.incomes.length - nuevos.length;
+
         if (nuevos.length) {
           const rows: VentaRow[] = nuevos.map((it) => ({
             id: `bank-${it.referencia}`,
