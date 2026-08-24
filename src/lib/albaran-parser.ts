@@ -20,6 +20,10 @@ export type ParsedAlbaran = {
   efectivo_amount: number;
   tpv_amount: number;
   banco_amount: number;
+  /** Importe de la venta pagado con saldo a favor (CANJEO). */
+  canje_amount: number;
+  /** true si el albarán está marcado como CANJEA. */
+  es_canjeo: boolean;
   ingreso: number;
   coste: number;
   beneficio_real: number;
@@ -33,7 +37,9 @@ export type ParsedAlbaran = {
 // OCR-tolerant keywords (no cierran con \b para permitir "TPV6" o "TPV:6")
 const TPV_RE = "(?:T[\\.\\s]*P[\\.\\s]*[VUY]|1PV|IPV|LPV|TARJETA)";
 const BANCO_RE = "(?:BANC[O0]|BAN[O0]|TRANSFER(?:ENCIA)?)";
-const FINANCIAL_KEYWORD_RE = `(?:PDV|PVD|COSTE|${TPV_RE}|${BANCO_RE})`;
+// CANJEA / CANJEO / CANJE: parte pagada con saldo a favor del cliente.
+const CANJE_RE = "(?:CANJE[AO]?D?[AO]?|CAN[JI]EA)";
+const FINANCIAL_KEYWORD_RE = `(?:PDV|PVD|COSTE|${CANJE_RE}|${TPV_RE}|${BANCO_RE})`;
 
 function normalizeFinancialText(text: string): string {
   return text
@@ -163,6 +169,11 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   const tpv_amount = round2(sumAllValues(collectPreferLines(text, TPV_RE)));
   const banco_amount = round2(sumAllValues(collectPreferLines(text, BANCO_RE)));
 
+  // 3b) CANJEO: parte del TOTAL pagada con saldo a favor del cliente.
+  //     "CANJEA" sin importe => se canjea todo el TOTAL del albarán.
+  const canjeValues = collectPreferLines(text, CANJE_RE);
+  const canjeMarked = new RegExp(`(?:^|[^A-Z0-9])${CANJE_RE}(?![A-Z])`, "i").test(text);
+
   // Fallback: venta manual "PDV 2 TPV 6" sin TOTAL → sólo hay cobro por tarjeta.
   if (totalAlbaran == null && (tpv_amount > 0 || banco_amount > 0)) {
     totalAlbaran = 0; // no hay efectivo, sólo TPV/BANCO
@@ -172,8 +183,15 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
   }
 
   // 4) Efectivo = TOTAL del albarán. PVP final = efectivo + TPV + BANCO.
-  const efectivo_amount = round2(Math.max(0, totalAlbaran ?? 0));
-  const pvp = round2(efectivo_amount + tpv_amount + banco_amount);
+  //    El CANJEO no cambia la venta: sólo sustituye parte del efectivo cobrado.
+  const brutoEfectivo = round2(Math.max(0, totalAlbaran ?? 0));
+  const pvp = round2(brutoEfectivo + tpv_amount + banco_amount);
+  const canjeSum = round2(sumAllValues(canjeValues));
+  const canje_amount = canjeMarked
+    ? round2(Math.min(canjeSum > 0 ? canjeSum : brutoEfectivo, brutoEfectivo))
+    : 0;
+  const efectivo_amount = round2(Math.max(0, brutoEfectivo - canje_amount));
+  const es_canjeo = canje_amount > 0;
 
   // 4b) El OCR pierde a veces el punto decimal del coste ("PVD 3.14" → "PVD 314").
   //     Si el coste supera el PVP, se reparan esos enteros dividiendo por 100.
@@ -268,6 +286,8 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
     efectivo_amount,
     tpv_amount,
     banco_amount,
+    canje_amount,
+    es_canjeo,
     ingreso: round2(ingreso),
     coste: round2(coste),
     beneficio_real: round2(beneficio_real),
@@ -286,6 +306,8 @@ export function composeAlbaran(input: {
   pvd_values: number[];
   tpv_values: number[];
   banco_values: number[];
+  canje_values?: number[];
+  es_canjeo?: boolean;
   entrega: number | null;
   stock: StockLetter | null;
   fecha: string | null;
@@ -296,8 +318,15 @@ export function composeAlbaran(input: {
 
   const tpv_amount = round2(sumAllValues(input.tpv_values));
   const banco_amount = round2(sumAllValues(input.banco_values));
-  const efectivo_amount = round2(Math.max(0, input.total ?? 0));
-  const pvp = round2(efectivo_amount + tpv_amount + banco_amount);
+  const brutoEfectivo = round2(Math.max(0, input.total ?? 0));
+  const pvp = round2(brutoEfectivo + tpv_amount + banco_amount);
+  const canjeSum = round2(sumAllValues(input.canje_values ?? []));
+  const canjeMarked = Boolean(input.es_canjeo) || canjeSum > 0;
+  const canje_amount = canjeMarked
+    ? round2(Math.min(canjeSum > 0 ? canjeSum : brutoEfectivo, brutoEfectivo))
+    : 0;
+  const efectivo_amount = round2(Math.max(0, brutoEfectivo - canje_amount));
+  const es_canjeo = canje_amount > 0;
   const pvd = round2(sumAllValues(input.pvd_values));
 
   if (input.total == null) warnings.push("No se detectó el TOTAL del albarán.");
@@ -330,6 +359,8 @@ export function composeAlbaran(input: {
     efectivo_amount,
     tpv_amount,
     banco_amount,
+    canje_amount,
+    es_canjeo,
     ingreso: round2(ingreso),
     coste: round2(coste),
     beneficio_real: round2(beneficio_real),
@@ -355,7 +386,9 @@ export function getMetodoBreakdown(row: {
   efectivo_amount?: number | null;
   tpv_amount?: number | null;
   banco_amount?: number | null;
-}): { efectivo: number; tpv: number; banco: number } {
+  canje_amount?: number | null;
+}): { efectivo: number; tpv: number; banco: number; canje: number } {
+  const canje = Math.max(0, Number(row.canje_amount ?? 0));
   const hasBreakdown =
     row.efectivo_amount != null ||
     row.tpv_amount != null ||
@@ -365,13 +398,15 @@ export function getMetodoBreakdown(row: {
       efectivo: Number(row.efectivo_amount ?? 0),
       tpv: Number(row.tpv_amount ?? 0),
       banco: Number(row.banco_amount ?? 0),
+      canje,
     };
   }
   const mp = (row.metodo_pago ?? "efectivo") as MetodoPago;
-  const total = Number(row.total_venta ?? 0);
+  const cobrado = Math.max(0, Number(row.total_venta ?? 0) - canje);
   return {
-    efectivo: mp === "efectivo" ? total : 0,
-    tpv: mp === "tpv" ? total : 0,
-    banco: mp === "banco" ? total : 0,
+    efectivo: mp === "efectivo" ? cobrado : 0,
+    tpv: mp === "tpv" ? cobrado : 0,
+    banco: mp === "banco" ? cobrado : 0,
+    canje,
   };
 }
