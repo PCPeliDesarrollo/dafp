@@ -7,12 +7,21 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   composeAlbaran,
+  STOCK_TO_EMPLEADO,
   type ParsedAlbaran,
   type StockLetter,
 } from "@/lib/albaran-parser";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { readAlbaranImage } from "@/lib/albaran-ai.functions";
 import { getVentasStore } from "@/lib/ventas-store";
 import { useEmpresa } from "@/lib/empresa";
+
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -87,6 +96,9 @@ export function OcrPasteZone() {
   const ventasStore = getVentasStore(useEmpresa());
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
+  // Cuando la captura no muestra el STOCK, se elige a mano en el desplegable.
+  const [stockOverride, setStockOverride] = useState<StockLetter | null>(null);
+
   const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -114,6 +126,8 @@ export function OcrPasteZone() {
        // fecha, dejamos el selector sin override en vez de reutilizar por error
        // la fecha del albarán previamente procesado.
        setFechaOverride(parsed.fecha);
+      setStockOverride(parsed.stock ?? null);
+
       setStatus({
         kind: "parsed",
         parsed,
@@ -164,10 +178,13 @@ export function OcrPasteZone() {
 
   const save = async () => {
     if (status.kind !== "parsed") return;
-    if (!status.parsed.empleado) {
+    const stock = stockOverride ?? status.parsed.stock;
+    const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
+    if (!empleado) {
       setStatus({
         kind: "error",
-        message: "No se pudo detectar el STOCK (A/C/T/S) en la imagen. Sube una captura más clara.",
+        message:
+          "No se detectó el STOCK en la imagen. Elige el comercial en el desplegable antes de guardar.",
       });
       return;
     }
@@ -181,14 +198,14 @@ export function OcrPasteZone() {
       // NO se machacan entre sí, pero volver a subir el mismo sí se actualiza.
       const id = p.numero
         ? `alb-${p.numero}`
-        : `alb-${fecha}-${p.empleado}-${fingerprint(p)}`;
+        : `alb-${fecha}-${empleado}-${fingerprint(p)}`;
 
       await ventasStore.setImported(
         [
           {
             id,
             fecha,
-            empleado: p.empleado!,
+            empleado,
             total_venta: p.ingreso,
             beneficio: p.beneficio_real,
             metodo_pago: p.metodo_pago,
@@ -203,7 +220,8 @@ export function OcrPasteZone() {
         ],
         "Albarán (OCR)",
       );
-      await ventasStore.dropLegacyDuplicates(fecha, p.empleado!, id);
+      await ventasStore.dropLegacyDuplicates(fecha, empleado, id);
+
 
       setStatus({ kind: "saved", parsed: p });
     } catch (err) {
@@ -394,16 +412,27 @@ export function OcrPasteZone() {
                     {status.text || "(vacío)"}
                   </pre>
                 </details>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-md border border-border/40 bg-background/60 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Stock detectado
-                    </p>
-                    <p className="text-sm font-medium">
-                      {status.parsed.stock
-                        ? `${status.parsed.stock} · ${status.parsed.empleado}`
-                        : "— no detectado —"}
-                    </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-xs">
+                      Stock / comercial
+                      {status.parsed.stock ? " (detectado)" : " (no detectado — elígelo)"}
+                    </Label>
+                    <Select
+                      value={stockOverride ?? ""}
+                      onValueChange={(v) => setStockOverride(v as StockLetter)}
+                    >
+                      <SelectTrigger className="mt-1 h-9">
+                        <SelectValue placeholder="Selecciona el stock" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(STOCK_TO_EMPLEADO) as StockLetter[]).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {`STOCK ${s} · ${STOCK_TO_EMPLEADO[s]}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-xs">Fecha</Label>
@@ -415,6 +444,7 @@ export function OcrPasteZone() {
                     />
                   </div>
                 </div>
+
 
                 <div className="flex gap-2">
                   <Button
