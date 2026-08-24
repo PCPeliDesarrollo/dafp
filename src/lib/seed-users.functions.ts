@@ -30,5 +30,16 @@ export const seedUsers = createServerFn({ method: "POST" }).handler(async () => 
       results.push({ email: u.email, status: data.user ? "created" : "unknown" });
     }
   }
+
+  // Asegura el rol de superusuario
+  const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const su = list?.users?.find((u) => (u.email ?? "").toLowerCase() === SUPERUSER_EMAIL);
+  if (su) {
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: su.id, role: "superuser" }, { onConflict: "user_id,role" });
+  }
+
   return { results };
+
 });
