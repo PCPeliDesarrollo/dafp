@@ -22,6 +22,7 @@ import {
   Wallet,
   Landmark,
   PiggyBank,
+  Gift,
   ShoppingBag,
   Trash2,
   LogOut,
