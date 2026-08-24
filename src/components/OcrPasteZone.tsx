@@ -412,16 +412,27 @@ export function OcrPasteZone() {
                     {status.text || "(vacío)"}
                   </pre>
                 </details>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-md border border-border/40 bg-background/60 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Stock detectado
-                    </p>
-                    <p className="text-sm font-medium">
-                      {status.parsed.stock
-                        ? `${status.parsed.stock} · ${status.parsed.empleado}`
-                        : "— no detectado —"}
-                    </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-xs">
+                      Stock / comercial
+                      {status.parsed.stock ? " (detectado)" : " (no detectado — elígelo)"}
+                    </Label>
+                    <Select
+                      value={stockOverride ?? ""}
+                      onValueChange={(v) => setStockOverride(v as StockLetter)}
+                    >
+                      <SelectTrigger className="mt-1 h-9">
+                        <SelectValue placeholder="Selecciona el stock" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(STOCK_TO_EMPLEADO) as StockLetter[]).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {`STOCK ${s} · ${STOCK_TO_EMPLEADO[s]}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-xs">Fecha</Label>
@@ -433,6 +444,7 @@ export function OcrPasteZone() {
                     />
                   </div>
                 </div>
+
 
                 <div className="flex gap-2">
                   <Button
