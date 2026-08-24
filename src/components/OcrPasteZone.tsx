@@ -178,7 +178,7 @@ export function OcrPasteZone() {
 
   const save = async () => {
     if (status.kind !== "parsed") return;
-    const stock = status.parsed.stock ?? stockOverride;
+    const stock = stockOverride ?? status.parsed.stock;
     const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
     if (!empleado) {
       setStatus({
