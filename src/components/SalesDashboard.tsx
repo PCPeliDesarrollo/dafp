@@ -379,6 +379,17 @@ export function SalesDashboard() {
     () => filtered.reduce((a, r) => a + r.total_venta, 0),
     [filtered],
   );
+  // CANJEOS: parte de las ventas pagada con saldo a favor (no es dinero nuevo).
+  const canjeadoTotal = useMemo(
+    () => filtered.reduce((a, r) => a + Math.max(0, Number(r.canje_amount ?? 0)), 0),
+    [filtered],
+  );
+  const canjeRows = useMemo(
+    () => filtered.filter((r) => Math.max(0, Number(r.canje_amount ?? 0)) > 0),
+    [filtered],
+  );
+  /** Dinero realmente cobrado = ventas − canjeos. */
+  const cobrosRealesTotal = ingresosRealesTotal - canjeadoTotal;
   const beneficioRealTotal = useMemo(
     () => filtered.reduce((a, r) => a + (r.beneficio ?? 0), 0),
     [filtered],
@@ -451,7 +462,7 @@ export function SalesDashboard() {
   const gastosPersonales = filteredGastos
     .filter((g) => g.categoria === "personales")
     .reduce((a, g) => a + g.monto, 0);
-  const dineroNetoReal = ingresosRealesTotal - gastosTiendaTotal - gastosPersonales;
+  const dineroNetoReal = cobrosRealesTotal - gastosTiendaTotal - gastosPersonales;
 
   // ---- Detalle de KPIs: de dónde sale cada cantidad ----
   const rangoLabel = RANGOS.find((r) => r.key === rango)?.label ?? "";
@@ -499,8 +510,31 @@ export function SalesDashboard() {
     });
   };
 
+  const canjeItems = canjeRows
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+    .map((r) => ({
+      id: `c-${r.id}`,
+      fecha: r.fecha,
+      concepto: `${ventaConcepto(r)}${r.cliente ? ` · ${r.cliente}` : ""}`,
+      detalle: `Venta ${eurP.format(r.total_venta)} · pagado con saldo a favor`,
+      importe: Math.max(0, Number(r.canje_amount ?? 0)),
+      sourceKind: "venta" as const,
+      sourceId: String(r.id),
+    }));
+
   const dineroNetoItems = [
-    ...ventaItems(filtered),
+    ...ventaItems(filtered).map((it) => {
+      const row = filtered.find((r) => String(r.id) === it.sourceId);
+      const canje = Math.max(0, Number(row?.canje_amount ?? 0));
+      return canje > 0
+        ? {
+            ...it,
+            importe: it.importe - canje,
+            detalle: `CANJEA ${eurP.format(canje)} descontado (no es cobro nuevo)`,
+          }
+        : it;
+    }),
     ...filteredGastos
       .slice()
       .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
@@ -959,6 +993,46 @@ export function SalesDashboard() {
           })}
         </section>
 
+        {/* CANJEOS: ventas pagadas con saldo a favor del cliente */}
+        <section className="mt-4">
+          <Card
+            className="cursor-pointer border-warning/40 bg-warning/5 shadow-elevated transition-colors hover:border-warning/70"
+            onClick={() =>
+              setKpiDetail({
+                title: `Canjeos · ${rangoLabel}`,
+                formula:
+                  "Importe de las ventas pagado con saldo a favor del cliente (CANJEA). Cuenta como venta del comercial, pero NO como dinero nuevo cobrado.",
+                total: canjeadoTotal,
+                items: canjeItems,
+              })
+            }
+          >
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
+              <div>
+                <p className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <Gift className="h-3.5 w-3.5" /> Canjeos · {rangoLabel}
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-warning">
+                  {eurP.format(canjeadoTotal)}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {canjeRows.length} venta{canjeRows.length === 1 ? "" : "s"} pagada
+                  {canjeRows.length === 1 ? "" : "s"} con saldo a favor · no suma a caja
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Cobros reales
+                </p>
+                <p className="text-xl font-semibold tabular-nums text-success">
+                  {eurP.format(cobrosRealesTotal)}
+                </p>
+                <p className="text-[11px] text-muted-foreground">Ventas − canjeos</p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Resumen global de tesorería (Ingresos - Gastos = Dinero Neto Real) */}
         <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card
@@ -981,7 +1055,7 @@ export function SalesDashboard() {
                 {eurP.format(ingresosRealesTotal)}
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Suma de PVP y entregas parciales
+                Cobrado de verdad: {eurP.format(cobrosRealesTotal)} (sin canjeos)
               </p>
             </CardContent>
           </Card>
@@ -1023,7 +1097,7 @@ export function SalesDashboard() {
               setKpiDetail({
                 title: `Dinero Neto Real · ${rangoLabel}`,
                 formula:
-                  "Ingresos de albaranes (en verde) − gastos de tienda y personales (en rojo) del periodo.",
+                  "Cobros reales (ventas − canjeos, en verde) − gastos de tienda y personales (en rojo) del periodo.",
                 total: dineroNetoReal,
                 items: dineroNetoItems,
               })
@@ -1041,7 +1115,7 @@ export function SalesDashboard() {
                 {eurP.format(dineroNetoReal)}
               </p>
               <p className="mt-1 text-[11px] opacity-90">
-                Ingresos − Gastos Tienda − Gastos Personales
+                Cobros reales (sin canjeos) − Gastos Tienda − Gastos Personales
               </p>
             </CardContent>
           </Card>
