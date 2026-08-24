@@ -304,6 +304,7 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
 export function composeAlbaran(input: {
   total: number | null;
   pvd_values: number[];
+  pvp_values?: number[];
   tpv_values: number[];
   banco_values: number[];
   canje_values?: number[];
