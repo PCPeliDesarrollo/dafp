@@ -6,12 +6,14 @@ export type AlbaranVision = {
   pvd_values: number[];
   tpv_values: number[];
   banco_values: number[];
+  canje_values: number[];
+  es_canjeo: boolean;
   entrega: number | null;
 };
 
 const SYSTEM = `Eres un lector experto de albaranes de venta españoles.
 Devuelve SOLO un JSON válido con esta forma exacta:
-{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|"S"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"entrega":number|null}
+{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|"S"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"canje_values":number[],"es_canjeo":boolean,"entrega":number|null}
 
 Reglas:
 - "numero": el número de albarán tal cual, por ejemplo "10#0355".
@@ -21,6 +23,8 @@ Reglas:
 - "pvd_items": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste POR UNIDAD). Para cada una, "valor" es el número anotado con sus decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15) y "cantidad" es la columna "Cant" de la línea de artículo a la que pertenece esa anotación (si no la ves, usa 1). NO multipliques tú: devuelve valor y cantidad por separado.
 - "tpv_values": TODAS las anotaciones manuales "TPV" bajo las líneas (cobros con tarjeta). No incluyas números que estén dentro del texto de la descripción del artículo si ya están anotados debajo; cada anotación cuenta una sola vez.
 - "banco_values": anotaciones "BANCO" o transferencias.
+- "es_canjeo": true SOLO si en el albarán aparece escrito "CANJEA", "CANJEO" o "CANJE" (el cliente paga con saldo a favor que ya tenía). Si no aparece, false.
+- "canje_values": los importes anotados junto a "CANJEA"/"CANJEO" (lo pagado con saldo a favor). Si aparece "CANJEA" sin importe, devuelve lista vacía.
 - "entrega": si hay una anotación "ENTREGA", su importe; si no, null.
 No inventes valores. Si no ves algo, usa null o lista vacía.`;
 
@@ -57,6 +61,8 @@ function normalizeVisionResult(parsed: any): AlbaranVision {
     pvd_values: pvdItems,
     tpv_values: asPositiveNumbers(parsed?.tpv_values),
     banco_values: asPositiveNumbers(parsed?.banco_values),
+    canje_values: asPositiveNumbers(parsed?.canje_values),
+    es_canjeo: parsed?.es_canjeo === true,
     entrega:
       Number.isFinite(Number(parsed?.entrega)) && Number(parsed.entrega) > 0
         ? Number(parsed.entrega)

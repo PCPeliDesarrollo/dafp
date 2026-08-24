@@ -72,7 +72,7 @@ async function toCompactDataUrl(source: Blob, maxSide = 1800): Promise<string> {
  * subir la misma captura genera el mismo id y actualiza la venta.
  */
 function fingerprint(p: ParsedAlbaran): string {
-  const parts = [p.pvp, p.pvd, p.entrega ?? 0, p.tpv_amount, p.banco_amount]
+  const parts = [p.pvp, p.pvd, p.entrega ?? 0, p.tpv_amount, p.banco_amount, p.canje_amount]
     .map((n) => Math.round(Number(n ?? 0) * 100))
     .join("-");
   let h = 0;
@@ -103,6 +103,8 @@ export function OcrPasteZone() {
         pvd_values: v?.pvd_values ?? [],
         tpv_values: v?.tpv_values ?? [],
         banco_values: v?.banco_values ?? [],
+        canje_values: v?.canje_values ?? [],
+        es_canjeo: v?.es_canjeo ?? false,
         entrega: v?.entrega ?? null,
         stock: (v?.stock as StockLetter | null) ?? null,
         fecha: v?.fecha ?? null,
@@ -196,6 +198,7 @@ export function OcrPasteZone() {
             efectivo_amount: p.efectivo_amount,
             tpv_amount: p.tpv_amount,
             banco_amount: p.banco_amount,
+            canje_amount: p.canje_amount,
           },
         ],
         "Albarán (OCR)",
@@ -368,6 +371,12 @@ export function OcrPasteZone() {
                     <Field label="Efectivo" value={eur.format(status.parsed.efectivo_amount)} />
                     <Field label="TPV" value={eur.format(status.parsed.tpv_amount)} />
                     <Field label="Banco" value={eur.format(status.parsed.banco_amount)} />
+                    {status.parsed.es_canjeo && (
+                      <Field
+                        label="CANJEA (saldo a favor)"
+                        value={eur.format(status.parsed.canje_amount)}
+                      />
+                    )}
                   </div>
                 </div>
                 {status.parsed.warnings.length > 0 && (
