@@ -16,7 +16,12 @@ export type VentaRow = {
   efectivo_amount?: number | null;
   tpv_amount?: number | null;
   banco_amount?: number | null;
+  /** Parte de la venta pagada con saldo a favor del cliente (CANJEO). */
+  canje_amount?: number | null;
+  /** Cliente que usa su saldo a favor (opcional). */
+  cliente?: string | null;
 };
+
 
 const EMPLEADOS = ["Lucía Fernández", "Marcos Ruiz", "Elena García", "Javier Soto", "Nora Vidal"];
 
