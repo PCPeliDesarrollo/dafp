@@ -7,12 +7,21 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   composeAlbaran,
+  STOCK_TO_EMPLEADO,
   type ParsedAlbaran,
   type StockLetter,
 } from "@/lib/albaran-parser";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { readAlbaranImage } from "@/lib/albaran-ai.functions";
 import { getVentasStore } from "@/lib/ventas-store";
 import { useEmpresa } from "@/lib/empresa";
+
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
