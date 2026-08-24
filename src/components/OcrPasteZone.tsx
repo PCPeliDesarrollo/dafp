@@ -126,6 +126,8 @@ export function OcrPasteZone() {
        // fecha, dejamos el selector sin override en vez de reutilizar por error
        // la fecha del albarán previamente procesado.
        setFechaOverride(parsed.fecha);
+      setStockOverride(parsed.stock ?? null);
+
       setStatus({
         kind: "parsed",
         parsed,
