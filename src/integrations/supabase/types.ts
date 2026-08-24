@@ -90,6 +90,8 @@ export type Database = {
         Row: {
           banco_amount: number | null
           beneficio: number
+          canje_amount: number
+          cliente: string | null
           created_at: string
           efectivo_amount: number | null
           empleado: string
@@ -107,6 +109,8 @@ export type Database = {
         Insert: {
           banco_amount?: number | null
           beneficio?: number
+          canje_amount?: number
+          cliente?: string | null
           created_at?: string
           efectivo_amount?: number | null
           empleado: string
@@ -124,6 +128,8 @@ export type Database = {
         Update: {
           banco_amount?: number | null
           beneficio?: number
+          canje_amount?: number
+          cliente?: string | null
           created_at?: string
           efectivo_amount?: number | null
           empleado?: string
@@ -144,6 +150,8 @@ export type Database = {
         Row: {
           banco_amount: number | null
           beneficio: number
+          canje_amount: number
+          cliente: string | null
           created_at: string
           efectivo_amount: number | null
           empleado: string
@@ -161,6 +169,8 @@ export type Database = {
         Insert: {
           banco_amount?: number | null
           beneficio?: number
+          canje_amount?: number
+          cliente?: string | null
           created_at?: string
           efectivo_amount?: number | null
           empleado: string
@@ -178,6 +188,8 @@ export type Database = {
         Update: {
           banco_amount?: number | null
           beneficio?: number
+          canje_amount?: number
+          cliente?: string | null
           created_at?: string
           efectivo_amount?: number | null
           empleado?: string
