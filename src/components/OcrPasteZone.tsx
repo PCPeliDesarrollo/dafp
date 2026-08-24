@@ -178,10 +178,13 @@ export function OcrPasteZone() {
 
   const save = async () => {
     if (status.kind !== "parsed") return;
-    if (!status.parsed.empleado) {
+    const stock = status.parsed.stock ?? stockOverride;
+    const empleado = stock ? STOCK_TO_EMPLEADO[stock] : null;
+    if (!empleado) {
       setStatus({
         kind: "error",
-        message: "No se pudo detectar el STOCK (A/C/T/S) en la imagen. Sube una captura más clara.",
+        message:
+          "No se detectó el STOCK en la imagen. Elige el comercial en el desplegable antes de guardar.",
       });
       return;
     }
@@ -195,14 +198,14 @@ export function OcrPasteZone() {
       // NO se machacan entre sí, pero volver a subir el mismo sí se actualiza.
       const id = p.numero
         ? `alb-${p.numero}`
-        : `alb-${fecha}-${p.empleado}-${fingerprint(p)}`;
+        : `alb-${fecha}-${empleado}-${fingerprint(p)}`;
 
       await ventasStore.setImported(
         [
           {
             id,
             fecha,
-            empleado: p.empleado!,
+            empleado,
             total_venta: p.ingreso,
             beneficio: p.beneficio_real,
             metodo_pago: p.metodo_pago,
@@ -217,7 +220,8 @@ export function OcrPasteZone() {
         ],
         "Albarán (OCR)",
       );
-      await ventasStore.dropLegacyDuplicates(fecha, p.empleado!, id);
+      await ventasStore.dropLegacyDuplicates(fecha, empleado, id);
+
 
       setStatus({ kind: "saved", parsed: p });
     } catch (err) {
