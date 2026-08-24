@@ -4,6 +4,7 @@ export type AlbaranVision = {
   stock: "A" | "C" | "T" | "S" | null;
   total: number | null;
   pvd_values: number[];
+  pvp_values: number[];
   tpv_values: number[];
   banco_values: number[];
   canje_values: number[];
@@ -13,7 +14,7 @@ export type AlbaranVision = {
 
 const SYSTEM = `Eres un lector experto de albaranes de venta españoles.
 Devuelve SOLO un JSON válido con esta forma exacta:
-{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|"S"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"tpv_values":number[],"banco_values":number[],"canje_values":number[],"es_canjeo":boolean,"entrega":number|null}
+{"numero":string|null,"fecha":"YYYY-MM-DD"|null,"stock":"A"|"C"|"T"|"S"|null,"total":number|null,"pvd_items":[{"valor":number,"cantidad":number}],"pvp_values":number[],"tpv_values":number[],"banco_values":number[],"canje_values":number[],"es_canjeo":boolean,"entrega":number|null}
 
 Reglas:
 - "numero": el número de albarán tal cual, por ejemplo "10#0355".
@@ -21,6 +22,7 @@ Reglas:
 - "stock": la letra del cliente "STOCK A" / "STOCK C" / "STOCK T" / "STOCK S". Si el albarán indica "SSTOCK" (o "STOCK S"), devuelve "S".
 - "total": el TOTAL (€) del pie del albarán (base imponible + impuestos). Si no aparece un TOTAL final claro, usa la suma de la columna "Total Línea".
 - "pvd_items": TODAS las anotaciones manuales "PVD" o "PDV" bajo las líneas de artículo (coste POR UNIDAD). Para cada una, "valor" es el número anotado con sus decimales exactos (PVD 3.14 => 3.14, PVD 0.15 => 0.15) y "cantidad" es la columna "Cant" de la línea de artículo a la que pertenece esa anotación (si no la ves, usa 1). NO multipliques tú: devuelve valor y cantidad por separado.
+- "pvp_values": TODAS las anotaciones manuales "PVP" bajo las líneas (precio de venta anotado a mano). Devuelve el número tal cual (PVP 11.80 => 11.8).
 - "tpv_values": TODAS las anotaciones manuales "TPV" bajo las líneas (cobros con tarjeta). No incluyas números que estén dentro del texto de la descripción del artículo si ya están anotados debajo; cada anotación cuenta una sola vez.
 - "banco_values": anotaciones "BANCO" o transferencias.
 - "es_canjeo": true SOLO si en el albarán aparece escrito "CANJEA", "CANJEO" o "CANJE" (el cliente paga con saldo a favor que ya tenía). Si no aparece, false.
@@ -59,6 +61,7 @@ function normalizeVisionResult(parsed: any): AlbaranVision {
     stock,
     total: Number.isFinite(Number(parsed?.total)) ? Number(parsed.total) : null,
     pvd_values: pvdItems,
+    pvp_values: asPositiveNumbers(parsed?.pvp_values),
     tpv_values: asPositiveNumbers(parsed?.tpv_values),
     banco_values: asPositiveNumbers(parsed?.banco_values),
     canje_values: asPositiveNumbers(parsed?.canje_values),

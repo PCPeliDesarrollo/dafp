@@ -304,6 +304,7 @@ export function parseAlbaranText(rawText: string): ParsedAlbaran {
 export function composeAlbaran(input: {
   total: number | null;
   pvd_values: number[];
+  pvp_values?: number[];
   tpv_values: number[];
   banco_values: number[];
   canje_values?: number[];
@@ -319,17 +320,27 @@ export function composeAlbaran(input: {
   const tpv_amount = round2(sumAllValues(input.tpv_values));
   const banco_amount = round2(sumAllValues(input.banco_values));
   const brutoEfectivo = round2(Math.max(0, input.total ?? 0));
-  const pvp = round2(brutoEfectivo + tpv_amount + banco_amount);
   const canjeSum = round2(sumAllValues(input.canje_values ?? []));
+  // PVP anotado a mano en la captura (p.ej. "PVP 11.80"). Se usa cuando el
+  // albarán no trae TOTAL impreso (recortes / líneas a 0,00).
+  const pvpManual = round2(sumAllValues(input.pvp_values ?? []));
+  // El PVP de venta es el mayor entre el cobro detectado, el PVP anotado y el
+  // importe canjeado (un canjeo es venta aunque no haya cobro).
+  const pvp = round2(
+    Math.max(brutoEfectivo + tpv_amount + banco_amount, pvpManual, canjeSum),
+  );
   const canjeMarked = Boolean(input.es_canjeo) || canjeSum > 0;
   const canje_amount = canjeMarked
-    ? round2(Math.min(canjeSum > 0 ? canjeSum : brutoEfectivo, brutoEfectivo))
+    ? round2(Math.min(canjeSum > 0 ? canjeSum : pvp, pvp))
     : 0;
-  const efectivo_amount = round2(Math.max(0, brutoEfectivo - canje_amount));
+  const efectivo_amount = round2(
+    Math.max(0, pvp - tpv_amount - banco_amount - canje_amount),
+  );
   const es_canjeo = canje_amount > 0;
   const pvd = round2(sumAllValues(input.pvd_values));
 
-  if (input.total == null) warnings.push("No se detectó el TOTAL del albarán.");
+  if (input.total == null && pvpManual === 0 && canjeSum === 0)
+    warnings.push("No se detectó el TOTAL del albarán.");
   if (pvd === 0) warnings.push("No se detectó PVD/PDV; coste = 0.");
   if (pvd > pvp) warnings.push("El PVD detectado es mayor que el PVP; revisa la captura.");
 

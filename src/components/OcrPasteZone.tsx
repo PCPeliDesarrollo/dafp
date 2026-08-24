@@ -113,6 +113,7 @@ export function OcrPasteZone() {
       const parsed = composeAlbaran({
         total: v?.total ?? null,
         pvd_values: v?.pvd_values ?? [],
+        pvp_values: v?.pvp_values ?? [],
         tpv_values: v?.tpv_values ?? [],
         banco_values: v?.banco_values ?? [],
         canje_values: v?.canje_values ?? [],
