@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
+
 import {
   Bar,
   BarChart,
@@ -261,22 +263,32 @@ export function SalesDashboard() {
   const ventasStore = getVentasStore(esGeneral ? EMPRESA_KEYS[0] : vista);
   const gastosStore = getGastosStore(esGeneral ? EMPRESA_KEYS[0] : vista);
   const { data, isLoading, source, fileName, importedAt } = useDashboardVentas(vista);
+  const { isSuper } = useSuperuser();
+  const allowed = useMemo(() => (isSuper ? null : allowedMonths()), [isSuper]);
   const [rango, setRango] = useState<RangoKey>("mes");
   const [monthAnchor, setMonthAnchor] = useState<string>(() => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   });
 
+  useEffect(() => {
+    if (allowed && !allowed.includes(monthAnchor)) setMonthAnchor(allowed[0]);
+  }, [allowed, monthAnchor]);
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     navigate({ to: "/auth" });
   }
 
-  const rows = data ?? [];
+  const rows = useMemo(() => {
+    const all = data ?? [];
+    return allowed ? all.filter((r) => allowed.includes((r.fecha ?? "").slice(0, 7))) : all;
+  }, [data, allowed]);
   const filtered = useMemo(
     () => filterByRange(rows, rango, monthAnchor),
     [rows, rango, monthAnchor],
   );
+
 
 
   const { today, yesterday } = useMemo(() => isoDaysAgo(rows), [rows]);
@@ -403,7 +415,20 @@ export function SalesDashboard() {
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnapEmpresa = useGastos(esGeneral ? EMPRESA_KEYS[0] : vista);
   const gastosSnapGeneral = useGastosGeneral();
-  const gastosSnap = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
+  const gastosSnapRaw = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
+  const gastosSnap = useMemo(
+    () =>
+      allowed
+        ? {
+            ...gastosSnapRaw,
+            rows: gastosSnapRaw.rows.filter((g) =>
+              allowed.includes((g.fecha ?? "").slice(0, 7)),
+            ),
+          }
+        : gastosSnapRaw,
+    [gastosSnapRaw, allowed],
+  );
+
   const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
   const [kpiDetail, setKpiDetail] = useState<KpiDetail | null>(null);
 
