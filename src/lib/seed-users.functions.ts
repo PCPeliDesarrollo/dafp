@@ -1,9 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 
+const SUPERUSER_EMAIL = "angeleschavessamino0@gmail.com";
+
 const USERS = [
   { email: "gerenciapcpeli@gmail.com", password: "010101" },
   { email: "fernandezcristina87@gmail.com", password: "010101" },
+  { email: SUPERUSER_EMAIL, password: "010101" },
 ];
+
 
 export const seedUsers = createServerFn({ method: "POST" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
