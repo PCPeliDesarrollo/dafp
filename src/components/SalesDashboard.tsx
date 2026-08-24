@@ -403,7 +403,20 @@ export function SalesDashboard() {
   // ------- Gastos (respeta el mismo filtro de rango) -------
   const gastosSnapEmpresa = useGastos(esGeneral ? EMPRESA_KEYS[0] : vista);
   const gastosSnapGeneral = useGastosGeneral();
-  const gastosSnap = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
+  const gastosSnapRaw = esGeneral ? gastosSnapGeneral : gastosSnapEmpresa;
+  const gastosSnap = useMemo(
+    () =>
+      allowed
+        ? {
+            ...gastosSnapRaw,
+            rows: gastosSnapRaw.rows.filter((g) =>
+              allowed.includes((g.fecha ?? "").slice(0, 7)),
+            ),
+          }
+        : gastosSnapRaw,
+    [gastosSnapRaw, allowed],
+  );
+
   const [gastosDialog, setGastosDialog] = useState<"tienda" | "personales" | null>(null);
   const [kpiDetail, setKpiDetail] = useState<KpiDetail | null>(null);
 
