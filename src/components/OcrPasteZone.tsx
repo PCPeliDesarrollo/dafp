@@ -96,6 +96,9 @@ export function OcrPasteZone() {
   const ventasStore = getVentasStore(useEmpresa());
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
+  // Cuando la captura no muestra el STOCK, se elige a mano en el desplegable.
+  const [stockOverride, setStockOverride] = useState<StockLetter | null>(null);
+
   const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
