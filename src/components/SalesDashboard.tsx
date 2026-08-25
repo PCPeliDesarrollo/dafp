@@ -1175,32 +1175,8 @@ export function SalesDashboard() {
           </Card>
         </section>
 
-        {/* Resumen global de tesorería (Ingresos - Gastos = Dinero Neto Real) */}
-        <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card
-            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
-            onClick={() =>
-              setKpiDetail({
-                title: `Total Ingresos Reales · ${rangoLabel}`,
-                formula:
-                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
-                total: ingresosRealesTotal,
-                items: ventaItems(filtered),
-              })
-            }
-          >
-            <CardContent className="p-5">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Total Ingresos Reales
-              </p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-success">
-                {eurP.format(ingresosRealesTotal)}
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Cobrado de verdad: {eurP.format(cobrosRealesTotal)} (sin canjeos)
-              </p>
-            </CardContent>
-          </Card>
+        {/* Totales de gastos del periodo */}
+        <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Card
             className="cursor-pointer border-warning/40 bg-warning/5 shadow-elevated transition-colors hover:border-warning/70"
             onClick={() => setGastosDialog("tienda")}
