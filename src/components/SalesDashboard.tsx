@@ -499,9 +499,7 @@ export function SalesDashboard() {
   const gastoDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? gastosPorFuente.efectivo : mp === "banco" ? gastosPorFuente.banco : 0;
 
-  /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES). */
-  const { rows: cierresRows } = useCierres();
-  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+  /** Cierres del periodo seleccionado. */
   const cierresPeriodo = useMemo(() => {
     const [yy, mm] = monthAnchor.split("-").map(Number);
     const base = cierresRows.filter((c) => empresasVista.includes(c.empresa));
