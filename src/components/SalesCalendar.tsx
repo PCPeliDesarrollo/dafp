@@ -370,6 +370,79 @@ export function SalesCalendar({
                 </span>
               </div>
 
+              {/* Desglose del día por método de cobro */}
+              <div className="mt-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  <Euro className="h-3 w-3" /> Cómo se ha cobrado
+                </div>
+                {[
+                  {
+                    key: "efectivo",
+                    label: "Efectivo (Caja)",
+                    icon: <Wallet className="h-3 w-3" />,
+                    amount: desgloseDia.efectivo,
+                    gasto: gastosDiaEfectivo,
+                    accent: "text-emerald-400",
+                  },
+                  {
+                    key: "tpv",
+                    label: "Tarjeta (TPV)",
+                    icon: <ShoppingBag className="h-3 w-3" />,
+                    amount: desgloseDia.tpv,
+                    gasto: 0,
+                    accent: "text-sky-400",
+                  },
+                  {
+                    key: "banco",
+                    label: "Transferencia (Banco)",
+                    icon: <Landmark className="h-3 w-3" />,
+                    amount: desgloseDia.banco,
+                    gasto: gastosDiaBanco,
+                    accent: "text-violet-400",
+                  },
+                ].map((m) => (
+                  <div
+                    key={m.key}
+                    className="rounded-lg border border-border/40 bg-background/30 px-2.5 py-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className={cn("flex items-center gap-1.5 font-medium", m.accent)}>
+                        {m.icon} {m.label}
+                      </span>
+                      <span className="font-semibold tabular-nums">{eur.format(m.amount)}</span>
+                    </div>
+                    {m.gasto > 0 && (
+                      <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                        <span>− gastos {eurP.format(m.gasto)} · queda</span>
+                        <span
+                          className={cn(
+                            "font-semibold tabular-nums",
+                            m.amount - m.gasto >= 0 ? "text-primary" : "text-destructive",
+                          )}
+                        >
+                          {eur.format(m.amount - m.gasto)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {desgloseDia.canje > 0 && (
+                  <div className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-xs">
+                    <span className="font-medium text-amber-400">Canjeos (no es dinero nuevo)</span>
+                    <span className="font-semibold tabular-nums text-amber-400">
+                      {eur.format(desgloseDia.canje)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between rounded-lg border border-border/50 bg-background/40 px-2.5 py-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Suma cobrada del día
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {eur.format(desgloseDia.efectivo + desgloseDia.tpv + desgloseDia.banco)}
+                  </span>
+                </div>
+              </div>
 
 
               {/* Por comercial */}
