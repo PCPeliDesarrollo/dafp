@@ -628,6 +628,7 @@ export function SalesDashboard() {
         importe: bd[mp],
         sourceKind: "venta" as const,
         sourceId: String(r.id),
+        hasPvd: r.pvd != null,
       }));
     setKpiDetail({
       title: `${METODO_PAGO_LABEL[mp]} · ${rangoLabel}`,
