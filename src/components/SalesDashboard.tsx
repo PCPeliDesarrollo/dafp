@@ -592,6 +592,35 @@ export function SalesDashboard() {
       })),
   ];
 
+  /** Detalle de los gastos pagados con una fuente concreta (efectivo / banco) del mes. */
+  const showGastosFuenteDetalle = (mp: MetodoPago) => {
+    const fuente = mp === "efectivo" ? "efectivo" : "banco";
+    const rows = filteredGastos
+      .filter((g) => (g.fuente === "efectivo" ? "efectivo" : "banco") === fuente)
+      .slice()
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+    setKpiDetail({
+      title: `Gastos pagados en ${fuente} · ${rangoLabel}`,
+      formula:
+        mp === "tpv"
+          ? "El TPV liquida en banco, por eso aquí se listan los gastos bancarios del periodo."
+          : `Todos los gastos (tienda y personales) pagados en ${fuente} dentro del periodo seleccionado. Se restan al ingreso para obtener el dinero real.`,
+      total: rows.reduce((a, g) => a + g.monto, 0),
+      totalLabel: "Total gastos",
+      items: rows.map((g) => ({
+        id: `g-${g.id}`,
+        fecha: g.fecha,
+        concepto: g.concepto || (g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"),
+        detalle: `${g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"} · ${fuente}`,
+        importe: g.monto,
+        negativo: true,
+        sourceKind: "gasto" as const,
+        sourceId: g.id,
+      })),
+    });
+  };
+
+
   /** Borra el movimiento real (albarán o gasto) desde el detalle de un KPI. */
   const deleteKpiItem = async (item: KpiDetailItem) => {
     if (!item.sourceKind || !item.sourceId) return;
