@@ -559,7 +559,8 @@ export function SalesCalendar({
                             </AlertDialog>
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 )}
               </div>
