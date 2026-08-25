@@ -1285,6 +1285,39 @@ export function SalesDashboard() {
         </section>
         )}
 
+        {/* Cuentas cerradas de meses anteriores (BF / EF / BS / ES) */}
+        <section className="mt-6">
+          <Card className="gradient-card border-border/50 shadow-elevated">
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                  Cuentas cerradas del periodo
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-info">
+                  {eurP.format(cierresPeriodo.total)}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Efectivo {eurP.format(cierresPeriodo.efectivo)} · Banco{" "}
+                  {eurP.format(cierresPeriodo.banco)}
+                  {cierresPeriodo.rows.length > 0 &&
+                    ` · ${cierresPeriodo.rows.length} registro(s)`}
+                </p>
+                {cierresPeriodo.rows.length > 0 && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {cierresPeriodo.rows
+                      .map(
+                        (c) =>
+                          `${c.codigo} ${formatMesAnio(c.mes, c.anio)}: ${eurP.format(c.monto)}`,
+                      )
+                      .join(" · ")}
+                  </p>
+                )}
+              </div>
+              <CierresImportDialog />
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Zona de pegado / OCR de albaranes */}
         {!esGeneral && (
         <section className="mt-6">
