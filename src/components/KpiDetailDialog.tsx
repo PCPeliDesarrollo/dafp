@@ -199,6 +199,46 @@ export function KpiDetailDialog({
                           )}
                           {it.detalle && <span>{it.detalle}</span>}
                         </p>
+                        {onSetPvd && it.sourceKind === "venta" && !removed.has(it.id) && (
+                          pvdEditId === it.id ? (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                min="0"
+                                autoFocus
+                                value={pvdValue}
+                                onChange={(e) => setPvdValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") void handleSavePvd(it);
+                                  if (e.key === "Escape") setPvdEditId(null);
+                                }}
+                                placeholder="PVD €"
+                                className="h-7 w-24 rounded-md border border-border/60 bg-background px-2 text-xs tabular-nums outline-none focus:border-primary"
+                              />
+                              <Button
+                                size="sm"
+                                className="h-7 px-2 text-[11px]"
+                                disabled={pvdBusy}
+                                onClick={() => void handleSavePvd(it)}
+                              >
+                                {pvdBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Guardar"}
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPvdEditId(it.id);
+                                setPvdValue("");
+                              }}
+                              className="mt-1 inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20"
+                            >
+                              + PVD · calcular beneficio
+                            </button>
+                          )
+                        )}
                       </div>
                       <span
                         className={cn(
