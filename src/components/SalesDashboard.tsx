@@ -443,16 +443,27 @@ export function SalesDashboard() {
   }, [gastosSnap.rows, rows, rango, monthAnchor]);
 
 
-  // Available months from ventas + gastos + current month for the picker
+  /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES). */
+  const { rows: cierresRows } = useCierres();
+  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+
+  // Meses disponibles: ventas + gastos + cierres históricos + mes actual
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows) set.add(r.fecha.slice(0, 7));
     for (const g of gastosSnap.rows) set.add(g.fecha.slice(0, 7));
+    for (const c of cierresRows) {
+      if (!empresasVista.includes(c.empresa)) continue;
+      const ym = `${c.anio}-${String(c.mes).padStart(2, "0")}`;
+      if (allowed && !allowed.includes(ym)) continue;
+      set.add(ym);
+    }
     const now = new Date();
     set.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
     set.add(monthAnchor);
     return Array.from(set).sort().reverse();
-  }, [rows, gastosSnap.rows, monthAnchor]);
+  }, [rows, gastosSnap.rows, cierresRows, esGeneral, vista, allowed, monthAnchor]);
+
 
   const monthLabel = (ym: string) => {
     const [yy, mm] = ym.split("-").map(Number);
@@ -488,9 +499,7 @@ export function SalesDashboard() {
   const gastoDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? gastosPorFuente.efectivo : mp === "banco" ? gastosPorFuente.banco : 0;
 
-  /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES). */
-  const { rows: cierresRows } = useCierres();
-  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+  /** Cierres del periodo seleccionado. */
   const cierresPeriodo = useMemo(() => {
     const [yy, mm] = monthAnchor.split("-").map(Number);
     const base = cierresRows.filter((c) => empresasVista.includes(c.empresa));

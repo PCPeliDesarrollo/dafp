@@ -84,20 +84,25 @@ export function AnnualView() {
     [gastosRows, allowed],
   );
 
+  const { rows: cierresRows } = useCierres();
+  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+
   const years = useMemo(() => {
     const set = new Set<string>();
     for (const r of ventas) set.add((r.fecha ?? "").slice(0, 4));
     for (const g of gastos) set.add((g.fecha ?? "").slice(0, 4));
+    for (const c of cierresRows) {
+      if (empresasVista.includes(c.empresa)) set.add(String(c.anio));
+    }
     set.add(String(new Date().getFullYear()));
     set.add(year);
     return Array.from(set)
       .filter((y) => /^\d{4}$/.test(y))
       .sort()
       .reverse();
-  }, [ventas, gastos, year]);
+  }, [ventas, gastos, cierresRows, esGeneral, vista, year]);
 
-  const { rows: cierresRows } = useCierres();
-  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+
   const cierresAnio = useMemo(
     () =>
       cierresRows.filter(
