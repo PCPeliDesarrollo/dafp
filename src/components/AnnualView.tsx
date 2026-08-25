@@ -213,11 +213,12 @@ export function AnnualView() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           { t: "Ventas del año", v: tot.ventas, c: "text-foreground" },
           { t: "Beneficio real", v: tot.beneficio, c: "text-accent" },
           { t: "Gastos", v: tot.gastos, c: "text-destructive" },
+          { t: "Cuentas anteriores", v: tot.cierres, c: "text-info" },
           { t: "Dinero neto", v: tot.neto, c: tot.neto >= 0 ? "text-success" : "text-destructive" },
         ].map((k) => (
           <Card key={k.t} className="gradient-card border-border/50 shadow-elevated">
