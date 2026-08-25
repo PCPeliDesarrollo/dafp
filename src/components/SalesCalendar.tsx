@@ -142,7 +142,7 @@ export function SalesCalendar({
   const nAlb = selectedRows.length;
   const selectedGastos = gastosByDay.get(selected) ?? [];
   const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
-  const netoDia = beneficioDia - gastosDia;
+  
 
   // Desglose del día por método de cobro (efectivo / TPV / banco)
   const desgloseDia = useMemo(() => {
@@ -354,20 +354,6 @@ export function SalesCalendar({
                     −{eur.format(gastosDia)}
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-2 flex items-center justify-between rounded-lg border border-border/50 bg-background/40 px-2.5 py-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Neto real del día (beneficio − gastos)
-                </span>
-                <span
-                  className={cn(
-                    "text-sm font-semibold tabular-nums",
-                    netoDia >= 0 ? "text-primary" : "text-destructive",
-                  )}
-                >
-                  {eur.format(netoDia)}
-                </span>
               </div>
 
               {/* Desglose del día por método de cobro */}
@@ -681,7 +667,7 @@ function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gast
   const gTiendaBanco = monthGastos.filter((g) => g.categoria === "tienda" && g.fuente === "banco").reduce((a, g) => a + g.monto, 0);
   const gPersonales = monthGastos.filter((g) => g.categoria === "personales").reduce((a, g) => a + g.monto, 0);
   const gastosTotal = gTiendaCash + gTiendaBanco + gPersonales;
-  const netoMes = total - gastosTotal;
+  
 
 
 
@@ -797,14 +783,6 @@ function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gast
                   −{eurP.format(gPersonales)}
                 </div>
               </div>
-            </div>
-            <div className="mt-2 flex items-center justify-between rounded-lg border border-primary/40 bg-primary/10 px-3 py-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Dinero neto del mes
-              </span>
-              <span className={cn("text-base font-bold tabular-nums", netoMes >= 0 ? "text-success" : "text-destructive")}>
-                {eurP.format(netoMes)}
-              </span>
             </div>
           </div>
 

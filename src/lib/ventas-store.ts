@@ -223,6 +223,26 @@ function createVentasStore(empresa: EmpresaKey) {
     },
 
 
+    /** Fija el PVD (coste) de un albarán y recalcula su beneficio (PVP total − PVD). */
+    updatePvd: async (id: string, pvd: number) => {
+      const row = snapshot.rows?.find((r) => r.id === id);
+      if (!row) throw new Error("Venta no encontrada");
+      const beneficio = row.total_venta - pvd;
+      const { error } = await supabase
+        .from(table as any)
+        .update({ pvd, beneficio } as any)
+        .eq("id", id);
+      if (error) {
+        console.error(`Error actualizando PVD en ${table}:`, error);
+        throw error;
+      }
+      const rows = (snapshot.rows ?? []).map((r) =>
+        r.id === id ? { ...r, pvd, beneficio } : r,
+      );
+      snapshot = { ...snapshot, rows: rows.length ? rows : null };
+      emit();
+    },
+
     /** Elimina un albarán concreto por id. */
     remove: async (id: string) => {
       const { error } = await supabase.from(table as any).delete().eq("id", id);
