@@ -54,7 +54,7 @@ import { CierresImportDialog } from "./CierresImportDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
-import { useCierres } from "@/lib/cierres-store";
+import { useCierres, parseFuenteVendedor, VENDEDOR_NOMBRE } from "@/lib/cierres-store";
 import { formatMesAnio } from "@/lib/cierres-parser";
 import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
 import {
