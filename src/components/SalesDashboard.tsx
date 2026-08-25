@@ -23,7 +23,7 @@ import {
   RotateCcw,
   Wallet,
   Landmark,
-  PiggyBank,
+  
   Gift,
   ShoppingBag,
   Trash2,
@@ -971,7 +971,7 @@ export function SalesDashboard() {
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Card
-            className="cursor-pointer gradient-card border-border/50 shadow-elevated transition-colors hover:border-primary/50"
+            className="cursor-pointer border-success/50 bg-success/15 shadow-elevated transition-colors hover:border-success/70"
             onClick={() =>
               setKpiDetail({
                 title: `Total Ingresos Reales · ${rangoLabel}`,
@@ -986,7 +986,7 @@ export function SalesDashboard() {
               <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 Total Ingresos Reales · {RANGOS.find((r) => r.key === rango)?.label}
               </p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums">
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
                 {eurP.format(ingresosRealesTotal)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1502,6 +1502,7 @@ export function SalesDashboard() {
         detail={kpiDetail}
         onOpenChange={(v) => !v && setKpiDetail(null)}
         onDelete={deleteKpiItem}
+        onSetPvd={setVentaPvd}
       />
 
     </div>
