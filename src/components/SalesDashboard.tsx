@@ -50,9 +50,12 @@ import { IngresoManualForm } from "./IngresoManualForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { KpiDetailDialog, type KpiDetail, type KpiDetailItem } from "./KpiDetailDialog";
+import { CierresImportDialog } from "./CierresImportDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
+import { useCierres } from "@/lib/cierres-store";
+import { formatMesAnio } from "@/lib/cierres-parser";
 import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
 import {
   AlertDialog,
