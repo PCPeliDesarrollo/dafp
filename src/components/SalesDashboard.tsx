@@ -490,6 +490,22 @@ export function SalesDashboard() {
     .reduce((a, g) => a + g.monto, 0);
   const dineroNetoReal = cobrosRealesTotal - gastosTiendaTotal - gastosPersonales;
 
+  /** Gastos pagados con cada fuente (efectivo / banco), incluyendo personales. */
+  const gastosPorFuente = useMemo(() => {
+    const base = { efectivo: 0, banco: 0 };
+    for (const g of filteredGastos) {
+      if (g.fuente === "efectivo") base.efectivo += g.monto;
+      else base.banco += g.monto;
+    }
+    return base;
+  }, [filteredGastos]);
+
+  /** Gasto imputado a cada método de cobro: el TPV liquida en banco,
+   *  por eso los gastos bancarios se muestran también sobre el banco. */
+  const gastoDeMetodo = (mp: MetodoPago) =>
+    mp === "efectivo" ? gastosPorFuente.efectivo : mp === "banco" ? gastosPorFuente.banco : 0;
+
+
   // ---- Detalle de KPIs: de dónde sale cada cantidad ----
   const rangoLabel = RANGOS.find((r) => r.key === rango)?.label ?? "";
   const ventaConcepto = (r: VentaRow) => {
@@ -1015,7 +1031,38 @@ export function SalesDashboard() {
                     </div>
                   </div>
 
+                  {(() => {
+                    const gasto = gastoDeMetodo(mp);
+                    const real = d.ingreso - gasto;
+                    return (
+                      <div className="mt-3 space-y-1 border-t border-border/50 pt-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">
+                            {mp === "tpv" ? "Gastos (liquidan en banco)" : "− Gastos pagados"}
+                          </span>
+                          <span className="tabular-nums text-destructive">
+                            {gasto > 0 ? `−${eurP.format(gasto)}` : eurP.format(0)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                            Dinero real
+                          </span>
+                          <span
+                            className={cn(
+                              "text-lg font-semibold tabular-nums",
+                              real >= 0 ? "text-success" : "text-destructive",
+                            )}
+                          >
+                            {eurP.format(real)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 </CardContent>
+
               </Card>
             );
           })}
