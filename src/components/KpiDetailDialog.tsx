@@ -228,6 +228,18 @@ export function KpiDetailDialog({
                                 {pvdBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Guardar"}
                               </Button>
                             </div>
+                          ) : it.hasPvd ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPvdEditId(it.id);
+                                setPvdValue("");
+                              }}
+                              className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-500 hover:bg-blue-500/20"
+                              title="PVD añadido. Pincha para cambiarlo"
+                            >
+                              <CheckCircle2 className="h-3 w-3" /> PVD
+                            </button>
                           ) : (
                             <button
                               type="button"
