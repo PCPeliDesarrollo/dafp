@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      cierres_mensuales: {
+        Row: {
+          anio: number
+          codigo: string | null
+          created_at: string
+          empresa: string
+          fuente: string
+          id: string
+          mes: number
+          monto: number
+          notas: string | null
+          updated_at: string
+        }
+        Insert: {
+          anio: number
+          codigo?: string | null
+          created_at?: string
+          empresa: string
+          fuente: string
+          id?: string
+          mes: number
+          monto?: number
+          notas?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anio?: number
+          codigo?: string | null
+          created_at?: string
+          empresa?: string
+          fuente?: string
+          id?: string
+          mes?: number
+          monto?: number
+          notas?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gastos: {
         Row: {
           categoria: string

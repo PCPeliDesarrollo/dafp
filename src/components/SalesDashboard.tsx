@@ -50,9 +50,12 @@ import { IngresoManualForm } from "./IngresoManualForm";
 import { GastosBankImport } from "./GastosBankImport";
 import { GastosListDialog } from "./GastosListDialog";
 import { KpiDetailDialog, type KpiDetail, type KpiDetailItem } from "./KpiDetailDialog";
+import { CierresImportDialog } from "./CierresImportDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
+import { useCierres } from "@/lib/cierres-store";
+import { formatMesAnio } from "@/lib/cierres-parser";
 import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
 import {
   AlertDialog,
@@ -470,8 +473,6 @@ export function SalesDashboard() {
   const gastosPersonales = filteredGastos
     .filter((g) => g.categoria === "personales")
     .reduce((a, g) => a + g.monto, 0);
-  const dineroNetoReal = cobrosRealesTotal - gastosTiendaTotal - gastosPersonales;
-
   /** Gastos pagados con cada fuente (efectivo / banco), incluyendo personales. */
   const gastosPorFuente = useMemo(() => {
     const base = { efectivo: 0, banco: 0 };
@@ -486,6 +487,33 @@ export function SalesDashboard() {
    *  por eso los gastos bancarios se muestran también sobre el banco. */
   const gastoDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? gastosPorFuente.efectivo : mp === "banco" ? gastosPorFuente.banco : 0;
+
+  /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES). */
+  const { rows: cierresRows } = useCierres();
+  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+  const cierresPeriodo = useMemo(() => {
+    const [yy, mm] = monthAnchor.split("-").map(Number);
+    const base = cierresRows.filter((c) => empresasVista.includes(c.empresa));
+    const enPeriodo =
+      rango === "todo" ? base : base.filter((c) => c.anio === yy && c.mes === mm);
+    const visibles = allowed
+      ? enPeriodo.filter((c) =>
+          allowed.includes(`${c.anio}-${String(c.mes).padStart(2, "0")}`),
+        )
+      : enPeriodo;
+    const efectivo = visibles
+      .filter((c) => c.fuente === "efectivo")
+      .reduce((a, c) => a + c.monto, 0);
+    const banco = visibles.filter((c) => c.fuente === "banco").reduce((a, c) => a + c.monto, 0);
+    return { rows: visibles, efectivo, banco, total: efectivo + banco };
+  }, [cierresRows, esGeneral, vista, rango, monthAnchor, allowed]);
+
+  /** Importe de cierre histórico que suma a cada método de cobro. */
+  const cierreDeMetodo = (mp: MetodoPago) =>
+    mp === "efectivo" ? cierresPeriodo.efectivo : mp === "banco" ? cierresPeriodo.banco : 0;
+
+  const dineroNetoReal =
+    cobrosRealesTotal - gastosTiendaTotal - gastosPersonales + cierresPeriodo.total;
 
 
   // ---- Detalle de KPIs: de dónde sale cada cantidad ----
@@ -1003,7 +1031,8 @@ export function SalesDashboard() {
 
                   {(() => {
                     const gasto = gastoDeMetodo(mp);
-                    const real = d.ingreso - gasto;
+                    const cierre = cierreDeMetodo(mp);
+                    const real = d.ingreso - gasto + cierre;
                     return (
                       <div className="mt-3 space-y-1 border-t border-border/50 pt-2">
                         <button
@@ -1021,6 +1050,14 @@ export function SalesDashboard() {
                             {gasto > 0 ? `−${eurP.format(gasto)}` : eurP.format(0)}
                           </span>
                         </button>
+
+                        {cierre !== 0 && (
+                          <div className="flex items-center justify-between px-1 text-[11px]">
+                            <span className="text-muted-foreground">+ Cuentas anteriores</span>
+                            <span className="tabular-nums text-info">{eurP.format(cierre)}</span>
+                          </div>
+                        )}
+
 
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -1247,6 +1284,39 @@ export function SalesDashboard() {
           <GastosBankImport />
         </section>
         )}
+
+        {/* Cuentas cerradas de meses anteriores (BF / EF / BS / ES) */}
+        <section className="mt-6">
+          <Card className="gradient-card border-border/50 shadow-elevated">
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                  Cuentas cerradas del periodo
+                </p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums text-info">
+                  {eurP.format(cierresPeriodo.total)}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Efectivo {eurP.format(cierresPeriodo.efectivo)} · Banco{" "}
+                  {eurP.format(cierresPeriodo.banco)}
+                  {cierresPeriodo.rows.length > 0 &&
+                    ` · ${cierresPeriodo.rows.length} registro(s)`}
+                </p>
+                {cierresPeriodo.rows.length > 0 && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {cierresPeriodo.rows
+                      .map(
+                        (c) =>
+                          `${c.codigo} ${formatMesAnio(c.mes, c.anio)}: ${eurP.format(c.monto)}`,
+                      )
+                      .join(" · ")}
+                  </p>
+                )}
+              </div>
+              <CierresImportDialog />
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Zona de pegado / OCR de albaranes */}
         {!esGeneral && (

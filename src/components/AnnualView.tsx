@@ -20,9 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CsvImportDialog } from "@/components/CsvImportDialog";
+import { CierresImportDialog } from "@/components/CierresImportDialog";
 import { EmpresaProvider, EMPRESAS, EMPRESA_KEYS, type VistaKey } from "@/lib/empresa";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useGastos, useGastosGeneral } from "@/lib/gastos-store";
+import { useCierres } from "@/lib/cierres-store";
 import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
 import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -94,15 +96,31 @@ export function AnnualView() {
       .reverse();
   }, [ventas, gastos, year]);
 
+  const { rows: cierresRows } = useCierres();
+  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+  const cierresAnio = useMemo(
+    () =>
+      cierresRows.filter(
+        (c) => String(c.anio) === year && empresasVista.includes(c.empresa),
+      ),
+    [cierresRows, year, esGeneral, vista],
+  );
+
   const meses = useMemo(() => {
     return MESES.map((label, i) => {
       const ym = `${year}-${String(i + 1).padStart(2, "0")}`;
       const vs = ventas.filter((r) => (r.fecha ?? "").startsWith(ym));
       const gs = gastos.filter((g) => (g.fecha ?? "").startsWith(ym));
+      const cs = cierresAnio.filter((c) => c.mes === i + 1);
       const ventasTotal = vs.reduce((a, r) => a + (r.total_venta ?? 0), 0);
       const beneficio = vs.reduce((a, r) => a + (r.beneficio ?? 0), 0);
       const canjeado = vs.reduce((a, r) => a + Math.max(0, Number(r.canje_amount ?? 0)), 0);
       const gastosTotal = gs.reduce((a, g) => a + (g.monto ?? 0), 0);
+      const cierreEfectivo = cs
+        .filter((c) => c.fuente === "efectivo")
+        .reduce((a, c) => a + c.monto, 0);
+      const cierreBanco = cs.filter((c) => c.fuente === "banco").reduce((a, c) => a + c.monto, 0);
+      const cierres = cierreEfectivo + cierreBanco;
       return {
         mes: label.slice(0, 3),
         label,
@@ -111,11 +129,14 @@ export function AnnualView() {
         beneficio,
         canjeado,
         gastos: gastosTotal,
-        neto: ventasTotal - canjeado - gastosTotal,
+        cierreEfectivo,
+        cierreBanco,
+        cierres,
+        neto: ventasTotal - canjeado - gastosTotal + cierres,
         albaranes: vs.length,
       };
     });
-  }, [ventas, gastos, year]);
+  }, [ventas, gastos, cierresAnio, year]);
 
   const tot = useMemo(
     () =>
@@ -125,13 +146,15 @@ export function AnnualView() {
           beneficio: a.beneficio + m.beneficio,
           canjeado: a.canjeado + m.canjeado,
           gastos: a.gastos + m.gastos,
+          cierres: a.cierres + m.cierres,
           neto: a.neto + m.neto,
           albaranes: a.albaranes + m.albaranes,
         }),
-        { ventas: 0, beneficio: 0, canjeado: 0, gastos: 0, neto: 0, albaranes: 0 },
+        { ventas: 0, beneficio: 0, canjeado: 0, gastos: 0, cierres: 0, neto: 0, albaranes: 0 },
       ),
     [meses],
   );
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -179,6 +202,7 @@ export function AnnualView() {
               />
             </EmpresaProvider>
           )}
+          <CierresImportDialog />
         </div>
       </div>
 
@@ -189,11 +213,12 @@ export function AnnualView() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           { t: "Ventas del año", v: tot.ventas, c: "text-foreground" },
           { t: "Beneficio real", v: tot.beneficio, c: "text-accent" },
           { t: "Gastos", v: tot.gastos, c: "text-destructive" },
+          { t: "Cuentas anteriores", v: tot.cierres, c: "text-info" },
           { t: "Dinero neto", v: tot.neto, c: tot.neto >= 0 ? "text-success" : "text-destructive" },
         ].map((k) => (
           <Card key={k.t} className="gradient-card border-border/50 shadow-elevated">
@@ -258,6 +283,7 @@ export function AnnualView() {
                 <th className="px-4 py-2 text-right font-medium">Beneficio</th>
                 <th className="px-4 py-2 text-right font-medium">Canjeos</th>
                 <th className="px-4 py-2 text-right font-medium">Gastos</th>
+                <th className="px-4 py-2 text-right font-medium">Cuentas ant.</th>
                 <th className="px-4 py-2 text-right font-medium">Neto</th>
               </tr>
             </thead>
@@ -274,6 +300,9 @@ export function AnnualView() {
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums text-destructive">
                     {eur.format(m.gastos)}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums text-info">
+                    {m.cierres !== 0 ? eur.format(m.cierres) : "—"}
                   </td>
                   <td
                     className={cn(
@@ -297,6 +326,9 @@ export function AnnualView() {
                 <td className="px-4 py-2 text-right tabular-nums text-destructive">
                   {eur.format(tot.gastos)}
                 </td>
+                <td className="px-4 py-2 text-right tabular-nums text-info">
+                  {eur.format(tot.cierres)}
+                </td>
                 <td
                   className={cn(
                     "px-4 py-2 text-right tabular-nums",
@@ -306,6 +338,7 @@ export function AnnualView() {
                   {eur.format(tot.neto)}
                 </td>
               </tr>
+
             </tbody>
           </table>
         </CardContent>
