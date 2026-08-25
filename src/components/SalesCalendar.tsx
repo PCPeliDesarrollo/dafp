@@ -144,6 +144,27 @@ export function SalesCalendar({
   const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
   const netoDia = beneficioDia - gastosDia;
 
+  // Desglose del día por método de cobro (efectivo / TPV / banco)
+  const desgloseDia = useMemo(() => {
+    const acc = { efectivo: 0, tpv: 0, banco: 0, canje: 0 };
+    for (const r of selectedRows) {
+      const bd = getMetodoBreakdown(r);
+      acc.efectivo += bd.efectivo;
+      acc.tpv += bd.tpv;
+      acc.banco += bd.banco;
+      acc.canje += (r as any).canje_amount ?? 0;
+    }
+    return acc;
+  }, [selectedRows]);
+
+  const gastosDiaEfectivo = selectedGastos
+    .filter((g) => g.fuente === "efectivo")
+    .reduce((a, g) => a + g.monto, 0);
+  const gastosDiaBanco = selectedGastos
+    .filter((g) => g.fuente === "banco")
+    .reduce((a, g) => a + g.monto, 0);
+
+
 
   const porComercial = useMemo(() => {
     const m = new Map<string, { total: number; beneficio: number; n: number }>();
