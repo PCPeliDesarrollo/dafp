@@ -929,7 +929,8 @@ export function SalesDashboard() {
             </CardContent>
           </Card>
           <Card
-            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
+            className="relative cursor-pointer overflow-hidden gradient-accent border-accent/60 shadow-glow transition-opacity hover:opacity-90"
+
             onClick={() =>
               setKpiDetail({
                 title: `Beneficio Real · ${rangoLabel}`,
@@ -952,17 +953,18 @@ export function SalesDashboard() {
             }
           >
             <CardContent className="p-6">
-              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-widest text-accent-foreground/80">
                 Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
               </p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-accent-foreground">
                 {eurP.format(beneficioRealTotal)}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-accent-foreground/75">
                 Calculado desde PVP − PVD de los albaranes ({albaranesConBeneficio} con datos)
               </p>
             </CardContent>
           </Card>
+
         </section>
 
 
