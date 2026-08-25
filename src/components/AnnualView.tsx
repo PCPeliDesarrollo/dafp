@@ -24,7 +24,7 @@ import { CierresImportDialog } from "@/components/CierresImportDialog";
 import { EmpresaProvider, EMPRESAS, EMPRESA_KEYS, type VistaKey } from "@/lib/empresa";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useGastos, useGastosGeneral } from "@/lib/gastos-store";
-import { useCierres } from "@/lib/cierres-store";
+import { useCierres, parseFuenteVendedor } from "@/lib/cierres-store";
 import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
 import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
