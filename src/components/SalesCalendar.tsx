@@ -142,7 +142,7 @@ export function SalesCalendar({
   const nAlb = selectedRows.length;
   const selectedGastos = gastosByDay.get(selected) ?? [];
   const gastosDia = selectedGastos.reduce((a, g) => a + g.monto, 0);
-  const netoDia = beneficioDia - gastosDia;
+  
 
   // Desglose del día por método de cobro (efectivo / TPV / banco)
   const desgloseDia = useMemo(() => {
@@ -667,7 +667,7 @@ function MonthlySummary({ rows, gastos = [] }: { rows: VentaRow[]; gastos?: Gast
   const gTiendaBanco = monthGastos.filter((g) => g.categoria === "tienda" && g.fuente === "banco").reduce((a, g) => a + g.monto, 0);
   const gPersonales = monthGastos.filter((g) => g.categoria === "personales").reduce((a, g) => a + g.monto, 0);
   const gastosTotal = gTiendaCash + gTiendaBanco + gPersonales;
-  const netoMes = total - gastosTotal;
+  
 
 
 
