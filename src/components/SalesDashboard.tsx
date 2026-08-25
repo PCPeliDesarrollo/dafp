@@ -1065,14 +1065,22 @@ export function SalesDashboard() {
                     const real = d.ingreso - gasto;
                     return (
                       <div className="mt-3 space-y-1 border-t border-border/50 pt-2">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-muted-foreground">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showGastosFuenteDetalle(mp);
+                          }}
+                          className="flex w-full items-center justify-between rounded px-1 py-0.5 text-[11px] transition-colors hover:bg-muted/50"
+                        >
+                          <span className="text-muted-foreground underline decoration-dotted underline-offset-2">
                             {mp === "tpv" ? "Gastos (liquidan en banco)" : "− Gastos pagados"}
                           </span>
                           <span className="tabular-nums text-destructive">
                             {gasto > 0 ? `−${eurP.format(gasto)}` : eurP.format(0)}
                           </span>
-                        </div>
+                        </button>
+
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
                             Dinero real
