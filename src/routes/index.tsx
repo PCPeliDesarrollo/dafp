@@ -1,24 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SalesDashboard } from "@/components/SalesDashboard";
+import { AnnualView } from "@/components/AnnualView";
 import { AuthGate } from "@/components/AuthGate";
 import { EmpresaProvider, EMPRESAS, type VistaKey } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const TABS: { key: VistaKey; label: string }[] = [
+type TabKey = VistaKey | "anual";
+
+const TABS: { key: TabKey; label: string }[] = [
   { key: "fjv", label: EMPRESAS.fjv.label },
   { key: "pcp", label: EMPRESAS.pcp.label },
   { key: "general", label: "General" },
+  { key: "anual", label: "Año completo" },
 ];
 
 function DashboardTabs() {
-  const [vista, setVista] = useState<VistaKey>("fjv");
+  const [vista, setVista] = useState<TabKey>("fjv");
 
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
-        <div className="inline-flex rounded-xl border border-border/60 bg-card/60 p-1 backdrop-blur">
+        <div className="inline-flex flex-wrap rounded-xl border border-border/60 bg-card/60 p-1 backdrop-blur">
           {TABS.map((t) => (
             <Button
               key={t.key}
@@ -37,12 +41,17 @@ function DashboardTabs() {
           ))}
         </div>
       </div>
-      <EmpresaProvider key={vista} value={vista}>
-        <SalesDashboard />
-      </EmpresaProvider>
+      {vista === "anual" ? (
+        <AnnualView />
+      ) : (
+        <EmpresaProvider key={vista} value={vista}>
+          <SalesDashboard />
+        </EmpresaProvider>
+      )}
     </div>
   );
 }
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
