@@ -26,15 +26,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cierresStore, useCierres, type CierreInput } from "@/lib/cierres-store";
+import {
+  cierresStore,
+  cierreFuenteLabel,
+  useCierres,
+  type CierreFuente,
+  type CierreInput,
+} from "@/lib/cierres-store";
 import {
   CIERRE_CODIGOS,
   MESES_ES,
+  VENDEDOR_LETRA,
   formatMesAnio,
   parseCierresText,
 } from "@/lib/cierres-parser";
 import { readCierresImage } from "@/lib/cierres-ai.functions";
-import { EMPRESAS } from "@/lib/empresa";
+import { EMPRESAS, EMPRESA_KEYS, type EmpresaKey } from "@/lib/empresa";
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -81,6 +88,8 @@ export function CierresImportDialog() {
   const [open, setOpen] = useState(false);
   const [mes, setMes] = useState(now.getMonth() + 1);
   const [anio, setAnio] = useState(now.getFullYear());
+  /** Empresa a la que pertenecen los códigos de vendedor (VA/VT/VC/VS) de la foto. */
+  const [empresaVend, setEmpresaVend] = useState<EmpresaKey>("fjv");
   const [text, setText] = useState("");
   const [pending, setPending] = useState<CierreInput[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -100,12 +109,12 @@ export function CierresImportDialog() {
 
   const analizar = useCallback(
     (raw: string) => {
-      const res = parseCierresText(raw, { mes, anio });
+      const res = parseCierresText(raw, { mes, anio, empresaVendedores: empresaVend });
       setPending(res.entries);
       setWarnings(res.warnings);
       setMessage(null);
     },
-    [mes, anio],
+    [mes, anio, empresaVend],
   );
 
   const leerImagen = useCallback(
@@ -118,22 +127,33 @@ export function CierresImportDialog() {
         const entries: CierreInput[] = [];
         const map = new Map<string, CierreInput>();
         for (const e of v.entries) {
-          const info = CIERRE_CODIGOS[e.codigo]!;
           const m = e.mes ?? mes;
           const y = e.anio ?? anio;
-          map.set(`${info.empresa}-${y}-${m}-${info.fuente}`, {
-            empresa: info.empresa,
+          const esVend = e.codigo.startsWith("V");
+          const empresa: EmpresaKey = esVend ? empresaVend : CIERRE_CODIGOS[e.codigo]!.empresa;
+          const letra = esVend ? VENDEDOR_LETRA[e.codigo.slice(1)] : undefined;
+          if (esVend && !letra) continue;
+          const tipo = e.tipo === "neto" ? "neto" : "bruto";
+          const fuente: CierreFuente = esVend
+            ? (`${tipo}:${letra}` as CierreFuente)
+            : CIERRE_CODIGOS[e.codigo]!.fuente;
+          map.set(`${empresa}-${y}-${m}-${fuente}`, {
+            empresa,
             anio: y,
             mes: m,
-            fuente: info.fuente,
-            codigo: e.codigo,
+            fuente,
+            codigo: esVend ? `${e.codigo} (${tipo})` : e.codigo,
             monto: e.monto,
             notas: null,
           });
         }
         entries.push(...map.values());
         setPending(entries);
-        setWarnings(entries.length ? [] : ["La captura no contenía códigos BF, EF, BS ni ES."]);
+        setWarnings(
+          entries.length
+            ? []
+            : ["La captura no contenía códigos BF, EF, BS, ES ni VA/VT/VC/VS."],
+        );
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "Error leyendo la captura");
       } finally {
@@ -188,7 +208,8 @@ export function CierresImportDialog() {
           <DialogTitle>Cierres de meses y años anteriores</DialogTitle>
           <DialogDescription>
             Importes finales ya cerrados. BF = Banco FJV, EF = Efectivo FJV, BS = Banco PCP,
-            ES = Efectivo PCP. Sube un CSV, pega el texto o pega una captura.
+            ES = Efectivo PCP. Vendedores: VA = Ainhoa, VT = Tomás, VC = Cristina, VS/VO = Otros
+            («bruto» = ventas, «neto» = beneficio). Sube un CSV, pega el texto o pega una captura.
           </DialogDescription>
         </DialogHeader>
 
@@ -218,8 +239,28 @@ export function CierresImportDialog() {
               />
             </div>
           </div>
+          <div className="grid gap-1.5">
+            <Label>Empresa de los vendedores (VA / VT / VC / VS)</Label>
+            <Select
+              value={empresaVend}
+              onValueChange={(v) => setEmpresaVend(v as EmpresaKey)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {EMPRESA_KEYS.map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {EMPRESAS[k].label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Si el archivo o la captura indica el mes/año, se usa ese; si no, se usan estos.
+            Si el archivo o la captura indica el mes/año, se usa ese; si no, se usan estos. Los
+            códigos BF/EF/BS/ES ya llevan su empresa; los de vendedor usan la empresa elegida
+            arriba.
           </p>
 
           <div className="grid gap-1.5">
@@ -322,7 +363,7 @@ export function CierresImportDialog() {
                   >
                     <span className="font-medium">
                       {p.codigo} · {EMPRESAS[p.empresa].label} ·{" "}
-                      {p.fuente === "banco" ? "Banco" : "Efectivo"}
+                      {cierreFuenteLabel(p.fuente)}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {formatMesAnio(p.mes, p.anio)}
@@ -356,7 +397,7 @@ export function CierresImportDialog() {
                 >
                   <span className="font-medium">
                     {formatMesAnio(c.mes, c.anio)} · {EMPRESAS[c.empresa].label} ·{" "}
-                    {c.fuente === "banco" ? "Banco" : "Efectivo"}
+                    {cierreFuenteLabel(c.fuente)}
                   </span>
                   <span className="flex items-center gap-3">
                     <span className="font-semibold tabular-nums">{eur.format(c.monto)}</span>
