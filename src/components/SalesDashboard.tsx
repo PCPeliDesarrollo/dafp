@@ -1031,7 +1031,38 @@ export function SalesDashboard() {
                     </div>
                   </div>
 
+                  {(() => {
+                    const gasto = gastoDeMetodo(mp);
+                    const real = d.ingreso - gasto;
+                    return (
+                      <div className="mt-3 space-y-1 border-t border-border/50 pt-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">
+                            {mp === "tpv" ? "Gastos (liquidan en banco)" : "− Gastos pagados"}
+                          </span>
+                          <span className="tabular-nums text-destructive">
+                            {gasto > 0 ? `−${eurP.format(gasto)}` : eurP.format(0)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                            Dinero real
+                          </span>
+                          <span
+                            className={cn(
+                              "text-lg font-semibold tabular-nums",
+                              real >= 0 ? "text-success" : "text-destructive",
+                            )}
+                          >
+                            {eurP.format(real)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 </CardContent>
+
               </Card>
             );
           })}
