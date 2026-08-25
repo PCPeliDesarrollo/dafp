@@ -490,6 +490,22 @@ export function SalesDashboard() {
     .reduce((a, g) => a + g.monto, 0);
   const dineroNetoReal = cobrosRealesTotal - gastosTiendaTotal - gastosPersonales;
 
+  /** Gastos pagados con cada fuente (efectivo / banco), incluyendo personales. */
+  const gastosPorFuente = useMemo(() => {
+    const base = { efectivo: 0, banco: 0 };
+    for (const g of filteredGastos) {
+      if (g.fuente === "efectivo") base.efectivo += g.monto;
+      else base.banco += g.monto;
+    }
+    return base;
+  }, [filteredGastos]);
+
+  /** Gasto imputado a cada método de cobro: el TPV liquida en banco,
+   *  por eso los gastos bancarios se muestran también sobre el banco. */
+  const gastoDeMetodo = (mp: MetodoPago) =>
+    mp === "efectivo" ? gastosPorFuente.efectivo : mp === "banco" ? gastosPorFuente.banco : 0;
+
+
   // ---- Detalle de KPIs: de dónde sale cada cantidad ----
   const rangoLabel = RANGOS.find((r) => r.key === rango)?.label ?? "";
   const ventaConcepto = (r: VentaRow) => {
