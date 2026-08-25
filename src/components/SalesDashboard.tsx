@@ -612,6 +612,7 @@ export function SalesDashboard() {
         importe: r.total_venta,
         sourceKind: "venta" as const,
         sourceId: String(r.id),
+        hasPvd: r.pvd != null,
       }));
 
   const showMetodoDetalle = (mp: MetodoPago) => {
@@ -627,6 +628,7 @@ export function SalesDashboard() {
         importe: bd[mp],
         sourceKind: "venta" as const,
         sourceId: String(r.id),
+        hasPvd: r.pvd != null,
       }));
     setKpiDetail({
       title: `${METODO_PAGO_LABEL[mp]} · ${rangoLabel}`,
@@ -652,6 +654,7 @@ export function SalesDashboard() {
       importe: Math.max(0, Number(r.canje_amount ?? 0)),
       sourceKind: "venta" as const,
       sourceId: String(r.id),
+      hasPvd: r.pvd != null,
     }));
 
   /** Detalle de los gastos pagados con una fuente concreta (efectivo / banco) del mes. */

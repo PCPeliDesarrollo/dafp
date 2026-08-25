@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, Trash2 } from "lucide-react";
+import { Loader2, Search, Trash2, CheckCircle2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,8 @@ export type KpiDetailItem = {
   /** Origen real del movimiento, para poder eliminarlo */
   sourceKind?: "venta" | "gasto";
   sourceId?: string;
+  /** true si el albarán ya tiene PVD (coste) y por tanto beneficio calculado */
+  hasPvd?: boolean;
 };
 
 export type KpiDetail = {
@@ -226,6 +228,18 @@ export function KpiDetailDialog({
                                 {pvdBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Guardar"}
                               </Button>
                             </div>
+                          ) : it.hasPvd ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPvdEditId(it.id);
+                                setPvdValue("");
+                              }}
+                              className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-500 hover:bg-blue-500/20"
+                              title="PVD añadido. Pincha para cambiarlo"
+                            >
+                              <CheckCircle2 className="h-3 w-3" /> PVD
+                            </button>
                           ) : (
                             <button
                               type="button"

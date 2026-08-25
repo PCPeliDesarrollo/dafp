@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp, Trash2, CheckCircle2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -508,7 +508,14 @@ export function SalesCalendar({
                           </div>
 
                           <div className="text-right">
-                            <div className="font-semibold tabular-nums">{eurP.format(r.total_venta)}</div>
+                            <div className="flex items-center justify-end gap-1 font-semibold tabular-nums">
+                              {r.pvd != null && (
+                                <span title="PVD añadido">
+                                  <CheckCircle2 className="h-3 w-3 text-blue-500" aria-label="PVD añadido" />
+                                </span>
+                              )}
+                              {eurP.format(r.total_venta)}
+                            </div>
                           </div>
                           {onDeleteVenta && (
                             <AlertDialog>
