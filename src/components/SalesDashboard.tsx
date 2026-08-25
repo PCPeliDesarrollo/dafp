@@ -1209,34 +1209,6 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
-          <Card
-            className="relative cursor-pointer overflow-hidden gradient-primary text-primary-foreground shadow-glow transition-opacity hover:opacity-90"
-            onClick={() =>
-              setKpiDetail({
-                title: `Dinero Neto Real · ${rangoLabel}`,
-                formula:
-                  "Cobros reales (ventas − canjeos, en verde) − gastos de tienda y personales (en rojo) del periodo.",
-                total: dineroNetoReal,
-                items: dineroNetoItems,
-              })
-            }
-          >
-            <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-            <CardContent className="p-5">
-              <p className="flex items-center gap-1 text-[10px] uppercase tracking-widest opacity-90">
-                <PiggyBank className="h-3.5 w-3.5" /> Dinero Neto Real
-              </p>
-              <p className={cn(
-                "mt-1 text-3xl font-bold tabular-nums",
-                dineroNetoReal < 0 && "text-destructive-foreground",
-              )}>
-                {eurP.format(dineroNetoReal)}
-              </p>
-              <p className="mt-1 text-[11px] opacity-90">
-                Cobros reales (sin canjeos) − Gastos Tienda − Gastos Personales
-              </p>
-            </CardContent>
-          </Card>
         </section>
 
 
