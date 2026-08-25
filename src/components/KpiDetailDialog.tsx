@@ -31,6 +31,8 @@ export type KpiDetailItem = {
   /** Origen real del movimiento, para poder eliminarlo */
   sourceKind?: "venta" | "gasto";
   sourceId?: string;
+  /** true si el albarán ya tiene PVD (coste) y por tanto beneficio calculado */
+  hasPvd?: boolean;
 };
 
 export type KpiDetail = {
