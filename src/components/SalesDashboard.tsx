@@ -575,8 +575,24 @@ export function SalesDashboard() {
   const cierreDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? cierresPeriodo.efectivo : mp === "banco" ? cierresPeriodo.banco : 0;
 
-  const dineroNetoReal =
-    cobrosRealesTotal - gastosTiendaTotal - gastosPersonales + cierresPeriodo.total;
+  /** Fija el PVD de un albarán desde el detalle de un KPI; el beneficio se recalcula solo. */
+  const setVentaPvd = async (item: KpiDetailItem, pvd: number) => {
+    const id = item.sourceId ?? item.id;
+    const stores = esGeneral ? EMPRESA_KEYS.map((k) => getVentasStore(k)) : [ventasStore];
+    for (const s of stores) {
+      try {
+        await s.updatePvd(id, pvd);
+        toast.success("PVD guardado", {
+          description: "Beneficio recalculado: PVP total − PVD.",
+        });
+        return;
+      } catch {
+        // No está en esta empresa; probar la siguiente.
+      }
+    }
+    toast.error("No se pudo guardar el PVD");
+  };
+
 
 
   // ---- Detalle de KPIs: de dónde sale cada cantidad ----
@@ -637,33 +653,6 @@ export function SalesDashboard() {
       sourceKind: "venta" as const,
       sourceId: String(r.id),
     }));
-
-  const dineroNetoItems = [
-    ...ventaItems(filtered).map((it) => {
-      const row = filtered.find((r) => String(r.id) === it.sourceId);
-      const canje = Math.max(0, Number(row?.canje_amount ?? 0));
-      return canje > 0
-        ? {
-            ...it,
-            importe: it.importe - canje,
-            detalle: `CANJEA ${eurP.format(canje)} descontado (no es cobro nuevo)`,
-          }
-        : it;
-    }),
-    ...filteredGastos
-      .slice()
-      .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
-      .map((g) => ({
-        id: `g-${g.id}`,
-        fecha: g.fecha,
-        concepto: g.concepto || (g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"),
-        detalle: `${g.categoria === "tienda" ? "Gasto tienda" : "Gasto personal"} · ${g.fuente === "banco" ? "banco" : "efectivo"}`,
-        importe: g.monto,
-        negativo: true,
-        sourceKind: "gasto" as const,
-        sourceId: g.id,
-      })),
-  ];
 
   /** Detalle de los gastos pagados con una fuente concreta (efectivo / banco) del mes. */
   const showGastosFuenteDetalle = (mp: MetodoPago) => {
