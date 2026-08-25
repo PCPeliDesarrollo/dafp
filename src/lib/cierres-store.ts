@@ -2,7 +2,42 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { EmpresaKey } from "./empresa";
 
-export type CierreFuente = "banco" | "efectivo";
+/** Letras de vendedor: A = Ainhoa, T = Tomás, C = Cristina, S = Otros. */
+export type VendedorLetra = "A" | "T" | "C" | "S";
+
+/**
+ * Fuente del importe cerrado:
+ *  - "efectivo" / "banco": dinero final del mes (BF/EF/BS/ES)
+ *  - "bruto:<letra>" / "neto:<letra>": ventas y beneficios de cada vendedor (VA/VT/VC/VS)
+ */
+export type CierreFuente =
+  | "banco"
+  | "efectivo"
+  | `bruto:${VendedorLetra}`
+  | `neto:${VendedorLetra}`;
+
+export const VENDEDOR_NOMBRE: Record<VendedorLetra, string> = {
+  A: "Ainhoa",
+  T: "Tomás",
+  C: "Cristina",
+  S: "Otros",
+};
+
+export function parseFuenteVendedor(
+  fuente: string,
+): { tipo: "bruto" | "neto"; letra: VendedorLetra } | null {
+  const m = /^(bruto|neto):([ATCS])$/.exec(fuente);
+  if (!m) return null;
+  return { tipo: m[1] as "bruto" | "neto", letra: m[2] as VendedorLetra };
+}
+
+export function cierreFuenteLabel(fuente: string): string {
+  const v = parseFuenteVendedor(fuente);
+  if (v) {
+    return `${VENDEDOR_NOMBRE[v.letra]} · ${v.tipo === "bruto" ? "Ventas" : "Beneficio"}`;
+  }
+  return fuente === "banco" ? "Banco" : "Efectivo";
+}
 
 export type Cierre = {
   id: string;

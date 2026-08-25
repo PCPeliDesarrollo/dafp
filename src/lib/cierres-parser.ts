@@ -1,5 +1,17 @@
 import type { EmpresaKey } from "./empresa";
-import type { CierreFuente, CierreInput } from "./cierres-store";
+import type { CierreFuente, CierreInput, VendedorLetra } from "./cierres-store";
+
+/**
+ * Códigos de vendedor: VA = Ainhoa, VT = Tomás, VC = Cristina, VS/VO = Otros.
+ * "(bruto)" son las ventas totales y "(neto)" los beneficios reales.
+ */
+export const VENDEDOR_LETRA: Record<string, VendedorLetra> = {
+  A: "A",
+  T: "T",
+  C: "C",
+  S: "S",
+  O: "S",
+};
 
 /**
  * Códigos de cierre histórico:
@@ -104,8 +116,9 @@ export type ParseCierresResult = {
  */
 export function parseCierresText(
   text: string,
-  fallback: { mes: number; anio: number },
+  fallback: { mes: number; anio: number; empresaVendedores?: EmpresaKey },
 ): ParseCierresResult {
+  const empresaVend: EmpresaKey = fallback.empresaVendedores ?? "fjv";
   const warnings: string[] = [];
   const map = new Map<string, CierreInput>();
   let ctxMes = fallback.mes;
@@ -119,7 +132,9 @@ export function parseCierresText(
 
   for (const line of lines) {
     const { mes, anio } = findMesAnio(line);
-    const codeMatches = [...line.matchAll(/\b(BF|EF|BS|ES)\b/gi)];
+    const codeMatches = [
+      ...line.matchAll(/\b(BF|EF|BS|ES)\b|\bV\s*([ATCSO])\b\s*\(?\s*(brut\w*|net\w*)\)?/gi),
+    ];
 
     if (!codeMatches.length) {
       if (mes) ctxMes = mes;
@@ -134,8 +149,17 @@ export function parseCierresText(
 
     for (let i = 0; i < codeMatches.length; i++) {
       const m = codeMatches[i]!;
-      const codigo = m[1]!.toUpperCase();
-      const start = (m.index ?? 0) + codigo.length;
+      const esVendedor = !m[1];
+      const letra = esVendedor ? VENDEDOR_LETRA[m[2]!.toUpperCase()] : undefined;
+      const tipo = esVendedor
+        ? m[3]!.toLowerCase().startsWith("brut")
+          ? ("bruto" as const)
+          : ("neto" as const)
+        : undefined;
+      const codigo = esVendedor
+        ? `V${m[2]!.toUpperCase()} (${tipo})`
+        : m[1]!.toUpperCase();
+      const start = (m.index ?? 0) + m[0]!.length;
       const end = i + 1 < codeMatches.length ? codeMatches[i + 1]!.index ?? line.length : line.length;
       const segment = line.slice(start, end);
       const numMatch = segment.match(/-?\(?\d[\d.,]*\)?/);
@@ -148,13 +172,16 @@ export function parseCierresText(
         warnings.push(`Importe no válido para ${codigo} en: "${line}"`);
         continue;
       }
-      const info = CIERRE_CODIGOS[codigo]!;
-      const key = `${info.empresa}-${lineAnio}-${lineMes}-${info.fuente}`;
+      const empresa: EmpresaKey = esVendedor ? empresaVend : CIERRE_CODIGOS[codigo]!.empresa;
+      const fuente: CierreFuente = esVendedor
+        ? (`${tipo}:${letra}` as CierreFuente)
+        : CIERRE_CODIGOS[codigo]!.fuente;
+      const key = `${empresa}-${lineAnio}-${lineMes}-${fuente}`;
       map.set(key, {
-        empresa: info.empresa,
+        empresa,
         anio: lineAnio,
         mes: lineMes,
-        fuente: info.fuente,
+        fuente,
         codigo,
         monto,
         notas: null,
@@ -163,7 +190,10 @@ export function parseCierresText(
     }
   }
 
-  if (!sawAny) warnings.push("No se ha encontrado ningún código BF, EF, BS o ES.");
+  if (!sawAny)
+    warnings.push(
+      "No se ha encontrado ningún código BF, EF, BS, ES ni VA/VT/VC/VS (bruto/neto).",
+    );
 
   return { entries: Array.from(map.values()), warnings };
 }

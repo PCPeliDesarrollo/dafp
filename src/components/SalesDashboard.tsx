@@ -54,7 +54,7 @@ import { CierresImportDialog } from "./CierresImportDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
-import { useCierres } from "@/lib/cierres-store";
+import { useCierres, parseFuenteVendedor, VENDEDOR_NOMBRE } from "@/lib/cierres-store";
 import { formatMesAnio } from "@/lib/cierres-parser";
 import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
 import {
@@ -280,10 +280,57 @@ export function SalesDashboard() {
     navigate({ to: "/auth" });
   }
 
+  /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES y VA/VT/VC/VS). */
+  const { rows: cierresRows } = useCierres();
+  const empresasVista = useMemo(
+    () => (esGeneral ? [...EMPRESA_KEYS] : [vista]),
+    [esGeneral, vista],
+  );
+
+  /**
+   * Ventas/beneficios históricos por vendedor (VA/VT/VC/VS): se convierten en
+   * filas de venta sintéticas para que sumen a totales y ranking del mes.
+   * No llevan cobro asignado (el dinero ya está en BF/EF/BS/ES).
+   */
+  const ventasCierreVendedor = useMemo<VentaRow[]>(() => {
+    const agrup = new Map<string, { fecha: string; empleado: string; bruto: number; neto: number }>();
+    for (const c of cierresRows) {
+      if (!empresasVista.includes(c.empresa)) continue;
+      const v = parseFuenteVendedor(c.fuente);
+      if (!v) continue;
+      const ym = `${c.anio}-${String(c.mes).padStart(2, "0")}`;
+      const ultimoDia = new Date(c.anio, c.mes, 0).getDate();
+      const key = `${c.empresa}-${ym}-${v.letra}`;
+      const cur =
+        agrup.get(key) ??
+        {
+          fecha: `${ym}-${String(ultimoDia).padStart(2, "0")}`,
+          empleado: VENDEDOR_NOMBRE[v.letra],
+          bruto: 0,
+          neto: 0,
+        };
+      if (v.tipo === "bruto") cur.bruto += c.monto;
+      else cur.neto += c.monto;
+      agrup.set(key, cur);
+    }
+    return Array.from(agrup.entries()).map(([key, v]) => ({
+      id: `cierre-${key}`,
+      fecha: v.fecha,
+      empleado: v.empleado,
+      total_venta: v.bruto,
+      beneficio: v.neto,
+      metodo_pago: "efectivo" as MetodoPago,
+      efectivo_amount: 0,
+      tpv_amount: 0,
+      banco_amount: 0,
+      canje_amount: 0,
+    }));
+  }, [cierresRows, empresasVista]);
+
   const rows = useMemo(() => {
-    const all = data ?? [];
+    const all = [...(data ?? []), ...ventasCierreVendedor];
     return allowed ? all.filter((r) => allowed.includes((r.fecha ?? "").slice(0, 7))) : all;
-  }, [data, allowed]);
+  }, [data, allowed, ventasCierreVendedor]);
   const filtered = useMemo(
     () => filterByRange(rows, rango, monthAnchor),
     [rows, rango, monthAnchor],
@@ -391,7 +438,16 @@ export function SalesDashboard() {
     [filtered],
   );
   /** Dinero realmente cobrado = ventas − canjeos. */
-  const cobrosRealesTotal = ingresosRealesTotal - canjeadoTotal;
+  /** Dinero realmente cobrado: suma de efectivo + TPV + banco (los cierres
+   *  históricos por vendedor no aportan cobro, ya están en BF/EF/BS/ES). */
+  const cobrosRealesTotal = useMemo(
+    () =>
+      filtered.reduce((a, r) => {
+        const bd = getMetodoBreakdown(r);
+        return a + bd.efectivo + bd.tpv + bd.banco;
+      }, 0),
+    [filtered],
+  );
   const beneficioRealTotal = useMemo(
     () => filtered.reduce((a, r) => a + (r.beneficio ?? 0), 0),
     [filtered],
@@ -444,8 +500,6 @@ export function SalesDashboard() {
 
 
   /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES). */
-  const { rows: cierresRows } = useCierres();
-  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
 
   // Meses disponibles: ventas + gastos + cierres históricos + mes actual
   const availableMonths = useMemo(() => {

@@ -24,7 +24,7 @@ import { CierresImportDialog } from "@/components/CierresImportDialog";
 import { EmpresaProvider, EMPRESAS, EMPRESA_KEYS, type VistaKey } from "@/lib/empresa";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useGastos, useGastosGeneral } from "@/lib/gastos-store";
-import { useCierres } from "@/lib/cierres-store";
+import { useCierres, parseFuenteVendedor } from "@/lib/cierres-store";
 import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
 import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -126,12 +126,19 @@ export function AnnualView() {
         .reduce((a, c) => a + c.monto, 0);
       const cierreBanco = cs.filter((c) => c.fuente === "banco").reduce((a, c) => a + c.monto, 0);
       const cierres = cierreEfectivo + cierreBanco;
+      // Ventas/beneficios históricos por vendedor (VA/VT/VC/VS)
+      const vendBruto = cs
+        .filter((c) => parseFuenteVendedor(c.fuente)?.tipo === "bruto")
+        .reduce((a, c) => a + c.monto, 0);
+      const vendNeto = cs
+        .filter((c) => parseFuenteVendedor(c.fuente)?.tipo === "neto")
+        .reduce((a, c) => a + c.monto, 0);
       return {
         mes: label.slice(0, 3),
         label,
         ym,
-        ventas: ventasTotal,
-        beneficio,
+        ventas: ventasTotal + vendBruto,
+        beneficio: beneficio + vendNeto,
         canjeado,
         gastos: gastosTotal,
         cierreEfectivo,
