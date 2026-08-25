@@ -485,7 +485,9 @@ export function SalesCalendar({
                     {selectedRows
                       .slice()
                       .sort((a, b) => b.total_venta - a.total_venta)
-                      .map((r) => (
+                      .map((r) => {
+                        const bd = getMetodoBreakdown(r);
+                        return (
                         <div
                           key={r.id}
                           className="flex items-center justify-between gap-2 rounded-md border border-border/30 bg-background/20 px-2 py-1.5 text-xs"
@@ -495,7 +497,30 @@ export function SalesCalendar({
                               {r.id}
                             </div>
                             <div className="truncate text-[11px]">{r.empleado}</div>
+                            <div className="mt-0.5 flex flex-wrap gap-1 text-[9px] tabular-nums">
+                              {bd.efectivo > 0 && (
+                                <span className="rounded bg-emerald-500/10 px-1 py-0.5 text-emerald-400">
+                                  Efectivo {eurP.format(bd.efectivo)}
+                                </span>
+                              )}
+                              {bd.tpv > 0 && (
+                                <span className="rounded bg-sky-500/10 px-1 py-0.5 text-sky-400">
+                                  TPV {eurP.format(bd.tpv)}
+                                </span>
+                              )}
+                              {bd.banco > 0 && (
+                                <span className="rounded bg-violet-500/10 px-1 py-0.5 text-violet-400">
+                                  Banco {eurP.format(bd.banco)}
+                                </span>
+                              )}
+                              {bd.canje > 0 && (
+                                <span className="rounded bg-amber-500/10 px-1 py-0.5 text-amber-400">
+                                  Canjeo {eurP.format(bd.canje)}
+                                </span>
+                              )}
+                            </div>
                           </div>
+
                           <div className="text-right">
                             <div className="font-semibold tabular-nums">{eurP.format(r.total_venta)}</div>
                           </div>
