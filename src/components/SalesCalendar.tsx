@@ -508,7 +508,12 @@ export function SalesCalendar({
                           </div>
 
                           <div className="text-right">
-                            <div className="font-semibold tabular-nums">{eurP.format(r.total_venta)}</div>
+                            <div className="flex items-center justify-end gap-1 font-semibold tabular-nums">
+                              {r.pvd != null && (
+                                <CheckCircle2 className="h-3 w-3 text-blue-500" title="PVD añadido" />
+                              )}
+                              {eurP.format(r.total_venta)}
+                            </div>
                           </div>
                           {onDeleteVenta && (
                             <AlertDialog>
