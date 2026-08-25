@@ -612,6 +612,7 @@ export function SalesDashboard() {
         importe: r.total_venta,
         sourceKind: "venta" as const,
         sourceId: String(r.id),
+        hasPvd: r.pvd != null,
       }));
 
   const showMetodoDetalle = (mp: MetodoPago) => {
