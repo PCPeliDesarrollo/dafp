@@ -654,6 +654,7 @@ export function SalesDashboard() {
       importe: Math.max(0, Number(r.canje_amount ?? 0)),
       sourceKind: "venta" as const,
       sourceId: String(r.id),
+      hasPvd: r.pvd != null,
     }));
 
   /** Detalle de los gastos pagados con una fuente concreta (efectivo / banco) del mes. */
