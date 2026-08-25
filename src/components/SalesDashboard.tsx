@@ -470,8 +470,6 @@ export function SalesDashboard() {
   const gastosPersonales = filteredGastos
     .filter((g) => g.categoria === "personales")
     .reduce((a, g) => a + g.monto, 0);
-  const dineroNetoReal = cobrosRealesTotal - gastosTiendaTotal - gastosPersonales;
-
   /** Gastos pagados con cada fuente (efectivo / banco), incluyendo personales. */
   const gastosPorFuente = useMemo(() => {
     const base = { efectivo: 0, banco: 0 };
@@ -486,6 +484,33 @@ export function SalesDashboard() {
    *  por eso los gastos bancarios se muestran también sobre el banco. */
   const gastoDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? gastosPorFuente.efectivo : mp === "banco" ? gastosPorFuente.banco : 0;
+
+  /** Cierres históricos (importes finales ya cerrados: BF/EF/BS/ES). */
+  const { rows: cierresRows } = useCierres();
+  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
+  const cierresPeriodo = useMemo(() => {
+    const [yy, mm] = monthAnchor.split("-").map(Number);
+    const base = cierresRows.filter((c) => empresasVista.includes(c.empresa));
+    const enPeriodo =
+      rango === "todo" ? base : base.filter((c) => c.anio === yy && c.mes === mm);
+    const visibles = allowed
+      ? enPeriodo.filter((c) =>
+          allowed.includes(`${c.anio}-${String(c.mes).padStart(2, "0")}`),
+        )
+      : enPeriodo;
+    const efectivo = visibles
+      .filter((c) => c.fuente === "efectivo")
+      .reduce((a, c) => a + c.monto, 0);
+    const banco = visibles.filter((c) => c.fuente === "banco").reduce((a, c) => a + c.monto, 0);
+    return { rows: visibles, efectivo, banco, total: efectivo + banco };
+  }, [cierresRows, esGeneral, vista, rango, monthAnchor, allowed]);
+
+  /** Importe de cierre histórico que suma a cada método de cobro. */
+  const cierreDeMetodo = (mp: MetodoPago) =>
+    mp === "efectivo" ? cierresPeriodo.efectivo : mp === "banco" ? cierresPeriodo.banco : 0;
+
+  const dineroNetoReal =
+    cobrosRealesTotal - gastosTiendaTotal - gastosPersonales + cierresPeriodo.total;
 
 
   // ---- Detalle de KPIs: de dónde sale cada cantidad ----
