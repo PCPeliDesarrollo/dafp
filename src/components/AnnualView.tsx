@@ -167,6 +167,36 @@ export function AnnualView() {
     [meses],
   );
 
+  /** Ventas y beneficios del año agrupados por comercial (incluye cierres V* históricos). */
+  const comerciales = useMemo(() => {
+    const map = new Map<string, { ventas: number; beneficio: number }>();
+    const add = (nombre: string, venta: number, beneficio: number) => {
+      const cur = map.get(nombre) ?? { ventas: 0, beneficio: 0 };
+      cur.ventas += venta;
+      cur.beneficio += beneficio;
+      map.set(nombre, cur);
+    };
+    for (const r of ventas) {
+      if (!(r.fecha ?? "").startsWith(year)) continue;
+      if (r.empleado === "Banco") continue;
+      add(r.empleado, r.total_venta ?? 0, r.beneficio ?? 0);
+    }
+    for (const c of cierresAnio) {
+      const v = parseFuenteVendedor(c.fuente);
+      if (!v) continue;
+      add(
+        VENDEDOR_NOMBRE[v.letra],
+        v.tipo === "bruto" ? c.monto : 0,
+        v.tipo === "neto" ? c.monto : 0,
+      );
+    }
+    return Array.from(map.entries())
+      .map(([nombre, t]) => ({ nombre, ...t }))
+      .sort((a, b) => b.ventas - a.ventas);
+  }, [ventas, cierresAnio, year]);
+
+
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -278,6 +308,42 @@ export function AnnualView() {
               <Bar dataKey="gastos" name="Gastos" fill="var(--chart-5)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6 gradient-card border-border/50 shadow-elevated">
+        <CardHeader>
+          <CardTitle className="text-base">Ventas y beneficios por comercial · {year}</CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <table className="w-full min-w-[420px] text-sm">
+            <thead>
+              <tr className="border-b border-border/60 text-[11px] uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-2 text-left font-medium">Comercial</th>
+                <th className="px-4 py-2 text-right font-medium">Ventas</th>
+                <th className="px-4 py-2 text-right font-medium">Beneficio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comerciales.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    No hay ventas registradas en {year}.
+                  </td>
+                </tr>
+              ) : (
+                comerciales.map((c) => (
+                  <tr key={c.nombre} className="border-b border-border/40 last:border-0">
+                    <td className="px-4 py-2 font-medium">{c.nombre}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{eur.format(c.ventas)}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-accent">
+                      {eur.format(c.beneficio)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
 
