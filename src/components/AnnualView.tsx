@@ -281,6 +281,7 @@ export function AnnualView() {
                 <th className="px-4 py-2 text-right font-medium">Beneficio</th>
                 <th className="px-4 py-2 text-right font-medium">Canjeos</th>
                 <th className="px-4 py-2 text-right font-medium">Gastos</th>
+                <th className="px-4 py-2 text-right font-medium">Cuentas ant.</th>
                 <th className="px-4 py-2 text-right font-medium">Neto</th>
               </tr>
             </thead>
@@ -297,6 +298,9 @@ export function AnnualView() {
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums text-destructive">
                     {eur.format(m.gastos)}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums text-info">
+                    {m.cierres !== 0 ? eur.format(m.cierres) : "—"}
                   </td>
                   <td
                     className={cn(
@@ -320,6 +324,9 @@ export function AnnualView() {
                 <td className="px-4 py-2 text-right tabular-nums text-destructive">
                   {eur.format(tot.gastos)}
                 </td>
+                <td className="px-4 py-2 text-right tabular-nums text-info">
+                  {eur.format(tot.cierres)}
+                </td>
                 <td
                   className={cn(
                     "px-4 py-2 text-right tabular-nums",
@@ -329,6 +336,7 @@ export function AnnualView() {
                   {eur.format(tot.neto)}
                 </td>
               </tr>
+
             </tbody>
           </table>
         </CardContent>
