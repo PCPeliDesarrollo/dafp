@@ -749,14 +749,9 @@ export function SalesDashboard() {
               Ventas y Rendimiento · {empresaLabel}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Vista general del equipo comercial ·{" "}
-              {today ? new Date(today).toLocaleDateString("es-ES", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              }) : ""}
+              Vista general del equipo comercial
             </p>
+
             <div className="mt-2">
               {source === "csv" ? (
                 <Badge
