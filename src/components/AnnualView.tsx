@@ -103,8 +103,6 @@ export function AnnualView() {
   }, [ventas, gastos, cierresRows, esGeneral, vista, year]);
 
 
-  const { rows: cierresRows } = useCierres();
-  const empresasVista = esGeneral ? EMPRESA_KEYS : [vista];
   const cierresAnio = useMemo(
     () =>
       cierresRows.filter(
