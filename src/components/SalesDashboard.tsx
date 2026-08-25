@@ -288,19 +288,8 @@ export function SalesDashboard() {
 
 
 
-  const { today, yesterday } = useMemo(() => isoDaysAgo(rows), [rows]);
-  const todayRows = useMemo(() => rows.filter((r) => r.fecha === today), [rows, today]);
-  const yestRows = useMemo(
-    () => rows.filter((r) => r.fecha === yesterday),
-    [rows, yesterday],
-  );
-
   const sumTotal = (rs: VentaRow[]) => rs.reduce((a, r) => a + r.total_venta, 0);
 
-  const totalHoy = sumTotal(todayRows);
-  const totalAyer = sumTotal(yestRows);
-  const ventasHoy = todayRows.length;
-  const ventasAyer = yestRows.length;
 
   // "Banco" no es un empleado: sus ingresos no se atribuyen a nadie
   const isEmpleadoReal = (nombre: string) =>
