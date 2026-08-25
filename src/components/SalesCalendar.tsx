@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Users, ReceiptText, Euro, Calculator, Wallet, Landmark, ShoppingBag, TrendingUp, Trash2, CheckCircle2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
