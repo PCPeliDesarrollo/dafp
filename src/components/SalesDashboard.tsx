@@ -1031,7 +1031,8 @@ export function SalesDashboard() {
 
                   {(() => {
                     const gasto = gastoDeMetodo(mp);
-                    const real = d.ingreso - gasto;
+                    const cierre = cierreDeMetodo(mp);
+                    const real = d.ingreso - gasto + cierre;
                     return (
                       <div className="mt-3 space-y-1 border-t border-border/50 pt-2">
                         <button
@@ -1049,6 +1050,14 @@ export function SalesDashboard() {
                             {gasto > 0 ? `−${eurP.format(gasto)}` : eurP.format(0)}
                           </span>
                         </button>
+
+                        {cierre !== 0 && (
+                          <div className="flex items-center justify-between px-1 text-[11px]">
+                            <span className="text-muted-foreground">+ Cuentas anteriores</span>
+                            <span className="tabular-nums text-info">{eurP.format(cierre)}</span>
+                          </div>
+                        )}
+
 
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
