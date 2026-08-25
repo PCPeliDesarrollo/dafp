@@ -152,7 +152,7 @@ export function SalesCalendar({
       acc.efectivo += bd.efectivo;
       acc.tpv += bd.tpv;
       acc.banco += bd.banco;
-      acc.canje += (r as any).canje_amount ?? 0;
+      acc.canje += bd.canje;
     }
     return acc;
   }, [selectedRows]);
