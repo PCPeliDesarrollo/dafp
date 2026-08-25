@@ -75,10 +75,9 @@ import {
 } from "@/components/ui/select";
 
 
-type RangoKey = "hoy" | "semana" | "mes" | "todo";
+type RangoKey = "semana" | "mes" | "todo";
 
 const RANGOS: { key: RangoKey; label: string }[] = [
-  { key: "hoy", label: "Hoy" },
   { key: "semana", label: "Esta semana" },
   { key: "mes", label: "Este mes" },
   { key: "todo", label: "Todo" },
@@ -129,8 +128,6 @@ function filterByRange(rows: VentaRow[], rango: RangoKey, monthAnchor: string) {
   if (!rows.length) return rows;
   const today = localIso(new Date());
   const todayDate = new Date(today);
-  if (rango === "hoy") return rows.filter((r) => r.fecha === today);
-
   if (rango === "semana") {
     const start = new Date(todayDate);
     start.setDate(todayDate.getDate() - 6);
@@ -291,19 +288,8 @@ export function SalesDashboard() {
 
 
 
-  const { today, yesterday } = useMemo(() => isoDaysAgo(rows), [rows]);
-  const todayRows = useMemo(() => rows.filter((r) => r.fecha === today), [rows, today]);
-  const yestRows = useMemo(
-    () => rows.filter((r) => r.fecha === yesterday),
-    [rows, yesterday],
-  );
-
   const sumTotal = (rs: VentaRow[]) => rs.reduce((a, r) => a + r.total_venta, 0);
 
-  const totalHoy = sumTotal(todayRows);
-  const totalAyer = sumTotal(yestRows);
-  const ventasHoy = todayRows.length;
-  const ventasAyer = yestRows.length;
 
   // "Banco" no es un empleado: sus ingresos no se atribuyen a nadie
   const isEmpleadoReal = (nombre: string) =>
@@ -446,12 +432,8 @@ export function SalesDashboard() {
       });
     }
 
-    // "hoy" / "semana" se anclan al día real de calendario
+    // "semana" se ancla al día real de calendario
     const anchor = now;
-    if (rango === "hoy") {
-      const iso = localIso(now);
-      return gastosSnap.rows.filter((g) => g.fecha === iso);
-    }
     const start = new Date(anchor);
     start.setDate(anchor.getDate() - 6);
     return gastosSnap.rows.filter((g) => new Date(g.fecha) >= start);
@@ -767,14 +749,9 @@ export function SalesDashboard() {
               Ventas y Rendimiento · {empresaLabel}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Vista general del equipo comercial ·{" "}
-              {today ? new Date(today).toLocaleDateString("es-ES", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              }) : ""}
+              Vista general del equipo comercial
             </p>
+
             <div className="mt-2">
               {source === "csv" ? (
                 <Badge
@@ -910,42 +887,6 @@ export function SalesDashboard() {
             </Button>
           </div>
         </header>
-
-        {/* KPIs */}
-        <section className="grid gap-4 md:grid-cols-2">
-          <KpiCard
-            title="Total Vendido Hoy"
-            value={eur.format(totalHoy)}
-            delta={variacion(totalHoy, totalAyer)}
-            icon={Euro}
-            accent="primary"
-            onClick={() =>
-              setKpiDetail({
-                title: "Total Vendido Hoy",
-                formula: "Suma del TOTAL (PVP) de los albaranes con fecha de hoy.",
-                total: totalHoy,
-                items: ventaItems(todayRows),
-              })
-            }
-          />
-          <KpiCard
-            title="Nº Ventas Hoy"
-            value={String(ventasHoy)}
-            delta={variacion(ventasHoy, ventasAyer)}
-            icon={ReceiptText}
-            accent="info"
-            onClick={() =>
-              setKpiDetail({
-                title: "Nº Ventas Hoy",
-                formula: "Número de albaranes registrados con fecha de hoy.",
-                total: ventasHoy,
-                totalLabel: "Albaranes contados",
-                countMode: true,
-                items: ventaItems(todayRows),
-              })
-            }
-          />
-        </section>
 
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
