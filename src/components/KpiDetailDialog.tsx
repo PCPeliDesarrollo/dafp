@@ -48,20 +48,42 @@ export function KpiDetailDialog({
   detail,
   onOpenChange,
   onDelete,
+  onSetPvd,
 }: {
   detail: KpiDetail | null;
   onOpenChange: (open: boolean) => void;
   /** Borra el movimiento real (venta o gasto). Si no se pasa, no se muestra la papelera. */
   onDelete?: (item: KpiDetailItem) => Promise<void> | void;
+  /** Fija el PVD (coste) de un albarán; el beneficio se recalcula solo. */
+  onSetPvd?: (item: KpiDetailItem, pvd: number) => Promise<void> | void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [pvdEditId, setPvdEditId] = useState<string | null>(null);
+  const [pvdValue, setPvdValue] = useState("");
+  const [pvdBusy, setPvdBusy] = useState(false);
 
   useEffect(() => {
     setRemoved(new Set());
     setQuery("");
+    setPvdEditId(null);
+    setPvdValue("");
   }, [detail?.title]);
+
+  const handleSavePvd = async (it: KpiDetailItem) => {
+    if (!onSetPvd) return;
+    const pvd = Number(pvdValue.replace(",", "."));
+    if (!Number.isFinite(pvd) || pvd < 0) return;
+    setPvdBusy(true);
+    try {
+      await onSetPvd(it, pvd);
+      setPvdEditId(null);
+      setPvdValue("");
+    } finally {
+      setPvdBusy(false);
+    }
+  };
 
   const visibleItems = useMemo(() => {
     const q = query.trim().toLowerCase();
