@@ -24,7 +24,7 @@ import { CierresImportDialog } from "@/components/CierresImportDialog";
 import { EmpresaProvider, EMPRESAS, EMPRESA_KEYS, type VistaKey } from "@/lib/empresa";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useGastos, useGastosGeneral } from "@/lib/gastos-store";
-import { useCierres, parseFuenteVendedor } from "@/lib/cierres-store";
+import { useCierres, parseFuenteVendedor, VENDEDOR_NOMBRE } from "@/lib/cierres-store";
 import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
 import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -225,13 +225,12 @@ export function AnnualView() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { t: "Ventas del año", v: tot.ventas, c: "text-foreground" },
-          { t: "Beneficio real", v: tot.beneficio, c: "text-accent" },
+          { t: "Total ingresos reales", v: tot.ventas, c: "text-success" },
+          { t: "Beneficios reales", v: tot.beneficio, c: "text-accent" },
           { t: "Gastos", v: tot.gastos, c: "text-destructive" },
           { t: "Cuentas anteriores", v: tot.cierres, c: "text-info" },
-          { t: "Dinero neto", v: tot.neto, c: tot.neto >= 0 ? "text-success" : "text-destructive" },
         ].map((k) => (
           <Card key={k.t} className="gradient-card border-border/50 shadow-elevated">
             <CardContent className="p-5">
