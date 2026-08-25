@@ -929,7 +929,8 @@ export function SalesDashboard() {
             </CardContent>
           </Card>
           <Card
-            className="cursor-pointer border-success/40 bg-success/5 shadow-elevated transition-colors hover:border-success/70"
+            className="relative cursor-pointer overflow-hidden gradient-accent border-accent/60 shadow-glow transition-opacity hover:opacity-90"
+
             onClick={() =>
               setKpiDetail({
                 title: `Beneficio Real · ${rangoLabel}`,
