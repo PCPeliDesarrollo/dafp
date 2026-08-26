@@ -2,6 +2,8 @@ export type CierreVisionEntry = {
   codigo: "BF" | "EF" | "BS" | "ES" | "VA" | "VT" | "VC" | "VS";
   /** Solo para códigos de vendedor (V*): "bruto" = ventas, "neto" = beneficio. */
   tipo?: "bruto" | "neto" | null;
+  /** Empresa detectada en la captura para ese código (solo relevante en V*). */
+  empresa?: "fjv" | "pcp" | null;
   monto: number;
   mes: number | null;
   anio: number | null;
@@ -11,11 +13,12 @@ export type CierresVision = { entries: CierreVisionEntry[] };
 
 const SYSTEM = `Eres un lector experto de hojas de contabilidad manuscritas o impresas en español.
 Devuelve SOLO un JSON válido con esta forma exacta:
-{"entries":[{"codigo":"BF"|"EF"|"BS"|"ES"|"VA"|"VT"|"VC"|"VS","tipo":"bruto"|"neto"|null,"monto":number,"mes":number|null,"anio":number|null}]}
+{"entries":[{"codigo":"BF"|"EF"|"BS"|"ES"|"VA"|"VT"|"VC"|"VS","tipo":"bruto"|"neto"|null,"empresa":"fjv"|"pcp"|null,"monto":number,"mes":number|null,"anio":number|null}]}
 
 Reglas:
 - Busca todas las anotaciones con los códigos BF, EF, BS, ES y su importe en euros. Para estos, "tipo" es null.
 - Busca también los códigos de vendedor: VA (Ainhoa), VT (Tomás), VC (Cristina), VS o VO (Otros). Cada uno puede aparecer dos veces: acompañado de "(bruto)" = ventas totales de ese vendedor, y de "(neto)" = beneficio real de ese vendedor. Rellena "tipo" con "bruto" o "neto" según lo indicado junto al código. Si pone VO devuelve el código "VS".
+- "empresa": la empresa a la que pertenece cada importe, según la columna, bloque o título donde está escrito. Usa "fjv" si está en la zona de FJV / Francisco / códigos BF-EF, y "pcp" si está en la zona de PCP / códigos BS-ES. Para BF y EF siempre "fjv"; para BS y ES siempre "pcp". Para los códigos de vendedor (V*) deduce la empresa por la columna o bloque donde aparecen; si no hay forma de saberlo, null.
 - "monto": el importe tal cual, en número (usa punto decimal). Los importes en formato español (1.234,56) equivalen a 1234.56.
 - "mes": número de mes 1-12 si en la imagen aparece el mes al que pertenece esa cantidad (nombre del mes o número). Si no lo ves, null.
 - "anio": año de 4 cifras si aparece; si no, null.
@@ -37,11 +40,14 @@ function normalize(parsed: any): CierresVision {
       continue;
     const tipoRaw = String(e?.tipo ?? "").toLowerCase();
     const tipo = esVend ? (tipoRaw.startsWith("net") ? "neto" : "bruto") : null;
+    const empRaw = String(e?.empresa ?? "").toLowerCase();
+    const empresa = empRaw === "fjv" || empRaw === "pcp" ? (empRaw as "fjv" | "pcp") : null;
     const mes = Number(e?.mes);
     const anio = Number(e?.anio);
     entries.push({
       codigo: codigo as CierreVisionEntry["codigo"],
       tipo,
+      empresa,
       monto,
       mes: Number.isFinite(mes) && mes >= 1 && mes <= 12 ? mes : null,
       anio: Number.isFinite(anio) && anio > 1990 ? anio : null,
