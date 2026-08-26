@@ -437,17 +437,6 @@ export function SalesDashboard() {
     () => filtered.filter((r) => Math.max(0, Number(r.canje_amount ?? 0)) > 0),
     [filtered],
   );
-  /** Dinero realmente cobrado = ventas − canjeos. */
-  /** Dinero realmente cobrado: suma de efectivo + TPV + banco (los cierres
-   *  históricos por vendedor no aportan cobro, ya están en BF/EF/BS/ES). */
-  const cobrosRealesTotal = useMemo(
-    () =>
-      filtered.reduce((a, r) => {
-        const bd = getMetodoBreakdown(r);
-        return a + bd.efectivo + bd.tpv + bd.banco;
-      }, 0),
-    [filtered],
-  );
   const beneficioRealTotal = useMemo(
     () => filtered.reduce((a, r) => a + (r.beneficio ?? 0), 0),
     [filtered],
