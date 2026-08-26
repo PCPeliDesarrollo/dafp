@@ -1138,8 +1138,8 @@ export function SalesDashboard() {
           })}
         </section>
 
-        {/* CANJEOS: ventas pagadas con saldo a favor del cliente */}
-        <section className="mt-4">
+        {/* Resumen secundario: canjeos, cobros reales y gastos en una sola fila */}
+        <section className="mt-4 grid gap-4 md:grid-cols-3">
           <Card
             className="cursor-pointer border-warning/40 bg-warning/5 shadow-elevated transition-colors hover:border-warning/70"
             onClick={() =>
@@ -1176,10 +1176,7 @@ export function SalesDashboard() {
               </div>
             </CardContent>
           </Card>
-        </section>
 
-        {/* Totales de gastos del periodo */}
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Card
             className="cursor-pointer border-warning/40 bg-warning/5 shadow-elevated transition-colors hover:border-warning/70"
             onClick={() => setGastosDialog("tienda")}
@@ -1196,6 +1193,7 @@ export function SalesDashboard() {
               </p>
             </CardContent>
           </Card>
+
           <Card
             className="cursor-pointer border-destructive/40 bg-destructive/5 shadow-elevated transition-colors hover:border-destructive/70"
             onClick={() => setGastosDialog("personales")}
