@@ -255,10 +255,37 @@ export function AnnualView() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mt-6 grid gap-4 md:grid-cols-2">
+        <Card className="border-success/50 bg-success/15 shadow-elevated">
+          <CardContent className="p-6">
+            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Total ingresos reales · {year}
+            </p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
+              {eur.format(tot.ventas)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ventas del año más cuentas de vendedores importadas
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="relative overflow-hidden gradient-accent border-accent/60 shadow-glow">
+          <CardContent className="p-6">
+            <p className="text-xs font-medium uppercase tracking-widest text-accent-foreground/80">
+              Beneficio real · {year}
+            </p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums text-accent-foreground">
+              {eur.format(tot.beneficio)}
+            </p>
+            <p className="mt-1 text-xs text-accent-foreground/75">
+              Calculado desde PVP − PVD de los albaranes
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mt-4 grid gap-4 sm:grid-cols-2">
         {[
-          { t: "Total ingresos reales", v: tot.ventas, c: "text-success" },
-          { t: "Beneficios reales", v: tot.beneficio, c: "text-accent" },
           { t: "Gastos", v: tot.gastos, c: "text-destructive" },
           { t: "Cuentas anteriores", v: tot.cierres, c: "text-info" },
         ].map((k) => (
@@ -274,6 +301,7 @@ export function AnnualView() {
           </Card>
         ))}
       </section>
+
 
       <Card className="mt-6 gradient-card border-border/50 shadow-elevated">
         <CardHeader className="flex flex-row items-center justify-between gap-2">
