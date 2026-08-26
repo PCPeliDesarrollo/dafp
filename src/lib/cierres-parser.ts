@@ -118,7 +118,9 @@ export function parseCierresText(
   text: string,
   fallback: { mes: number; anio: number; empresaVendedores?: EmpresaKey },
 ): ParseCierresResult {
-  const empresaVend: EmpresaKey = fallback.empresaVendedores ?? "fjv";
+  const empresaFallback: EmpresaKey = fallback.empresaVendedores ?? "fjv";
+  /** Empresa deducida del contexto (título FJV/PCP o últimos códigos BF/EF vs BS/ES). */
+  let ctxEmpresa: EmpresaKey | null = null;
   const warnings: string[] = [];
   const map = new Map<string, CierreInput>();
   let ctxMes = fallback.mes;
@@ -135,6 +137,10 @@ export function parseCierresText(
     const codeMatches = [
       ...line.matchAll(/\b(BF|EF|BS|ES)\b|\bV\s*([ATCSO])\b\s*\(?\s*(brut\w*|net\w*)\)?/gi),
     ];
+
+    const nline = normalize(line);
+    if (/\bfjv\b|francisco/.test(nline)) ctxEmpresa = "fjv";
+    else if (/\bpcp\b/.test(nline)) ctxEmpresa = "pcp";
 
     if (!codeMatches.length) {
       if (mes) ctxMes = mes;
@@ -172,7 +178,10 @@ export function parseCierresText(
         warnings.push(`Importe no válido para ${codigo} en: "${line}"`);
         continue;
       }
-      const empresa: EmpresaKey = esVendedor ? empresaVend : CIERRE_CODIGOS[codigo]!.empresa;
+      if (!esVendedor) ctxEmpresa = CIERRE_CODIGOS[codigo]!.empresa;
+      const empresa: EmpresaKey = esVendedor
+        ? ctxEmpresa ?? empresaFallback
+        : CIERRE_CODIGOS[codigo]!.empresa;
       const fuente: CierreFuente = esVendedor
         ? (`${tipo}:${letra}` as CierreFuente)
         : CIERRE_CODIGOS[codigo]!.fuente;
