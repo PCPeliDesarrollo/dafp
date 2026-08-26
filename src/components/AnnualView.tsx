@@ -348,14 +348,15 @@ export function AnnualView() {
             <thead>
               <tr className="border-b border-border/60 text-[11px] uppercase tracking-widest text-muted-foreground">
                 <th className="px-4 py-2 text-left font-medium">Comercial</th>
-                <th className="px-4 py-2 text-right font-medium">Ventas</th>
-                <th className="px-4 py-2 text-right font-medium">Beneficio</th>
+                <th className="px-4 py-2 text-right font-medium">Ventas (bruto)</th>
+                <th className="px-4 py-2 text-right font-medium">Beneficio (neto)</th>
+                <th className="px-4 py-2 text-right font-medium">%</th>
               </tr>
             </thead>
             <tbody>
               {comerciales.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">
                     No hay ventas registradas en {year}.
                   </td>
                 </tr>
@@ -367,9 +368,13 @@ export function AnnualView() {
                     <td className="px-4 py-2 text-right tabular-nums text-accent">
                       {eur.format(c.beneficio)}
                     </td>
+                    <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
+                      {c.ventas ? `${((c.beneficio / c.ventas) * 100).toFixed(2)}%` : "—"}
+                    </td>
                   </tr>
                 ))
               )}
+
             </tbody>
           </table>
         </CardContent>
