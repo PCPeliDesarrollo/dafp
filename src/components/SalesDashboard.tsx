@@ -560,9 +560,45 @@ export function SalesDashboard() {
     return { rows: visibles, efectivo, banco, total: efectivo + banco };
   }, [cierresRows, esGeneral, vista, rango, monthAnchor, allowed]);
 
+  /**
+   * Desglose de las cuentas cerradas del periodo, igual que la hoja de Excel:
+   * saldos BF/EF/BS/ES con su TOTAL, y aparte las ventas de comerciales
+   * (bruto) con su beneficio (neto) y el porcentaje de margen.
+   */
+  const cierresDesglose = useMemo(() => {
+    const saldoCodigos = ["BF", "EF", "BS", "ES"] as const;
+    const saldos = saldoCodigos.map((code) => ({
+      code,
+      monto: cierresPeriodo.rows
+        .filter((c) => (c.codigo ?? "").toUpperCase() === code)
+        .reduce((a, c) => a + c.monto, 0),
+    }));
+    const vendMap = new Map<string, { bruto: number; neto: number }>();
+    for (const c of cierresPeriodo.rows) {
+      const v = parseFuenteVendedor(c.fuente);
+      if (!v) continue;
+      const nombre = VENDEDOR_NOMBRE[v.letra];
+      const cur = vendMap.get(nombre) ?? { bruto: 0, neto: 0 };
+      if (v.tipo === "bruto") cur.bruto += c.monto;
+      else cur.neto += c.monto;
+      vendMap.set(nombre, cur);
+    }
+    const vendedores = Array.from(vendMap.entries())
+      .map(([nombre, v]) => ({ nombre, ...v }))
+      .sort((a, b) => b.bruto - a.bruto);
+    return {
+      saldos,
+      total: saldos.reduce((a, s) => a + s.monto, 0),
+      vendedores,
+      brutoTotal: vendedores.reduce((a, v) => a + v.bruto, 0),
+      netoTotal: vendedores.reduce((a, v) => a + v.neto, 0),
+    };
+  }, [cierresPeriodo]);
+
   /** Importe de cierre histórico que suma a cada método de cobro. */
   const cierreDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? cierresPeriodo.efectivo : mp === "banco" ? cierresPeriodo.banco : 0;
+
 
   /** Fija el PVD de un albarán desde el detalle de un KPI; el beneficio se recalcula solo. */
   const setVentaPvd = async (item: KpiDetailItem, pvd: number) => {
@@ -1266,38 +1302,124 @@ export function SalesDashboard() {
         </section>
         )}
 
-        {/* Cuentas cerradas de meses anteriores (BF / EF / BS / ES) */}
+        {/* Cuentas cerradas del periodo: saldos BF/EF/BS/ES y ventas de comerciales */}
         <section className="mt-6">
           <Card className="gradient-card border-border/50 shadow-elevated">
-            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
-              <div>
+            <CardContent className="p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                   Cuentas cerradas del periodo
                 </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-info">
-                  {eurP.format(cierresPeriodo.total)}
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Efectivo {eurP.format(cierresPeriodo.efectivo)} · Banco{" "}
-                  {eurP.format(cierresPeriodo.banco)}
-                  {cierresPeriodo.rows.length > 0 &&
-                    ` · ${cierresPeriodo.rows.length} registro(s)`}
-                </p>
-                {cierresPeriodo.rows.length > 0 && (
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {cierresPeriodo.rows
-                      .map(
-                        (c) =>
-                          `${c.codigo} ${formatMesAnio(c.mes, c.anio)}: ${eurP.format(c.monto)}`,
-                      )
-                      .join(" · ")}
-                  </p>
-                )}
+                <CierresImportDialog />
               </div>
-              <CierresImportDialog />
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {/* Saldos de banco y efectivo */}
+                <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                    Saldo de banco y efectivo
+                  </p>
+                  <table className="mt-2 w-full text-sm">
+                    <tbody>
+                      {cierresDesglose.saldos.map((s) => (
+                        <tr key={s.code} className="border-b border-border/40 last:border-0">
+                          <td className="py-1 font-medium">{s.code}</td>
+                          <td
+                            className={cn(
+                              "py-1 text-right tabular-nums",
+                              s.monto < 0 ? "text-destructive" : "text-info",
+                            )}
+                          >
+                            {eurP.format(s.monto)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="font-semibold">
+                        <td className="pt-2">TOTAL</td>
+                        <td
+                          className={cn(
+                            "pt-2 text-right tabular-nums",
+                            cierresDesglose.total < 0 ? "text-destructive" : "text-success",
+                          )}
+                        >
+                          {eurP.format(cierresDesglose.total)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    BF/EF = FJV · BS/ES = PCP. Es dinero disponible al cerrar el mes, no ventas.
+                  </p>
+                </div>
+
+                {/* Ventas de comerciales (bruto) y beneficio (neto) */}
+                <div className="rounded-xl border border-border/60 bg-card/40 p-4">
+                  <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+                    Ventas comerciales · bruto y neto
+                  </p>
+                  {cierresDesglose.vendedores.length === 0 ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Sin datos de comerciales en este periodo.
+                    </p>
+                  ) : (
+                    <table className="mt-2 w-full text-sm">
+                      <thead>
+                        <tr className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                          <th className="py-1 text-left font-medium">Comercial</th>
+                          <th className="py-1 text-right font-medium">Bruto</th>
+                          <th className="py-1 text-right font-medium">Neto</th>
+                          <th className="py-1 text-right font-medium">%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cierresDesglose.vendedores.map((v) => (
+                          <tr key={v.nombre} className="border-b border-border/40 last:border-0">
+                            <td className="py-1 font-medium">{v.nombre}</td>
+                            <td className="py-1 text-right tabular-nums">{eurP.format(v.bruto)}</td>
+                            <td className="py-1 text-right tabular-nums text-accent">
+                              {eurP.format(v.neto)}
+                            </td>
+                            <td className="py-1 text-right tabular-nums text-muted-foreground">
+                              {v.bruto ? `${((v.neto / v.bruto) * 100).toFixed(2)}%` : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="font-semibold">
+                          <td className="pt-2">Total</td>
+                          <td className="pt-2 text-right tabular-nums">
+                            {eurP.format(cierresDesglose.brutoTotal)}
+                          </td>
+                          <td className="pt-2 text-right tabular-nums text-accent">
+                            {eurP.format(cierresDesglose.netoTotal)}
+                          </td>
+                          <td className="pt-2 text-right tabular-nums text-muted-foreground">
+                            {cierresDesglose.brutoTotal
+                              ? `${((cierresDesglose.netoTotal / cierresDesglose.brutoTotal) * 100).toFixed(2)}%`
+                              : "—"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )}
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Bruto = vendido por el comercial · Neto = beneficio real. Va aparte del saldo.
+                  </p>
+                </div>
+              </div>
+
+              {cierresPeriodo.rows.length > 0 && (
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  {cierresPeriodo.rows
+                    .map(
+                      (c) => `${c.codigo} ${formatMesAnio(c.mes, c.anio)}: ${eurP.format(c.monto)}`,
+                    )
+                    .join(" · ")}
+                </p>
+              )}
             </CardContent>
           </Card>
         </section>
+
 
         {/* Zona de pegado / OCR de albaranes */}
         {!esGeneral && (
