@@ -1154,15 +1154,6 @@ export function SalesDashboard() {
                   {canjeRows.length === 1 ? "" : "s"} con saldo a favor · no suma a caja
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Cobros reales
-                </p>
-                <p className="text-xl font-semibold tabular-nums text-success">
-                  {eurP.format(cobrosRealesTotal)}
-                </p>
-                <p className="text-[11px] text-muted-foreground">Ventas − canjeos</p>
-              </div>
             </CardContent>
           </Card>
 
