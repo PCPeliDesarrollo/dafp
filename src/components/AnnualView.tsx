@@ -287,7 +287,7 @@ export function AnnualView() {
       <section className="mt-4 grid gap-4 sm:grid-cols-2">
         {[
           { t: "Gastos", v: tot.gastos, c: "text-destructive" },
-          { t: "Cuentas anteriores", v: tot.cierres, c: "text-info" },
+          { t: "Saldo cuentas cerradas (BF/EF/BS/ES)", v: tot.cierres, c: "text-info" },
         ].map((k) => (
           <Card key={k.t} className="gradient-card border-border/50 shadow-elevated">
             <CardContent className="p-5">
