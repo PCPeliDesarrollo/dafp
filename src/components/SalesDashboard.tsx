@@ -974,7 +974,7 @@ export function SalesDashboard() {
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           <Card
-            className="cursor-pointer border-success/50 bg-success/15 shadow-elevated transition-colors hover:border-success/70"
+            className="cursor-pointer border-success/70 bg-success/25 shadow-elevated shadow-success-glow transition-colors hover:border-success hover:bg-success/30"
             onClick={() =>
               setKpiDetail({
                 title: `Total Ingresos Reales · ${rangoLabel}`,

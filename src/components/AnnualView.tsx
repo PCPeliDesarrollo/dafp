@@ -256,7 +256,7 @@ export function AnnualView() {
       )}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2">
-        <Card className="border-success/50 bg-success/15 shadow-elevated">
+        <Card className="border-success/70 bg-success/25 shadow-elevated shadow-success-glow">
           <CardContent className="p-6">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
               Total ingresos reales · {year}
