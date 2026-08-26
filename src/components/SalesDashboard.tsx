@@ -560,9 +560,45 @@ export function SalesDashboard() {
     return { rows: visibles, efectivo, banco, total: efectivo + banco };
   }, [cierresRows, esGeneral, vista, rango, monthAnchor, allowed]);
 
+  /**
+   * Desglose de las cuentas cerradas del periodo, igual que la hoja de Excel:
+   * saldos BF/EF/BS/ES con su TOTAL, y aparte las ventas de comerciales
+   * (bruto) con su beneficio (neto) y el porcentaje de margen.
+   */
+  const cierresDesglose = useMemo(() => {
+    const saldoCodigos = ["BF", "EF", "BS", "ES"] as const;
+    const saldos = saldoCodigos.map((code) => ({
+      code,
+      monto: cierresPeriodo.rows
+        .filter((c) => (c.codigo ?? "").toUpperCase() === code)
+        .reduce((a, c) => a + c.monto, 0),
+    }));
+    const vendMap = new Map<string, { bruto: number; neto: number }>();
+    for (const c of cierresPeriodo.rows) {
+      const v = parseFuenteVendedor(c.fuente);
+      if (!v) continue;
+      const nombre = VENDEDOR_NOMBRE[v.letra];
+      const cur = vendMap.get(nombre) ?? { bruto: 0, neto: 0 };
+      if (v.tipo === "bruto") cur.bruto += c.monto;
+      else cur.neto += c.monto;
+      vendMap.set(nombre, cur);
+    }
+    const vendedores = Array.from(vendMap.entries())
+      .map(([nombre, v]) => ({ nombre, ...v }))
+      .sort((a, b) => b.bruto - a.bruto);
+    return {
+      saldos,
+      total: saldos.reduce((a, s) => a + s.monto, 0),
+      vendedores,
+      brutoTotal: vendedores.reduce((a, v) => a + v.bruto, 0),
+      netoTotal: vendedores.reduce((a, v) => a + v.neto, 0),
+    };
+  }, [cierresPeriodo]);
+
   /** Importe de cierre histórico que suma a cada método de cobro. */
   const cierreDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? cierresPeriodo.efectivo : mp === "banco" ? cierresPeriodo.banco : 0;
+
 
   /** Fija el PVD de un albarán desde el detalle de un KPI; el beneficio se recalcula solo. */
   const setVentaPvd = async (item: KpiDetailItem, pvd: number) => {
