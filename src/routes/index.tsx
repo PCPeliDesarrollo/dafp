@@ -48,10 +48,10 @@ function DashboardTabs() {
           ))}
         </div>
       </div>
-      {vista === "anual" && isSuper ? (
+      {vista === "anual" ? (
         <AnnualView />
       ) : (
-        <EmpresaProvider key={vista} value={vista}>
+        <EmpresaProvider key={vista} value={vista as VistaKey}>
           <SalesDashboard />
         </EmpresaProvider>
       )}
