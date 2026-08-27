@@ -30,7 +30,7 @@ function DashboardTabs() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
         <div className="inline-flex flex-wrap rounded-xl border border-border/60 bg-card/60 p-1 backdrop-blur">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <Button
               key={t.key}
               variant="ghost"
@@ -48,7 +48,7 @@ function DashboardTabs() {
           ))}
         </div>
       </div>
-      {vista === "anual" ? (
+      {vista === "anual" && isSuper ? (
         <AnnualView />
       ) : (
         <EmpresaProvider key={vista} value={vista}>
