@@ -6,6 +6,8 @@ import { AuthGate } from "@/components/AuthGate";
 import { EmpresaProvider, EMPRESAS, type VistaKey } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSuperuser } from "@/lib/use-superuser";
+
 
 type TabKey = VistaKey | "anual";
 
@@ -17,13 +19,18 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 function DashboardTabs() {
-  const [vista, setVista] = useState<TabKey>("fjv");
+  const { isSuper } = useSuperuser();
+  const [vistaRaw, setVista] = useState<TabKey>("fjv");
+  const tabs = isSuper ? TABS : TABS.filter((t) => t.key !== "anual");
+  const vista: TabKey = !isSuper && vistaRaw === "anual" ? "fjv" : vistaRaw;
+
+
 
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
         <div className="inline-flex flex-wrap rounded-xl border border-border/60 bg-card/60 p-1 backdrop-blur">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <Button
               key={t.key}
               variant="ghost"
@@ -44,7 +51,7 @@ function DashboardTabs() {
       {vista === "anual" ? (
         <AnnualView />
       ) : (
-        <EmpresaProvider key={vista} value={vista}>
+        <EmpresaProvider key={vista} value={vista as VistaKey}>
           <SalesDashboard />
         </EmpresaProvider>
       )}
