@@ -6,6 +6,8 @@ import { AuthGate } from "@/components/AuthGate";
 import { EmpresaProvider, EMPRESAS, type VistaKey } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSuperuser } from "@/lib/use-superuser";
+
 
 type TabKey = VistaKey | "anual";
 
@@ -17,7 +19,12 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 function DashboardTabs() {
+  const { isSuper } = useSuperuser();
   const [vista, setVista] = useState<TabKey>("fjv");
+  const tabs = isSuper ? TABS : TABS.filter((t) => t.key !== "anual");
+
+  if (!isSuper && vista === "anual") setVista("fjv");
+
 
   return (
     <div className="min-h-screen bg-background">
