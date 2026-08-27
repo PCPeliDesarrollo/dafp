@@ -20,10 +20,10 @@ const TABS: { key: TabKey; label: string }[] = [
 
 function DashboardTabs() {
   const { isSuper } = useSuperuser();
-  const [vista, setVista] = useState<TabKey>("fjv");
+  const [vistaRaw, setVista] = useState<TabKey>("fjv");
   const tabs = isSuper ? TABS : TABS.filter((t) => t.key !== "anual");
+  const vista: TabKey = !isSuper && vistaRaw === "anual" ? "fjv" : vistaRaw;
 
-  if (!isSuper && vista === "anual") setVista("fjv");
 
 
   return (
