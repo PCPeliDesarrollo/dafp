@@ -36,11 +36,13 @@ export function GastosListDialog({
   onOpenChange,
   categoria,
   gastos,
+  periodo,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   categoria: GastoCategoria;
   gastos: Gasto[];
+  periodo?: string;
 }) {
   const vista = useVista();
   const esGeneral = vista === "general";
@@ -91,6 +93,8 @@ export function GastosListDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
+            {periodo ? <span className="font-medium text-foreground">{periodo}</span> : null}
+            {periodo ? " · " : ""}
             {filtered.length} movimientos · Total{" "}
             <span className="font-semibold text-foreground">
               {eur.format(total)}
