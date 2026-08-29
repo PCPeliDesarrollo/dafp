@@ -93,6 +93,8 @@ export function GastosListDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
+            {periodo ? <span className="font-medium text-foreground">{periodo}</span> : null}
+            {periodo ? " · " : ""}
             {filtered.length} movimientos · Total{" "}
             <span className="font-semibold text-foreground">
               {eur.format(total)}
