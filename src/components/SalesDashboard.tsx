@@ -599,6 +599,23 @@ export function SalesDashboard() {
   const cierreDeMetodo = (mp: MetodoPago) =>
     mp === "efectivo" ? cierresPeriodo.efectivo : mp === "banco" ? cierresPeriodo.banco : 0;
 
+  /** Dinero real por método de cobro (ingreso − gastos + cierres). */
+  const dineroRealMetodo = (mp: MetodoPago) => {
+    const ingreso = desglosePago[mp].ingreso;
+    const gasto = gastoDeMetodo(mp);
+    const cierre = cierreDeMetodo(mp);
+    return ingreso - gasto + cierre;
+  };
+
+  /** KPI definitivo: Dinero Real Efectivo + Gastos Personales + Dinero Real TPV + Dinero Real Banco. */
+  const totalDefinitivo = useMemo(
+    () =>
+      dineroRealMetodo("efectivo") +
+      dineroRealMetodo("tpv") +
+      dineroRealMetodo("banco") +
+      gastosPersonales,
+    [desglosePago, gastosPorFuente, cierresPeriodo, gastosPersonales],
+  );
 
   /** Fija el PVD de un albarán desde el detalle de un KPI; el beneficio se recalcula solo. */
   const setVentaPvd = async (item: KpiDetailItem, pvd: number) => {
