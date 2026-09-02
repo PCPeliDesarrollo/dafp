@@ -60,7 +60,7 @@ function DashboardTabs() {
       {vista === "anual" ? (
         <AnnualView />
       ) : (
-        <EmpresaProvider key={vista} value={vista as VistaKey}>
+        <EmpresaProvider value={vista as VistaKey}>
           {isSuper ? <SalesDashboard /> : <LimitedDashboard />}
         </EmpresaProvider>
       )}
