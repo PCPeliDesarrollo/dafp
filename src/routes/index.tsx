@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SalesDashboard } from "@/components/SalesDashboard";
 import { AnnualView } from "@/components/AnnualView";
+import { LimitedDashboard } from "@/components/LimitedDashboard";
 import { AuthGate } from "@/components/AuthGate";
 import { EmpresaProvider, EMPRESAS, type VistaKey } from "@/lib/empresa";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,20 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 function DashboardTabs() {
-  const { isSuper } = useSuperuser();
+  const { isSuper, loading } = useSuperuser();
   const [vistaRaw, setVista] = useState<TabKey>("fjv");
-  const tabs = isSuper ? TABS : TABS.filter((t) => t.key !== "anual");
-  const vista: TabKey = !isSuper && vistaRaw === "anual" ? "fjv" : vistaRaw;
+  // Sin superusuario: solo FJV y PCP, y con la vista reducida.
+  const tabs = isSuper ? TABS : TABS.filter((t) => t.key === "fjv" || t.key === "pcp");
+  const vista: TabKey =
+    !isSuper && vistaRaw !== "fjv" && vistaRaw !== "pcp" ? "fjv" : vistaRaw;
 
-
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Cargando…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,12 +61,13 @@ function DashboardTabs() {
         <AnnualView />
       ) : (
         <EmpresaProvider key={vista} value={vista as VistaKey}>
-          <SalesDashboard />
+          {isSuper ? <SalesDashboard /> : <LimitedDashboard />}
         </EmpresaProvider>
       )}
     </div>
   );
 }
+
 
 
 export const Route = createFileRoute("/")({
