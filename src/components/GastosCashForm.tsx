@@ -108,6 +108,18 @@ export function GastosCashForm() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs">Pagado con</Label>
+            <Select value={fuente} onValueChange={(v) => setFuente(v as GastoFuente)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="efectivo">Efectivo (Caja)</SelectItem>
+                <SelectItem value="banco">Banco</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="sm:col-span-2 flex justify-end">
             <Button type="submit" disabled={saving} className="gap-2">
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
