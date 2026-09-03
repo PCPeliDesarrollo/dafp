@@ -63,7 +63,7 @@ export function GastosCashForm() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Wallet className="h-4 w-4 text-warning" />
-          Gastos en efectivo
+          Gastos manuales
         </CardTitle>
       </CardHeader>
       <CardContent>
