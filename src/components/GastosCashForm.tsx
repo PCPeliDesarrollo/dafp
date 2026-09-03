@@ -96,7 +96,7 @@ export function GastosCashForm() {
               className="mt-1"
             />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <Label className="text-xs">Categoría</Label>
             <Select value={categoria} onValueChange={(v) => setCategoria(v as GastoCategoria)}>
               <SelectTrigger className="mt-1">
