@@ -46,6 +46,7 @@ export function GastosCashForm() {
         monto: n,
         concepto: concepto.trim(),
         categoria,
+        fuente,
       });
       toast.success("Gasto registrado");
       setMonto("");
