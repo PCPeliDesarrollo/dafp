@@ -20,10 +20,9 @@ import {
   ReceiptText,
   Trophy,
   Upload,
-  RotateCcw,
   Wallet,
   Landmark,
-  
+
   Gift,
   ShoppingBag,
   Trash2,
