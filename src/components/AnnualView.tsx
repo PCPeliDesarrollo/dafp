@@ -26,7 +26,7 @@ import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useGastos, useGastosGeneral } from "@/lib/gastos-store";
 import { useCierres, parseFuenteVendedor, VENDEDOR_NOMBRE } from "@/lib/cierres-store";
 import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
-import { Upload } from "lucide-react";
+import { Upload, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -195,6 +195,27 @@ export function AnnualView() {
       .sort((a, b) => b.ventas - a.ventas);
   }, [ventas, cierresAnio, year]);
 
+  /**
+   * KPI definitivo del año: Dinero Real Efectivo + TPV + Banco + Gastos Personales.
+   * Dinero real = ingresos cobrados − gastos pagados + saldos de cuentas cerradas.
+   */
+  const totalDefinitivo = useMemo(() => {
+    const ingresos = ventas
+      .filter((r) => (r.fecha ?? "").startsWith(year))
+      .reduce((a, r) => a + (r.total_venta ?? 0), 0);
+    const gastosAnio = gastos.filter((g) => (g.fecha ?? "").startsWith(year));
+    const gastosTotal = gastosAnio.reduce((a, g) => a + (g.monto ?? 0), 0);
+    const personales = gastosAnio
+      .filter((g) => g.categoria === "personales")
+      .reduce((a, g) => a + (g.monto ?? 0), 0);
+    const cierres = cierresAnio
+      .filter((c) => c.fuente === "efectivo" || c.fuente === "banco")
+      .reduce((a, c) => a + c.monto, 0);
+    return ingresos - gastosTotal + cierres + personales;
+  }, [ventas, gastos, cierresAnio, year]);
+
+
+
 
 
 
@@ -255,7 +276,29 @@ export function AnnualView() {
         </p>
       )}
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2">
+      <section className="mt-6 grid gap-4">
+        <Card className="overflow-hidden border-purple-500/40 bg-purple-500/10 shadow-elevated">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-purple-300">
+                <Wallet className="h-4 w-4" /> TOTAL · {year}
+              </p>
+              <p className="mt-1 text-4xl font-semibold tabular-nums text-purple-200">
+                {eur.format(totalDefinitivo)}
+              </p>
+              <p className="mt-1 text-xs text-purple-300/80">
+                Efectivo + TPV + Banco + Gastos Personales
+              </p>
+            </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/20">
+              <Wallet className="h-7 w-7 text-purple-300" />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mt-4 grid gap-4 md:grid-cols-2">
+
         <Card className="border-success/70 bg-success/25 shadow-elevated shadow-success-glow">
           <CardContent className="p-6">
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
