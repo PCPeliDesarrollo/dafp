@@ -1057,6 +1057,68 @@ export function SalesDashboard() {
 
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-4 grid gap-4 md:grid-cols-2">
+          <Card
+            className="cursor-pointer border-success/70 bg-success/25 shadow-elevated shadow-success-glow transition-colors hover:border-success hover:bg-success/30"
+            onClick={() =>
+              setKpiDetail({
+                title: `Total Ingresos Reales · ${rangoLabel}`,
+                formula:
+                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
+                total: ingresosRealesTotal,
+                items: ventaItems(filtered),
+              })
+            }
+          >
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                Total Ingresos Reales · {RANGOS.find((r) => r.key === rango)?.label}
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
+                {eurP.format(ingresosRealesTotal)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Incluye entregas parciales al valor cobrado · pulsa para ver el detalle
+              </p>
+            </CardContent>
+          </Card>
+          <Card
+            className="relative cursor-pointer overflow-hidden gradient-accent border-accent/60 shadow-glow transition-opacity hover:opacity-90"
+            onClick={() =>
+              setKpiDetail({
+                title: `Beneficio Real · ${rangoLabel}`,
+                formula: "Beneficio de cada albarán = PVP total − PVD (coste × cantidad).",
+                total: beneficioRealTotal,
+                items: filtered
+                  .filter((r) => (r.beneficio ?? 0) !== 0)
+                  .slice()
+                  .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+                  .map((r) => ({
+                    id: `b-${r.id}`,
+                    fecha: r.fecha,
+                    concepto: ventaConcepto(r),
+                    detalle: `PVP ${eurP.format(r.total_venta)} · beneficio`,
+                    importe: r.beneficio ?? 0,
+                    sourceKind: "venta" as const,
+                    sourceId: String(r.id),
+                  })),
+              })
+            }
+          >
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-widest text-accent-foreground/80">
+                Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
+              </p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums text-accent-foreground">
+                {eurP.format(beneficioRealTotal)}
+              </p>
+              <p className="mt-1 text-xs text-accent-foreground/75">
+                Calculado desde PVP − PVD de los albaranes ({albaranesConBeneficio} con datos)
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Desglose por método de pago */}
         <section className="mt-4 grid gap-4 md:grid-cols-3">
           {(["efectivo", "tpv", "banco"] as MetodoPago[]).map((mp) => {
             const d = desglosePago[mp];
