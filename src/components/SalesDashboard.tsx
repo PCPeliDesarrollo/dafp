@@ -988,18 +988,6 @@ export function SalesDashboard() {
               </AlertDialogContent>
             </AlertDialog>
             )}
-            {!esGeneral && source === "csv" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => ventasStore.clear()}
-                className="h-10 gap-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
-                title="Volver a los datos de demostración"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Restablecer demo
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
