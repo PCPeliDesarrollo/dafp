@@ -15,6 +15,8 @@ import { LogOut, Users } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { OcrPasteZone } from "./OcrPasteZone";
+import { GastosCashForm } from "./GastosCashForm";
+import { IngresoManualForm } from "./IngresoManualForm";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useVista } from "@/lib/empresa";
 
