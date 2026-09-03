@@ -11,7 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Wallet, Loader2 } from "lucide-react";
-import { getGastosStore, type GastoCategoria } from "@/lib/gastos-store";
+import {
+  getGastosStore,
+  type GastoCategoria,
+  type GastoFuente,
+} from "@/lib/gastos-store";
 import { useEmpresa } from "@/lib/empresa";
 import { toast } from "sonner";
 
