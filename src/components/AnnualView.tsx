@@ -26,7 +26,7 @@ import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useGastos, useGastosGeneral } from "@/lib/gastos-store";
 import { useCierres, parseFuenteVendedor, VENDEDOR_NOMBRE } from "@/lib/cierres-store";
 import { allowedMonths, useSuperuser } from "@/lib/use-superuser";
-import { Upload } from "lucide-react";
+import { Upload, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const eur = new Intl.NumberFormat("es-ES", {
