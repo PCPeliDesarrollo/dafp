@@ -15,6 +15,8 @@ import { LogOut, Users } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { OcrPasteZone } from "./OcrPasteZone";
+import { GastosCashForm } from "./GastosCashForm";
+import { IngresoManualForm } from "./IngresoManualForm";
 import { useDashboardVentas } from "@/lib/use-dashboard-ventas";
 import { useVista } from "@/lib/empresa";
 
@@ -79,6 +81,11 @@ export function LimitedDashboard() {
       </div>
 
       <OcrPasteZone />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <IngresoManualForm />
+        <GastosCashForm />
+      </div>
 
       <Card className="gradient-card border-border/50 shadow-elevated">
         <CardHeader className="pb-2">
