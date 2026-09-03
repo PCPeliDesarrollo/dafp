@@ -1218,61 +1218,6 @@ export function SalesDashboard() {
           })}
         </section>
 
-        {/* KPI definitivo: TOTAL */}
-        <section className="mt-4 grid gap-4">
-          <Card
-            className="cursor-pointer overflow-hidden border-purple-500/40 bg-purple-500/10 shadow-elevated transition-colors hover:border-purple-500/70 hover:bg-purple-500/15"
-            onClick={() =>
-              setKpiDetail({
-                title: `TOTAL · ${rangoLabel}`,
-                formula:
-                  "Dinero Real Efectivo + Dinero Real TPV + Dinero Real Banco + Gastos Personales del periodo seleccionado.",
-                total: totalDefinitivo,
-                totalLabel: "Total definitivo",
-                items: [
-                  {
-                    id: "total-efectivo",
-                    concepto: "Dinero Real Efectivo",
-                    importe: dineroRealMetodo("efectivo"),
-                  },
-                  {
-                    id: "total-tpv",
-                    concepto: "Dinero Real TPV",
-                    importe: dineroRealMetodo("tpv"),
-                  },
-                  {
-                    id: "total-banco",
-                    concepto: "Dinero Real Banco",
-                    importe: dineroRealMetodo("banco"),
-                  },
-                  {
-                    id: "total-personales",
-                    concepto: "Gastos Personales",
-                    importe: gastosPersonales,
-                  },
-                ],
-              })
-            }
-          >
-            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
-              <div>
-                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-purple-300">
-                  <Wallet className="h-4 w-4" /> TOTAL · {rangoLabel}
-                </p>
-                <p className="mt-1 text-4xl font-semibold tabular-nums text-purple-200">
-                  {eurP.format(totalDefinitivo)}
-                </p>
-                <p className="mt-1 text-xs text-purple-300/80">
-                  Efectivo + TPV + Banco + Gastos Personales · pulsa para ver el desglose
-                </p>
-              </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/20">
-                <Wallet className="h-7 w-7 text-purple-300" />
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
         {/* Resumen secundario: canjeos, cobros reales y gastos en una sola fila */}
         <section className="mt-4 grid gap-4 md:grid-cols-3">
           <Card
