@@ -195,6 +195,27 @@ export function AnnualView() {
       .sort((a, b) => b.ventas - a.ventas);
   }, [ventas, cierresAnio, year]);
 
+  /**
+   * KPI definitivo del año: Dinero Real Efectivo + TPV + Banco + Gastos Personales.
+   * Dinero real = ingresos cobrados − gastos pagados + saldos de cuentas cerradas.
+   */
+  const totalDefinitivo = useMemo(() => {
+    const ingresos = ventas
+      .filter((r) => (r.fecha ?? "").startsWith(year))
+      .reduce((a, r) => a + (r.total_venta ?? 0), 0);
+    const gastosAnio = gastos.filter((g) => (g.fecha ?? "").startsWith(year));
+    const gastosTotal = gastosAnio.reduce((a, g) => a + (g.monto ?? 0), 0);
+    const personales = gastosAnio
+      .filter((g) => g.categoria === "personales")
+      .reduce((a, g) => a + (g.monto ?? 0), 0);
+    const cierres = cierresAnio
+      .filter((c) => c.fuente === "efectivo" || c.fuente === "banco")
+      .reduce((a, c) => a + c.monto, 0);
+    return ingresos - gastosTotal + cierres + personales;
+  }, [ventas, gastos, cierresAnio, year]);
+
+
+
 
 
 
