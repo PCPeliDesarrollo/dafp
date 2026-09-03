@@ -93,6 +93,7 @@ function createGastosStore(empresa: EmpresaKey) {
       monto: number;
       concepto: string;
       categoria: GastoCategoria;
+      fuente?: GastoFuente;
     }) => {
       const row: Gasto = {
         id: makeId(),
@@ -100,7 +101,7 @@ function createGastosStore(empresa: EmpresaKey) {
         monto: Math.abs(input.monto),
         concepto: input.concepto,
         categoria: input.categoria,
-        fuente: "efectivo",
+        fuente: input.fuente ?? "efectivo",
         referencia: null,
       };
       const { error } = await supabase.from(table as any).insert({

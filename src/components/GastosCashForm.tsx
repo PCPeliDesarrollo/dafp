@@ -11,7 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Wallet, Loader2 } from "lucide-react";
-import { getGastosStore, type GastoCategoria } from "@/lib/gastos-store";
+import {
+  getGastosStore,
+  type GastoCategoria,
+  type GastoFuente,
+} from "@/lib/gastos-store";
 import { useEmpresa } from "@/lib/empresa";
 import { toast } from "sonner";
 
@@ -20,6 +24,7 @@ export function GastosCashForm() {
   const [monto, setMonto] = useState("");
   const [concepto, setConcepto] = useState("");
   const [categoria, setCategoria] = useState<GastoCategoria>("tienda");
+  const [fuente, setFuente] = useState<GastoFuente>("efectivo");
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
 
@@ -41,6 +46,7 @@ export function GastosCashForm() {
         monto: n,
         concepto: concepto.trim(),
         categoria,
+        fuente,
       });
       toast.success("Gasto registrado");
       setMonto("");
@@ -57,7 +63,7 @@ export function GastosCashForm() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <Wallet className="h-4 w-4 text-warning" />
-          Gastos en efectivo
+          Gastos manuales
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -90,7 +96,7 @@ export function GastosCashForm() {
               className="mt-1"
             />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <Label className="text-xs">Categoría</Label>
             <Select value={categoria} onValueChange={(v) => setCategoria(v as GastoCategoria)}>
               <SelectTrigger className="mt-1">
@@ -99,6 +105,18 @@ export function GastosCashForm() {
               <SelectContent>
                 <SelectItem value="tienda">Gastos Tienda</SelectItem>
                 <SelectItem value="personales">Gastos Personales</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Pagado con</Label>
+            <Select value={fuente} onValueChange={(v) => setFuente(v as GastoFuente)}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="efectivo">Efectivo (Caja)</SelectItem>
+                <SelectItem value="banco">Banco</SelectItem>
               </SelectContent>
             </Select>
           </div>
