@@ -24,6 +24,7 @@ export function GastosCashForm() {
   const [monto, setMonto] = useState("");
   const [concepto, setConcepto] = useState("");
   const [categoria, setCategoria] = useState<GastoCategoria>("tienda");
+  const [fuente, setFuente] = useState<GastoFuente>("efectivo");
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
 
