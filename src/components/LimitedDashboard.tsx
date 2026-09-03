@@ -82,6 +82,11 @@ export function LimitedDashboard() {
 
       <OcrPasteZone />
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <IngresoManualForm />
+        <GastosCashForm />
+      </div>
+
       <Card className="gradient-card border-border/50 shadow-elevated">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
