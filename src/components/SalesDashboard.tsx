@@ -1000,74 +1000,63 @@ export function SalesDashboard() {
           </div>
         </header>
 
-        {/* Resumen real de ingresos y beneficio, respeta filtro */}
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
+        {/* KPI definitivo: TOTAL */}
+        <section className="mt-6 grid gap-4">
           <Card
-            className="cursor-pointer border-success/70 bg-success/25 shadow-elevated shadow-success-glow transition-colors hover:border-success hover:bg-success/30"
+            className="cursor-pointer overflow-hidden border-purple-500/40 bg-purple-500/10 shadow-elevated transition-colors hover:border-purple-500/70 hover:bg-purple-500/15"
             onClick={() =>
               setKpiDetail({
-                title: `Total Ingresos Reales · ${rangoLabel}`,
+                title: `TOTAL · ${rangoLabel}`,
                 formula:
-                  "Suma del PVP total de cada albarán (efectivo + TPV + banco) en el periodo seleccionado.",
-                total: ingresosRealesTotal,
-                items: ventaItems(filtered),
+                  "Dinero Real Efectivo + Dinero Real TPV + Dinero Real Banco + Gastos Personales del periodo seleccionado.",
+                total: totalDefinitivo,
+                totalLabel: "Total definitivo",
+                items: [
+                  {
+                    id: "total-efectivo",
+                    concepto: "Dinero Real Efectivo",
+                    importe: dineroRealMetodo("efectivo"),
+                  },
+                  {
+                    id: "total-tpv",
+                    concepto: "Dinero Real TPV",
+                    importe: dineroRealMetodo("tpv"),
+                  },
+                  {
+                    id: "total-banco",
+                    concepto: "Dinero Real Banco",
+                    importe: dineroRealMetodo("banco"),
+                  },
+                  {
+                    id: "total-personales",
+                    concepto: "Gastos Personales",
+                    importe: gastosPersonales,
+                  },
+                ],
               })
             }
           >
-            <CardContent className="p-6">
-              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                Total Ingresos Reales · {RANGOS.find((r) => r.key === rango)?.label}
-              </p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums text-success">
-                {eurP.format(ingresosRealesTotal)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Incluye entregas parciales al valor cobrado · pulsa para ver el detalle
-              </p>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-purple-300">
+                  <Wallet className="h-4 w-4" /> TOTAL · {rangoLabel}
+                </p>
+                <p className="mt-1 text-4xl font-semibold tabular-nums text-purple-200">
+                  {eurP.format(totalDefinitivo)}
+                </p>
+                <p className="mt-1 text-xs text-purple-300/80">
+                  Efectivo + TPV + Banco + Gastos Personales · pulsa para ver el desglose
+                </p>
+              </div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/20">
+                <Wallet className="h-7 w-7 text-purple-300" />
+              </div>
             </CardContent>
           </Card>
-          <Card
-            className="relative cursor-pointer overflow-hidden gradient-accent border-accent/60 shadow-glow transition-opacity hover:opacity-90"
-
-            onClick={() =>
-              setKpiDetail({
-                title: `Beneficio Real · ${rangoLabel}`,
-                formula: "Beneficio de cada albarán = PVP total − PVD (coste × cantidad).",
-                total: beneficioRealTotal,
-                items: filtered
-                  .filter((r) => (r.beneficio ?? 0) !== 0)
-                  .slice()
-                  .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
-                  .map((r) => ({
-                    id: `b-${r.id}`,
-                    fecha: r.fecha,
-                    concepto: ventaConcepto(r),
-                    detalle: `PVP ${eurP.format(r.total_venta)} · beneficio`,
-                    importe: r.beneficio ?? 0,
-                    sourceKind: "venta" as const,
-                    sourceId: String(r.id),
-                  })),
-              })
-            }
-          >
-            <CardContent className="p-6">
-              <p className="text-xs font-medium uppercase tracking-widest text-accent-foreground/80">
-                Beneficio Real · {RANGOS.find((r) => r.key === rango)?.label}
-              </p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums text-accent-foreground">
-                {eurP.format(beneficioRealTotal)}
-              </p>
-              <p className="mt-1 text-xs text-accent-foreground/75">
-                Calculado desde PVP − PVD de los albaranes ({albaranesConBeneficio} con datos)
-              </p>
-            </CardContent>
-          </Card>
-
         </section>
 
-
-
-        {/* Desglose por método de pago */}
+        {/* Resumen real de ingresos y beneficio, respeta filtro */}
+        <section className="mt-4 grid gap-4 md:grid-cols-2">
         <section className="mt-4 grid gap-4 md:grid-cols-3">
           {(["efectivo", "tpv", "banco"] as MetodoPago[]).map((mp) => {
             const d = desglosePago[mp];
