@@ -128,10 +128,15 @@ function FilaMensual({
         importe_basura_cobrado: importeBasura,
         importe_agua: num(agua),
         total_a_cobrar: total,
-        fecha_cobro:
-          fechaCobro || (marcarCobrado ? new Date().toISOString().slice(0, 10) : null),
+        fecha_cobro: marcarPendiente
+          ? null
+          : fechaCobro || (marcarCobrado ? new Date().toISOString().slice(0, 10) : null),
         quien_cobra: quienCobra || null,
-        estado_pago: marcarCobrado ? "Cobrado" : (existente?.estado_pago ?? "Pendiente"),
+        estado_pago: marcarPendiente
+          ? "Pendiente"
+          : marcarCobrado
+            ? "Cobrado"
+            : (existente?.estado_pago ?? "Pendiente"),
       });
       toast.success(marcarCobrado ? `Cobro registrado · ${inq.inquilino}` : "Guardado");
     } catch (e) {
