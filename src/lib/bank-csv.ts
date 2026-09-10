@@ -33,7 +33,11 @@ const CARD_HINTS = [
   "redsys",
   "datafono",
   "datafonos",
+  "facturacion comercio",
+  "facturacion de comercio",
+  "liquidacion comercio",
 ];
+
 
 export function isCardIncome(concepto: string): boolean {
   const n = concepto
