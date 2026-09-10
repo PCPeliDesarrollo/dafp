@@ -14,131 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      alqu_cobros_mensuales: {
-        Row: {
-          anio: number
-          aplica_basura_mes: boolean
-          created_at: string
-          estado_basura_trimestre: Database["public"]["Enums"]["alqu_estado_basura"]
-          estado_pago: Database["public"]["Enums"]["alqu_estado_pago"]
-          fecha_cobro: string | null
-          id: string
-          importe_agua: number
-          importe_alquiler: number
-          importe_basura_cobrado: number
-          inquilino_id: string
-          kw_consumidos: number
-          lectura_actual: number
-          lectura_anterior: number
-          mes: number
-          notas: string | null
-          quien_cobra: string | null
-          total_a_cobrar: number
-          total_luz: number
-          trimestre: number | null
-          updated_at: string
-        }
-        Insert: {
-          anio: number
-          aplica_basura_mes?: boolean
-          created_at?: string
-          estado_basura_trimestre?: Database["public"]["Enums"]["alqu_estado_basura"]
-          estado_pago?: Database["public"]["Enums"]["alqu_estado_pago"]
-          fecha_cobro?: string | null
-          id?: string
-          importe_agua?: number
-          importe_alquiler?: number
-          importe_basura_cobrado?: number
-          inquilino_id: string
-          kw_consumidos?: number
-          lectura_actual?: number
-          lectura_anterior?: number
-          mes: number
-          notas?: string | null
-          quien_cobra?: string | null
-          total_a_cobrar?: number
-          total_luz?: number
-          trimestre?: number | null
-          updated_at?: string
-        }
-        Update: {
-          anio?: number
-          aplica_basura_mes?: boolean
-          created_at?: string
-          estado_basura_trimestre?: Database["public"]["Enums"]["alqu_estado_basura"]
-          estado_pago?: Database["public"]["Enums"]["alqu_estado_pago"]
-          fecha_cobro?: string | null
-          id?: string
-          importe_agua?: number
-          importe_alquiler?: number
-          importe_basura_cobrado?: number
-          inquilino_id?: string
-          kw_consumidos?: number
-          lectura_actual?: number
-          lectura_anterior?: number
-          mes?: number
-          notas?: string | null
-          quien_cobra?: string | null
-          total_a_cobrar?: number
-          total_luz?: number
-          trimestre?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "alqu_cobros_mensuales_inquilino_id_fkey"
-            columns: ["inquilino_id"]
-            isOneToOne: false
-            referencedRelation: "alqu_inquilinos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      alqu_inquilinos: {
-        Row: {
-          created_at: string
-          direccion: string
-          frecuencia_basura: Database["public"]["Enums"]["alqu_frecuencia"]
-          id: string
-          importe_alquiler: number
-          importe_basura: number
-          inquilino: string
-          iva: number
-          minimo_luz: number
-          notas: string | null
-          precio_kw: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          direccion?: string
-          frecuencia_basura?: Database["public"]["Enums"]["alqu_frecuencia"]
-          id?: string
-          importe_alquiler?: number
-          importe_basura?: number
-          inquilino: string
-          iva?: number
-          minimo_luz?: number
-          notas?: string | null
-          precio_kw?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          direccion?: string
-          frecuencia_basura?: Database["public"]["Enums"]["alqu_frecuencia"]
-          id?: string
-          importe_alquiler?: number
-          importe_basura?: number
-          inquilino?: string
-          iva?: number
-          minimo_luz?: number
-          notas?: string | null
-          precio_kw?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       cierres_mensuales: {
         Row: {
           anio: number
@@ -408,12 +283,6 @@ export type Database = {
       }
     }
     Enums: {
-      alqu_estado_basura:
-        | "Cobrado este trimestre"
-        | "No corresponde pagar"
-        | "Pendiente de cobro"
-      alqu_estado_pago: "Pendiente" | "Cobrado"
-      alqu_frecuencia: "Mensual" | "Trimestral" | "Bimestral"
       app_role: "superuser" | "user"
     }
     CompositeTypes: {
@@ -542,13 +411,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      alqu_estado_basura: [
-        "Cobrado este trimestre",
-        "No corresponde pagar",
-        "Pendiente de cobro",
-      ],
-      alqu_estado_pago: ["Pendiente", "Cobrado"],
-      alqu_frecuencia: ["Mensual", "Trimestral", "Bimestral"],
       app_role: ["superuser", "user"],
     },
   },

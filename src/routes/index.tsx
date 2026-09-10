@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SalesDashboard } from "@/components/SalesDashboard";
 import { AnnualView } from "@/components/AnnualView";
-import { AlquileresView } from "@/components/AlquileresView";
 import { LimitedDashboard } from "@/components/LimitedDashboard";
 import { AuthGate } from "@/components/AuthGate";
 import { EmpresaProvider, EMPRESAS, type VistaKey } from "@/lib/empresa";
@@ -11,14 +10,13 @@ import { cn } from "@/lib/utils";
 import { useSuperuser } from "@/lib/use-superuser";
 
 
-type TabKey = VistaKey | "anual" | "alqu";
+type TabKey = VistaKey | "anual";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "fjv", label: EMPRESAS.fjv.label },
   { key: "pcp", label: EMPRESAS.pcp.label },
   { key: "general", label: "General" },
   { key: "anual", label: "Año completo" },
-  { key: "alqu", label: "ALQU" },
 ];
 
 function DashboardTabs() {
@@ -59,9 +57,7 @@ function DashboardTabs() {
           ))}
         </div>
       </div>
-      {vista === "alqu" ? (
-        <AlquileresView />
-      ) : vista === "anual" ? (
+      {vista === "anual" ? (
         <AnnualView />
       ) : (
         <EmpresaProvider value={vista as VistaKey}>
