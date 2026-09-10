@@ -107,7 +107,9 @@ function FilaMensual({
       : "No corresponde pagar";
   const cobrado = existente?.estado_pago === "Cobrado";
 
-  const guardar = async (marcarCobrado: boolean) => {
+  const guardar = async (modo: boolean | "pendiente") => {
+    const marcarCobrado = modo === true;
+    const marcarPendiente = modo === "pendiente";
     setSaving(true);
     try {
       await alquStore.saveCobro({
