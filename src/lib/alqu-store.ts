@@ -27,6 +27,8 @@ export type Cobro = {
   anio: number;
   mes: number;
   trimestre: number;
+  importe_alquiler: number;
+  notas: string | null;
   lectura_anterior: number;
   lectura_actual: number;
   kw_consumidos: number;
@@ -73,6 +75,8 @@ function mapCobro(r: any): Cobro {
     anio: Number(r.anio),
     mes: Number(r.mes),
     trimestre: Number(r.trimestre),
+    importe_alquiler: Number(r.importe_alquiler ?? 0),
+    notas: r.notas ?? null,
     lectura_anterior: Number(r.lectura_anterior ?? 0),
     lectura_actual: Number(r.lectura_actual ?? 0),
     kw_consumidos: Number(r.kw_consumidos ?? 0),
