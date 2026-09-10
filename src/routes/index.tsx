@@ -10,13 +10,14 @@ import { cn } from "@/lib/utils";
 import { useSuperuser } from "@/lib/use-superuser";
 
 
-type TabKey = VistaKey | "anual";
+type TabKey = VistaKey | "anual" | "alqu";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "fjv", label: EMPRESAS.fjv.label },
   { key: "pcp", label: EMPRESAS.pcp.label },
   { key: "general", label: "General" },
   { key: "anual", label: "Año completo" },
+  { key: "alqu", label: "ALQU" },
 ];
 
 function DashboardTabs() {
