@@ -593,7 +593,9 @@ export function AlquileresView() {
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Receipt className="h-4 w-4" /> Alquiler
                     </span>
-                    <span className="font-semibold">{eur(inq.importe_alquiler)}</span>
+                    <span className="font-semibold">
+                      {eur(c.importe_alquiler || inq.importe_alquiler)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="flex items-center gap-2 text-muted-foreground">
@@ -625,6 +627,10 @@ export function AlquileresView() {
                   {c.estado_basura_trimestre}
                   {c.fecha_cobro ? ` · Cobrado el ${c.fecha_cobro}` : ""}
                   {c.quien_cobra ? ` · ${c.quien_cobra}` : ""}
+                </p>
+                {c.notas && (
+                  <p className="rounded-md bg-muted/40 p-2 text-[11px] whitespace-pre-wrap">
+                    <span className="font-semibold">Notas:</span> {c.notas}
                 </p>
               </Card>
             );
