@@ -28,6 +28,7 @@ Reglas:
 - "es_canjeo": true SOLO si en el albarán aparece escrito "CANJEA", "CANJEO" o "CANJE" (el cliente paga con saldo a favor que ya tenía). Si no aparece, false.
 - "canje_values": los importes anotados junto a "CANJEA"/"CANJEO" (lo pagado con saldo a favor). Si aparece "CANJEA" sin importe, devuelve lista vacía.
 - "entrega": si hay una anotación "ENTREGA", su importe; si no, null.
+- IGNORA por completo cualquier línea o texto que diga "FACTURACIÓN COMERCIO" o "FACTURACION COMERCIO": ese cobro es TPV y ya está anotado en el albarán. No lo incluyas en tpv_values, banco_values, pvp_values ni en el total, y no lo trates como venta.
 No inventes valores. Si no ves algo, usa null o lista vacía.`;
 
 function asPositiveNumbers(v: unknown): number[] {
