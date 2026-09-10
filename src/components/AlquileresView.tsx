@@ -631,7 +631,8 @@ export function AlquileresView() {
                 {c.notas && (
                   <p className="rounded-md bg-muted/40 p-2 text-[11px] whitespace-pre-wrap">
                     <span className="font-semibold">Notas:</span> {c.notas}
-                </p>
+                  </p>
+                )}
               </Card>
             );
           })}
