@@ -81,6 +81,14 @@ function FilaMensual({
     existente ? String(existente.lectura_actual) : "",
   );
   const [agua, setAgua] = useState(existente ? String(existente.importe_agua) : "0");
+  const [alquiler, setAlquiler] = useState(
+    String(existente?.importe_alquiler || inq.importe_alquiler),
+  );
+  const [basuraImporte, setBasuraImporte] = useState(
+    String(existente?.importe_basura_cobrado || inq.importe_basura),
+  );
+  const [notas, setNotas] = useState(existente?.notas ?? "");
+  const [fechaCobro, setFechaCobro] = useState(existente?.fecha_cobro ?? "");
   const [basura, setBasura] = useState(
     existente ? existente.aplica_basura_mes : !yaCobradaBasura,
   );
@@ -89,8 +97,8 @@ function FilaMensual({
 
   const kw = Math.max(0, num(lecturaActual) - num(lecturaAnterior));
   const totalLuz = calcTotalLuz(inq, kw);
-  const importeBasura = basura ? inq.importe_basura : 0;
-  const total = inq.importe_alquiler + totalLuz + importeBasura + num(agua);
+  const importeBasura = basura ? num(basuraImporte) : 0;
+  const total = num(alquiler) + totalLuz + importeBasura + num(agua);
   const estadoBasura: EstadoBasura = basura
     ? "Pendiente de cobro"
     : yaCobradaBasura
