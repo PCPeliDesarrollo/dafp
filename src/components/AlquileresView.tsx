@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -81,6 +82,14 @@ function FilaMensual({
     existente ? String(existente.lectura_actual) : "",
   );
   const [agua, setAgua] = useState(existente ? String(existente.importe_agua) : "0");
+  const [alquiler, setAlquiler] = useState(
+    String(existente?.importe_alquiler || inq.importe_alquiler),
+  );
+  const [basuraImporte, setBasuraImporte] = useState(
+    String(existente?.importe_basura_cobrado || inq.importe_basura),
+  );
+  const [notas, setNotas] = useState(existente?.notas ?? "");
+  const [fechaCobro, setFechaCobro] = useState(existente?.fecha_cobro ?? "");
   const [basura, setBasura] = useState(
     existente ? existente.aplica_basura_mes : !yaCobradaBasura,
   );
@@ -89,8 +98,8 @@ function FilaMensual({
 
   const kw = Math.max(0, num(lecturaActual) - num(lecturaAnterior));
   const totalLuz = calcTotalLuz(inq, kw);
-  const importeBasura = basura ? inq.importe_basura : 0;
-  const total = inq.importe_alquiler + totalLuz + importeBasura + num(agua);
+  const importeBasura = basura ? num(basuraImporte) : 0;
+  const total = num(alquiler) + totalLuz + importeBasura + num(agua);
   const estadoBasura: EstadoBasura = basura
     ? "Pendiente de cobro"
     : yaCobradaBasura
@@ -98,7 +107,9 @@ function FilaMensual({
       : "No corresponde pagar";
   const cobrado = existente?.estado_pago === "Cobrado";
 
-  const guardar = async (marcarCobrado: boolean) => {
+  const guardar = async (modo: boolean | "pendiente") => {
+    const marcarCobrado = modo === true;
+    const marcarPendiente = modo === "pendiente";
     setSaving(true);
     try {
       await alquStore.saveCobro({
@@ -106,6 +117,8 @@ function FilaMensual({
         inquilino_id: inq.id,
         anio,
         mes,
+        importe_alquiler: num(alquiler),
+        notas: notas.trim() || null,
         lectura_anterior: num(lecturaAnterior),
         lectura_actual: num(lecturaActual),
         kw_consumidos: kw,
@@ -115,11 +128,15 @@ function FilaMensual({
         importe_basura_cobrado: importeBasura,
         importe_agua: num(agua),
         total_a_cobrar: total,
-        fecha_cobro: marcarCobrado
-          ? new Date().toISOString().slice(0, 10)
-          : (existente?.fecha_cobro ?? null),
+        fecha_cobro: marcarPendiente
+          ? null
+          : fechaCobro || (marcarCobrado ? new Date().toISOString().slice(0, 10) : null),
         quien_cobra: quienCobra || null,
-        estado_pago: marcarCobrado ? "Cobrado" : (existente?.estado_pago ?? "Pendiente"),
+        estado_pago: marcarPendiente
+          ? "Pendiente"
+          : marcarCobrado
+            ? "Cobrado"
+            : (existente?.estado_pago ?? "Pendiente"),
       });
       toast.success(marcarCobrado ? `Cobro registrado · ${inq.inquilino}` : "Guardado");
     } catch (e) {
@@ -173,15 +190,50 @@ function FilaMensual({
           <Input inputMode="decimal" value={agua} onChange={(e) => setAgua(e.target.value)} />
         </div>
         <div className="space-y-1">
+          <Label className="text-xs">Alquiler (€)</Label>
+          <Input
+            inputMode="decimal"
+            value={alquiler}
+            onChange={(e) => setAlquiler(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Basura (€)</Label>
+          <Input
+            inputMode="decimal"
+            value={basuraImporte}
+            onChange={(e) => setBasuraImporte(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
           <Label className="text-xs">Quién cobra</Label>
           <Input value={quienCobra} onChange={(e) => setQuienCobra(e.target.value)} />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Fecha de cobro</Label>
+          <Input
+            type="date"
+            value={fechaCobro}
+            onChange={(e) => setFechaCobro(e.target.value)}
+          />
+        </div>
       </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Notas de este mes</Label>
+        <Textarea
+          rows={2}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder={`Notas de ${MESES[mes - 1]} ${anio}…`}
+        />
+      </div>
+
 
       <div className="grid gap-2 rounded-lg bg-muted/40 p-3 text-xs sm:grid-cols-4">
         <div>
           <span className="text-muted-foreground">Alquiler</span>
-          <p className="font-semibold">{eur(inq.importe_alquiler)}</p>
+          <p className="font-semibold">{eur(num(alquiler))}</p>
         </div>
         <div>
           <span className="text-muted-foreground">
@@ -216,18 +268,43 @@ function FilaMensual({
               : estadoBasura}
           </span>
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {existente && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive"
+              disabled={saving}
+              onClick={async () => {
+                if (!confirm(`¿Borrar el recibo de ${inq.inquilino}?`)) return;
+                try {
+                  await alquStore.removeCobro(existente.id);
+                  toast.success("Recibo borrado");
+                } catch {
+                  toast.error("No se pudo borrar");
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="outline" size="sm" disabled={saving} onClick={() => guardar(false)}>
             Guardar
           </Button>
-          <Button
-            size="sm"
-            disabled={saving}
-            className="gradient-primary text-primary-foreground"
-            onClick={() => guardar(true)}
-          >
-            Marcar cobrado
-          </Button>
+          {cobrado ? (
+            <Button variant="outline" size="sm" disabled={saving} onClick={() => guardar("pendiente")}>
+              Marcar pendiente
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={saving}
+              className="gradient-primary text-primary-foreground"
+              onClick={() => guardar(true)}
+            >
+              Marcar cobrado
+            </Button>
+          )}
         </div>
       </div>
     </Card>
@@ -516,7 +593,9 @@ export function AlquileresView() {
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Receipt className="h-4 w-4" /> Alquiler
                     </span>
-                    <span className="font-semibold">{eur(inq.importe_alquiler)}</span>
+                    <span className="font-semibold">
+                      {eur(c.importe_alquiler || inq.importe_alquiler)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="flex items-center gap-2 text-muted-foreground">
@@ -549,6 +628,11 @@ export function AlquileresView() {
                   {c.fecha_cobro ? ` · Cobrado el ${c.fecha_cobro}` : ""}
                   {c.quien_cobra ? ` · ${c.quien_cobra}` : ""}
                 </p>
+                {c.notas && (
+                  <p className="rounded-md bg-muted/40 p-2 text-[11px] whitespace-pre-wrap">
+                    <span className="font-semibold">Notas:</span> {c.notas}
+                  </p>
+                )}
               </Card>
             );
           })}
