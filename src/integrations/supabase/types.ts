@@ -24,12 +24,14 @@ export type Database = {
           fecha_cobro: string | null
           id: string
           importe_agua: number
+          importe_alquiler: number
           importe_basura_cobrado: number
           inquilino_id: string
           kw_consumidos: number
           lectura_actual: number
           lectura_anterior: number
           mes: number
+          notas: string | null
           quien_cobra: string | null
           total_a_cobrar: number
           total_luz: number
@@ -45,12 +47,14 @@ export type Database = {
           fecha_cobro?: string | null
           id?: string
           importe_agua?: number
+          importe_alquiler?: number
           importe_basura_cobrado?: number
           inquilino_id: string
           kw_consumidos?: number
           lectura_actual?: number
           lectura_anterior?: number
           mes: number
+          notas?: string | null
           quien_cobra?: string | null
           total_a_cobrar?: number
           total_luz?: number
@@ -66,12 +70,14 @@ export type Database = {
           fecha_cobro?: string | null
           id?: string
           importe_agua?: number
+          importe_alquiler?: number
           importe_basura_cobrado?: number
           inquilino_id?: string
           kw_consumidos?: number
           lectura_actual?: number
           lectura_anterior?: number
           mes?: number
+          notas?: string | null
           quien_cobra?: string | null
           total_a_cobrar?: number
           total_luz?: number
