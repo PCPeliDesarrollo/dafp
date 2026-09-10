@@ -182,10 +182,45 @@ function FilaMensual({
           <Input inputMode="decimal" value={agua} onChange={(e) => setAgua(e.target.value)} />
         </div>
         <div className="space-y-1">
+          <Label className="text-xs">Alquiler (€)</Label>
+          <Input
+            inputMode="decimal"
+            value={alquiler}
+            onChange={(e) => setAlquiler(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Basura (€)</Label>
+          <Input
+            inputMode="decimal"
+            value={basuraImporte}
+            onChange={(e) => setBasuraImporte(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
           <Label className="text-xs">Quién cobra</Label>
           <Input value={quienCobra} onChange={(e) => setQuienCobra(e.target.value)} />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Fecha de cobro</Label>
+          <Input
+            type="date"
+            value={fechaCobro}
+            onChange={(e) => setFechaCobro(e.target.value)}
+          />
+        </div>
       </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Notas de este mes</Label>
+        <Textarea
+          rows={2}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder={`Notas de ${MESES[mes - 1]} ${anio}…`}
+        />
+      </div>
+
 
       <div className="grid gap-2 rounded-lg bg-muted/40 p-3 text-xs sm:grid-cols-4">
         <div>
