@@ -226,7 +226,7 @@ function FilaMensual({
       <div className="grid gap-2 rounded-lg bg-muted/40 p-3 text-xs sm:grid-cols-4">
         <div>
           <span className="text-muted-foreground">Alquiler</span>
-          <p className="font-semibold">{eur(inq.importe_alquiler)}</p>
+          <p className="font-semibold">{eur(num(alquiler))}</p>
         </div>
         <div>
           <span className="text-muted-foreground">
@@ -261,18 +261,43 @@ function FilaMensual({
               : estadoBasura}
           </span>
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {existente && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive"
+              disabled={saving}
+              onClick={async () => {
+                if (!confirm(`¿Borrar el recibo de ${inq.inquilino}?`)) return;
+                try {
+                  await alquStore.removeCobro(existente.id);
+                  toast.success("Recibo borrado");
+                } catch {
+                  toast.error("No se pudo borrar");
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="outline" size="sm" disabled={saving} onClick={() => guardar(false)}>
             Guardar
           </Button>
-          <Button
-            size="sm"
-            disabled={saving}
-            className="gradient-primary text-primary-foreground"
-            onClick={() => guardar(true)}
-          >
-            Marcar cobrado
-          </Button>
+          {cobrado ? (
+            <Button variant="outline" size="sm" disabled={saving} onClick={() => guardar("pendiente")}>
+              Marcar pendiente
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={saving}
+              className="gradient-primary text-primary-foreground"
+              onClick={() => guardar(true)}
+            >
+              Marcar cobrado
+            </Button>
+          )}
         </div>
       </div>
     </Card>
