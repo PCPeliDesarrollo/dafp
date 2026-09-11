@@ -38,9 +38,18 @@ export async function upsertAlquCobro(values: AlquCobroInput) {
   return data;
 }
 
-export async function deleteAlquCobro(id: string) {
-  const { error } = await supabase.from("alqu_cobros_mensuales").delete().eq("id", id);
+export async function deleteAlquCobro(receipt: Pick<AlquCobro, "id" | "inquilino_id" | "anio" | "mes">) {
+  const { data, error } = await supabase
+    .from("alqu_cobros_mensuales")
+    .delete()
+    .eq("id", receipt.id)
+    .eq("inquilino_id", receipt.inquilino_id)
+    .eq("anio", receipt.anio)
+    .eq("mes", receipt.mes)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!data) throw new Error("El recibo no existe o ya había sido eliminado");
 }
 
 export function previousReading(cobros: AlquCobro[], inquilinoId: string, anio: number, mes: number) {
