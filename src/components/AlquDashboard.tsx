@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { Building2, CalendarDays, Check, Edit3, Loader2, Printer, ReceiptText, Save } from "lucide-react";
+import { Building2, CalendarDays, Check, Edit3, FolderArchive, Loader2, Printer, ReceiptText, Save } from "lucide-react";
 import { toast } from "sonner";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -186,11 +187,22 @@ export function AlquDashboard() {
   const years = Array.from({ length: 9 }, (_, i) => now.getFullYear() + 2 - i);
   const totalMonth = Array.from(current.values()).reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
   const collected = Array.from(current.values()).filter((r) => r.estado_pago === "Cobrado").reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
+  const tenantById = useMemo(() => new Map(tenants.map((tenant) => [tenant.id, tenant])), [tenants]);
+  const receiptGroups = useMemo(() => {
+    const grouped = new Map<string, AlquCobro[]>();
+    for (const receipt of receipts) {
+      const key = `${receipt.anio}-${String(receipt.mes).padStart(2, "0")}`;
+      const existing = grouped.get(key) ?? [];
+      existing.push(receipt);
+      grouped.set(key, existing);
+    }
+    return Array.from(grouped.entries()).map(([key, rows]) => ({ key, rows }));
+  }, [receipts]);
 
   return <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
     <div className="flex flex-wrap items-end justify-between gap-4"><div><Badge className="mb-2 bg-primary/15 text-primary hover:bg-primary/15">Gestión de alquileres</Badge><h1 className="text-2xl font-semibold">ALQU</h1><p className="text-sm text-muted-foreground">Alquileres, lecturas y recibos mensuales</p></div><div className="flex gap-2"><Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent></Select><Select value={String(year)} onValueChange={(v) => setYear(Number(v))}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select></div></div>
     <div className="grid gap-3 sm:grid-cols-3"><Summary icon={Building2} label="Inquilinos" value={String(tenants.length)} /><Summary icon={ReceiptText} label="Facturado" value={eur.format(totalMonth)} /><Summary icon={Check} label="Cobrado" value={eur.format(collected)} /></div>
-    <Tabs defaultValue="mensualidades"><TabsList><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
+    <Tabs defaultValue="mensualidades"><TabsList className="h-auto flex-wrap"><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="recibos"><FolderArchive className="mr-2 h-4 w-4" />Recibos guardados</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{tenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
@@ -207,6 +219,22 @@ export function AlquDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div><p className="text-xs text-muted-foreground">Total a pagar</p><p className="text-2xl font-semibold text-primary">{eur.format(amounts.total)}</p></div><div className="flex gap-2">{row && <Button variant="outline" size="sm" onClick={() => setPreview({ tenant, receipt: row })}><Printer className="h-4 w-4" /> Recibo</Button>}<Button size="sm" onClick={() => saveReceipt(tenant)} disabled={savingId === tenant.id}>{savingId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></div></div>
         </CardContent></Card>;
       })}</div>}</TabsContent>
+      <TabsContent value="recibos" className="mt-5">
+        {loading ? <Loading /> : receiptGroups.length === 0 ? <Card className="border-dashed"><CardContent className="flex min-h-48 flex-col items-center justify-center text-center"><FolderArchive className="mb-3 h-8 w-8 text-muted-foreground" /><p className="font-medium">Todavía no hay recibos guardados</p><p className="mt-1 text-sm text-muted-foreground">Al pulsar Guardar en una mensualidad, aparecerá aquí dentro de su mes.</p></CardContent></Card> : <Accordion type="multiple" defaultValue={[receiptGroups[0]?.key ?? ""]} className="space-y-3">{receiptGroups.map(({ key, rows }) => {
+          const first = rows[0];
+          if (!first) return null;
+          const total = rows.reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
+          const paid = rows.filter((row) => row.estado_pago === "Cobrado");
+          const paidTotal = paid.reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
+          return <AccordionItem key={key} value={key} className="rounded-lg border border-border bg-card px-4 shadow-sm">
+            <AccordionTrigger className="gap-4 py-4 hover:no-underline"><div className="flex min-w-0 flex-1 flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"><div><p className="text-base font-semibold">{MONTHS[first.mes - 1]} {first.anio}</p><p className="text-xs font-normal text-muted-foreground">{rows.length} {rows.length === 1 ? "recibo guardado" : "recibos guardados"}</p></div><div className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-normal"><span>Facturado <strong className="ml-1 text-foreground">{eur.format(total)}</strong></span><span>Cobrado <strong className="ml-1 text-primary">{eur.format(paidTotal)}</strong></span></div></div></AccordionTrigger>
+            <AccordionContent><div className="divide-y divide-border rounded-md border border-border">{rows.map((receipt) => {
+              const tenant = tenantById.get(receipt.inquilino_id);
+              return <div key={receipt.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{tenant?.inquilino ?? "Inquilino"}</p><Badge variant={receipt.estado_pago === "Cobrado" ? "default" : "secondary"}>{receipt.estado_pago}</Badge></div><p className="mt-1 truncate text-xs text-muted-foreground">{tenant?.direccion || "Sin dirección"}{receipt.fecha_cobro ? ` · Cobrado el ${receipt.fecha_cobro}` : ""}</p></div><div className="flex items-center justify-between gap-3 sm:justify-end"><strong className="text-base">{eur.format(n(receipt.total_a_cobrar))}</strong><Button variant="outline" size="sm" disabled={!tenant} onClick={() => tenant && setPreview({ tenant, receipt })}><Printer className="h-4 w-4" /> Abrir recibo</Button></div></div>;
+            })}</div></AccordionContent>
+          </AccordionItem>;
+        })}</Accordion>}
+      </TabsContent>
        <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} /><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div>}</TabsContent>
     </Tabs>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
