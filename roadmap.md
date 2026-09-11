@@ -1,4 +1,4 @@
 # Roadmap
-- [x] Añadir agua residual bimestral al contrato y a cada mensualidad.
-- [x] Incluir su importe y estado en cálculos y recibos.
-- [x] Marcar a Lola como pendiente y comprobar el flujo.
+- [x] Añadir un archivo de recibos guardados en ALQU.
+- [x] Separar los recibos por año y mes con totales y estados.
+- [x] Comprobar apertura e impresión de recibos en escritorio y móvil.
