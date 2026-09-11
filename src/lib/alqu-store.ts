@@ -38,6 +38,11 @@ export async function upsertAlquCobro(values: AlquCobroInput) {
   return data;
 }
 
+export async function deleteAlquCobro(id: string) {
+  const { error } = await supabase.from("alqu_cobros_mensuales").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export function previousReading(cobros: AlquCobro[], inquilinoId: string, anio: number, mes: number) {
   const target = anio * 12 + mes;
   return (

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { Building2, CalendarDays, Check, Edit3, FolderArchive, Loader2, Printer, ReceiptText, Save } from "lucide-react";
+import { Building2, CalendarDays, Check, Edit3, FolderArchive, Loader2, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   calculateAlquAmounts,
+  deleteAlquCobro,
   garbageAlreadyPaid,
   loadAlquData,
   previousReading,
@@ -124,6 +126,8 @@ export function AlquDashboard() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<AlquInquilino | null>(null);
   const [preview, setPreview] = useState<{ tenant: AlquInquilino; receipt: AlquCobro } | null>(null);
+  const [deleting, setDeleting] = useState<{ tenant: AlquInquilino | null; receipt: AlquCobro } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -183,6 +187,17 @@ export function AlquDashboard() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar"); }
     finally { setSavingId(null); }
   };
+  const confirmDeleteReceipt = async () => {
+    if (!deleting) return;
+    setDeletingId(deleting.receipt.id);
+    try {
+      await deleteAlquCobro(deleting.receipt.id);
+      toast.success(`Recibo de ${deleting.tenant?.inquilino ?? "inquilino"} eliminado`);
+      setDeleting(null);
+      await reload();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo eliminar el recibo"); }
+    finally { setDeletingId(null); }
+  };
 
   const years = Array.from({ length: 9 }, (_, i) => now.getFullYear() + 2 - i);
   const totalMonth = Array.from(current.values()).reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
@@ -230,7 +245,7 @@ export function AlquDashboard() {
             <AccordionTrigger className="gap-4 py-4 hover:no-underline"><div className="flex min-w-0 flex-1 flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"><div><p className="text-base font-semibold">{MONTHS[first.mes - 1]} {first.anio}</p><p className="text-xs font-normal text-muted-foreground">{rows.length} {rows.length === 1 ? "recibo guardado" : "recibos guardados"}</p></div><div className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-normal"><span>Facturado <strong className="ml-1 text-foreground">{eur.format(total)}</strong></span><span>Cobrado <strong className="ml-1 text-primary">{eur.format(paidTotal)}</strong></span></div></div></AccordionTrigger>
             <AccordionContent><div className="divide-y divide-border rounded-md border border-border">{rows.map((receipt) => {
               const tenant = tenantById.get(receipt.inquilino_id);
-              return <div key={receipt.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{tenant?.inquilino ?? "Inquilino"}</p><Badge variant={receipt.estado_pago === "Cobrado" ? "default" : "secondary"}>{receipt.estado_pago}</Badge></div><p className="mt-1 truncate text-xs text-muted-foreground">{tenant?.direccion || "Sin dirección"}{receipt.fecha_cobro ? ` · Cobrado el ${receipt.fecha_cobro}` : ""}</p></div><div className="flex items-center justify-between gap-3 sm:justify-end"><strong className="text-base">{eur.format(n(receipt.total_a_cobrar))}</strong><Button variant="outline" size="sm" disabled={!tenant} onClick={() => tenant && setPreview({ tenant, receipt })}><Printer className="h-4 w-4" /> Abrir recibo</Button></div></div>;
+              return <div key={receipt.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{tenant?.inquilino ?? "Inquilino"}</p><Badge variant={receipt.estado_pago === "Cobrado" ? "default" : "secondary"}>{receipt.estado_pago}</Badge></div><p className="mt-1 truncate text-xs text-muted-foreground">{tenant?.direccion || "Sin dirección"}{receipt.fecha_cobro ? ` · Cobrado el ${receipt.fecha_cobro}` : ""}</p></div><div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end"><strong className="mr-1 text-base">{eur.format(n(receipt.total_a_cobrar))}</strong><Button variant="outline" size="sm" disabled={!tenant} onClick={() => tenant && setPreview({ tenant, receipt })}><Printer className="h-4 w-4" /> Abrir recibo</Button><Button variant="destructive" size="sm" onClick={() => setDeleting({ tenant: tenant ?? null, receipt })}><Trash2 className="h-4 w-4" /> Eliminar</Button></div></div>;
             })}</div></AccordionContent>
           </AccordionItem>;
         })}</Accordion>}
@@ -239,6 +254,7 @@ export function AlquDashboard() {
     </Tabs>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
     <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} />
+    <AlertDialog open={!!deleting} onOpenChange={(open) => !open && !deletingId && setDeleting(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar este recibo?</AlertDialogTitle><AlertDialogDescription>Se eliminará definitivamente el recibo de {deleting?.tenant?.inquilino ?? "este inquilino"} de {deleting ? `${MONTHS[deleting.receipt.mes - 1]} de ${deleting.receipt.anio}` : "este mes"}. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={!!deletingId} onClick={(event) => { event.preventDefault(); void confirmDeleteReceipt(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deletingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar recibo</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </main>;
 }
 
