@@ -17,6 +17,7 @@ export type Database = {
       alqu_cobros_mensuales: {
         Row: {
           anio: number
+          aplica_agua_residual: boolean
           aplica_basura_mes: boolean
           created_at: string
           estado_basura_trimestre: Database["public"]["Enums"]["alqu_estado_basura"]
@@ -24,6 +25,7 @@ export type Database = {
           fecha_cobro: string | null
           id: string
           importe_agua: number
+          importe_agua_residual_cobrado: number
           importe_alquiler: number
           importe_basura_cobrado: number
           inquilino_id: string
@@ -40,6 +42,7 @@ export type Database = {
         }
         Insert: {
           anio: number
+          aplica_agua_residual?: boolean
           aplica_basura_mes?: boolean
           created_at?: string
           estado_basura_trimestre?: Database["public"]["Enums"]["alqu_estado_basura"]
@@ -47,6 +50,7 @@ export type Database = {
           fecha_cobro?: string | null
           id?: string
           importe_agua?: number
+          importe_agua_residual_cobrado?: number
           importe_alquiler?: number
           importe_basura_cobrado?: number
           inquilino_id: string
@@ -63,6 +67,7 @@ export type Database = {
         }
         Update: {
           anio?: number
+          aplica_agua_residual?: boolean
           aplica_basura_mes?: boolean
           created_at?: string
           estado_basura_trimestre?: Database["public"]["Enums"]["alqu_estado_basura"]
@@ -70,6 +75,7 @@ export type Database = {
           fecha_cobro?: string | null
           id?: string
           importe_agua?: number
+          importe_agua_residual_cobrado?: number
           importe_alquiler?: number
           importe_basura_cobrado?: number
           inquilino_id?: string
@@ -100,6 +106,7 @@ export type Database = {
           direccion: string
           frecuencia_basura: Database["public"]["Enums"]["alqu_frecuencia"]
           id: string
+          importe_agua_residual: number
           importe_alquiler: number
           importe_basura: number
           inquilino: string
@@ -114,6 +121,7 @@ export type Database = {
           direccion?: string
           frecuencia_basura?: Database["public"]["Enums"]["alqu_frecuencia"]
           id?: string
+          importe_agua_residual?: number
           importe_alquiler?: number
           importe_basura?: number
           inquilino: string
@@ -128,6 +136,7 @@ export type Database = {
           direccion?: string
           frecuencia_basura?: Database["public"]["Enums"]["alqu_frecuencia"]
           id?: string
+          importe_agua_residual?: number
           importe_alquiler?: number
           importe_basura?: number
           inquilino?: string
