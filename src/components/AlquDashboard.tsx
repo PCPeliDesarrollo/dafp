@@ -30,6 +30,7 @@ const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(value) || 0;
 
 type Draft = {
+  lectura_anterior: string;
   lectura_actual: string;
   importe_agua: string;
   aplica_basura_mes: boolean;
@@ -132,6 +133,7 @@ export function AlquDashboard() {
       const row = current.get(tenant.id);
       const paid = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
       next[tenant.id] = {
+        lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
         importe_agua: String(row?.importe_agua ?? 0),
         aplica_basura_mes: row?.aplica_basura_mes ?? !paid,
@@ -148,14 +150,14 @@ export function AlquDashboard() {
   const saveReceipt = async (tenant: AlquInquilino) => {
     const draft = drafts[tenant.id]; if (!draft) return;
     const existing = current.get(tenant.id);
-    const anterior = existing ? n(existing.lectura_anterior) : previousReading(receipts, tenant.id, year, month);
+    const anterior = n(draft.lectura_anterior);
     const actual = n(draft.lectura_actual);
     if (actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
     const amounts = calculateAlquAmounts(tenant, anterior, actual, draft.aplica_basura_mes, n(draft.importe_agua));
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
-      await upsertAlquCobro({
+      const savedReceipt = await upsertAlquCobro({
         ...(existing?.id ? { id: existing.id } : {}), inquilino_id: tenant.id, anio: year, mes: month,
         trimestre: Math.ceil(month / 3), lectura_anterior: anterior, lectura_actual: actual,
         kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: n(tenant.importe_alquiler),
@@ -164,7 +166,9 @@ export function AlquDashboard() {
         estado_pago: draft.estado_pago, fecha_cobro: draft.estado_pago === "Cobrado" ? (draft.fecha_cobro || isoToday()) : null,
         quien_cobra: draft.estado_pago === "Cobrado" ? draft.quien_cobra.trim() || null : null, notas: draft.notas.trim() || null,
       });
-      toast.success(`Mensualidad de ${tenant.inquilino} guardada`); await reload();
+      toast.success(`Mensualidad de ${tenant.inquilino} guardada`);
+      setPreview({ tenant, receipt: savedReceipt });
+      await reload();
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar"); }
     finally { setSavingId(null); }
   };
@@ -179,11 +183,11 @@ export function AlquDashboard() {
     <Tabs defaultValue="mensualidades"><TabsList><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{tenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
-        const row = current.get(tenant.id); const anterior = row ? n(row.lectura_anterior) : previousReading(receipts, tenant.id, year, month);
+        const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
         const amounts = calculateAlquAmounts(tenant, anterior, n(draft.lectura_actual), draft.aplica_basura_mes, n(draft.importe_agua));
         const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
         return <Card key={tenant.id} className="gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{tenant.inquilino}</CardTitle><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div>{row && <Badge variant={row.estado_pago === "Cobrado" ? "default" : "secondary"}>{row.estado_pago}</Badge>}</div></CardHeader><CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Readout label="Anterior" value={`${dec.format(anterior)} KW`} /><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Luz con IVA" value={eur.format(amounts.luz)} accent /></div>
+           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Luz con IVA" value={eur.format(amounts.luz)} accent /></div>
           <div className="grid gap-3 sm:grid-cols-3"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_basura_mes} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_basura_mes: v === true })} /><span>Basura · {eur.format(n(tenant.importe_basura))}</span></label><Field label="Agua"><Input type="number" min="0" step="0.01" value={draft.importe_agua} onChange={(e) => patchDraft(tenant.id, { importe_agua: e.target.value })} /></Field><Field label="Estado"><Select value={draft.estado_pago} onValueChange={(v: Draft["estado_pago"]) => patchDraft(tenant.id, { estado_pago: v, fecha_cobro: v === "Cobrado" ? draft.fecha_cobro || isoToday() : "" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pendiente">Pendiente</SelectItem><SelectItem value="Cobrado">Cobrado</SelectItem></SelectContent></Select></Field></div>
           {paidElsewhere && !draft.aplica_basura_mes && <p className="text-xs text-info">Basura ya pagada en este periodo. No corresponde cobrarla este mes.</p>}
           {draft.estado_pago === "Cobrado" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Fecha de cobro"><Input type="date" value={draft.fecha_cobro} onChange={(e) => patchDraft(tenant.id, { fecha_cobro: e.target.value })} /></Field><Field label="Quién cobra"><Input value={draft.quien_cobra} onChange={(e) => patchDraft(tenant.id, { quien_cobra: e.target.value })} placeholder="Nombre" /></Field></div>}

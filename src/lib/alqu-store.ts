@@ -29,10 +29,13 @@ export async function updateAlquInquilino(id: string, values: AlquInquilinoUpdat
 }
 
 export async function upsertAlquCobro(values: AlquCobroInput) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("alqu_cobros_mensuales")
-    .upsert(values, { onConflict: "inquilino_id,anio,mes" });
+    .upsert(values, { onConflict: "inquilino_id,anio,mes" })
+    .select("*")
+    .single();
   if (error) throw error;
+  return data;
 }
 
 export function previousReading(cobros: AlquCobro[], inquilinoId: string, anio: number, mes: number) {
