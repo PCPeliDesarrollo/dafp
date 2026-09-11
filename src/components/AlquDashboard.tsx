@@ -17,6 +17,7 @@ import {
   garbageAlreadyPaid,
   loadAlquData,
   previousReading,
+  residualWaterAlreadyPaid,
   updateAlquInquilino,
   upsertAlquCobro,
   type AlquCobro,
@@ -33,6 +34,8 @@ type Draft = {
   lectura_anterior: string;
   lectura_actual: string;
   importe_agua: string;
+  aplica_agua_residual: boolean;
+  importe_agua_residual: string;
   aplica_basura_mes: boolean;
   estado_pago: "Pendiente" | "Cobrado";
   fecha_cobro: string;
@@ -52,6 +55,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
       await updateAlquInquilino(form.id, {
         inquilino: form.inquilino.trim(), direccion: form.direccion.trim(),
         importe_alquiler: n(form.importe_alquiler), importe_basura: n(form.importe_basura),
+        importe_agua_residual: n(form.importe_agua_residual),
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
       });
@@ -66,6 +70,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
       <MoneyField label="Alquiler" value={form.importe_alquiler} onChange={(v) => set("importe_alquiler", v)} />
       <MoneyField label="Basura" value={form.importe_basura} onChange={(v) => set("importe_basura", v)} />
+      <MoneyField label="Agua residual bimestral" value={form.importe_agua_residual} onChange={(v) => set("importe_agua_residual", v)} />
       <Field label="Frecuencia de basura"><Select value={form.frecuencia_basura} onValueChange={(v: AlquInquilino["frecuencia_basura"]) => set("frecuencia_basura", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Mensual">Mensual</SelectItem><SelectItem value="Bimestral">Bimestral</SelectItem><SelectItem value="Trimestral">Trimestral</SelectItem></SelectContent></Select></Field>
       <MoneyField label="IVA de luz (%)" value={form.iva} onChange={(v) => set("iva", v)} />
       <MoneyField label="Precio por KW" value={form.precio_kw} step="0.000001" onChange={(v) => set("precio_kw", v)} />
@@ -99,6 +104,7 @@ function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquIn
       </div>
       <div className="flex justify-between"><span className="text-muted-foreground">Basura</span><strong>{eur.format(n(receipt.importe_basura_cobrado))}</strong></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Agua</span><strong>{eur.format(n(receipt.importe_agua))}</strong></div>
+      <div className="flex justify-between"><span className="text-muted-foreground">Agua residual (bimestral)</span><strong>{eur.format(n(receipt.importe_agua_residual_cobrado))}</strong></div>
       <div className="flex items-center justify-between border-t border-border pt-4 text-xl"><span>TOTAL A PAGAR</span><strong className="text-primary">{eur.format(n(receipt.total_a_cobrar))}</strong></div>
       <div className="flex justify-between text-xs text-muted-foreground"><span>{receipt.estado_pago}</span><span>{receipt.fecha_cobro ? `Cobrado el ${receipt.fecha_cobro}${receipt.quien_cobra ? ` por ${receipt.quien_cobra}` : ""}` : ""}</span></div>
     </div>
@@ -132,10 +138,13 @@ export function AlquDashboard() {
     for (const tenant of tenants) {
       const row = current.get(tenant.id);
       const paid = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
+      const residualPaid = residualWaterAlreadyPaid(receipts, tenant.id, year, month, row?.id);
       next[tenant.id] = {
         lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
         importe_agua: String(row?.importe_agua ?? 0),
+        aplica_agua_residual: row?.aplica_agua_residual ?? false,
+        importe_agua_residual: String(row?.importe_agua_residual_cobrado || tenant.importe_agua_residual),
         aplica_basura_mes: row?.aplica_basura_mes ?? !paid,
         estado_pago: row?.estado_pago ?? "Pendiente",
         fecha_cobro: row?.fecha_cobro ?? "",
@@ -153,7 +162,7 @@ export function AlquDashboard() {
     const anterior = n(draft.lectura_anterior);
     const actual = n(draft.lectura_actual);
     if (actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
-    const amounts = calculateAlquAmounts(tenant, anterior, actual, draft.aplica_basura_mes, n(draft.importe_agua));
+    const amounts = calculateAlquAmounts(tenant, anterior, actual, draft.aplica_basura_mes, n(draft.importe_agua), draft.aplica_agua_residual, n(draft.importe_agua_residual));
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
@@ -163,6 +172,8 @@ export function AlquDashboard() {
         kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: n(tenant.importe_alquiler),
         aplica_basura_mes: draft.aplica_basura_mes, estado_basura_trimestre: draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
         importe_basura_cobrado: amounts.basura, importe_agua: Math.max(0, n(draft.importe_agua)), total_a_cobrar: amounts.total,
+        aplica_agua_residual: draft.aplica_agua_residual,
+        importe_agua_residual_cobrado: amounts.residual,
         estado_pago: draft.estado_pago, fecha_cobro: draft.estado_pago === "Cobrado" ? (draft.fecha_cobro || isoToday()) : null,
         quien_cobra: draft.estado_pago === "Cobrado" ? draft.quien_cobra.trim() || null : null, notas: draft.notas.trim() || null,
       });
@@ -184,17 +195,20 @@ export function AlquDashboard() {
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{tenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
-        const amounts = calculateAlquAmounts(tenant, anterior, n(draft.lectura_actual), draft.aplica_basura_mes, n(draft.importe_agua));
+        const amounts = calculateAlquAmounts(tenant, anterior, n(draft.lectura_actual), draft.aplica_basura_mes, n(draft.importe_agua), draft.aplica_agua_residual, n(draft.importe_agua_residual));
         const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
+        const residualPaidElsewhere = residualWaterAlreadyPaid(receipts, tenant.id, year, month, row?.id);
         return <Card key={tenant.id} className="gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{tenant.inquilino}</CardTitle><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div>{row && <Badge variant={row.estado_pago === "Cobrado" ? "default" : "secondary"}>{row.estado_pago}</Badge>}</div></CardHeader><CardContent className="space-y-4">
            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div>
-          <div className="grid gap-3 sm:grid-cols-3"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_basura_mes} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_basura_mes: v === true })} /><span>Basura · {eur.format(n(tenant.importe_basura))}</span></label><Field label="Agua"><Input type="number" min="0" step="0.01" value={draft.importe_agua} onChange={(e) => patchDraft(tenant.id, { importe_agua: e.target.value })} /></Field><Field label="Estado"><Select value={draft.estado_pago} onValueChange={(v: Draft["estado_pago"]) => patchDraft(tenant.id, { estado_pago: v, fecha_cobro: v === "Cobrado" ? draft.fecha_cobro || isoToday() : "" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pendiente">Pendiente</SelectItem><SelectItem value="Cobrado">Cobrado</SelectItem></SelectContent></Select></Field></div>
+           <div className="grid gap-3 sm:grid-cols-3"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_basura_mes} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_basura_mes: v === true })} /><span>Basura · {eur.format(n(tenant.importe_basura))}</span></label><Field label="Agua"><Input type="number" min="0" step="0.01" value={draft.importe_agua} onChange={(e) => patchDraft(tenant.id, { importe_agua: e.target.value })} /></Field><Field label="Estado"><Select value={draft.estado_pago} onValueChange={(v: Draft["estado_pago"]) => patchDraft(tenant.id, { estado_pago: v, fecha_cobro: v === "Cobrado" ? draft.fecha_cobro || isoToday() : "" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pendiente">Pendiente</SelectItem><SelectItem value="Cobrado">Cobrado</SelectItem></SelectContent></Select></Field></div>
+           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_agua_residual} disabled={residualPaidElsewhere} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_agua_residual: v === true })} /><span>{draft.aplica_agua_residual ? "Agua residual pagada" : "Agua residual pendiente"}</span></label><Field label="Importe agua residual (editable)"><Input type="number" min="0" step="0.01" value={draft.importe_agua_residual} disabled={residualPaidElsewhere} onChange={(e) => patchDraft(tenant.id, { importe_agua_residual: e.target.value })} /></Field></div>
+           {residualPaidElsewhere && <p className="text-xs text-info">Agua residual ya pagada en este bimestre. No corresponde cobrarla de nuevo.</p>}
           {paidElsewhere && !draft.aplica_basura_mes && <p className="text-xs text-info">Basura ya pagada en este periodo. No corresponde cobrarla este mes.</p>}
           {draft.estado_pago === "Cobrado" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Fecha de cobro"><Input type="date" value={draft.fecha_cobro} onChange={(e) => patchDraft(tenant.id, { fecha_cobro: e.target.value })} /></Field><Field label="Quién cobra"><Input value={draft.quien_cobra} onChange={(e) => patchDraft(tenant.id, { quien_cobra: e.target.value })} placeholder="Nombre" /></Field></div>}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div><p className="text-xs text-muted-foreground">Total a pagar</p><p className="text-2xl font-semibold text-primary">{eur.format(amounts.total)}</p></div><div className="flex gap-2">{row && <Button variant="outline" size="sm" onClick={() => setPreview({ tenant, receipt: row })}><Printer className="h-4 w-4" /> Recibo</Button>}<Button size="sm" onClick={() => saveReceipt(tenant)} disabled={savingId === tenant.id}>{savingId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></div></div>
         </CardContent></Card>;
       })}</div>}</TabsContent>
-      <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} /><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div>}</TabsContent>
+       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} /><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div>}</TabsContent>
     </Tabs>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
     <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} />

@@ -72,22 +72,46 @@ export function garbageAlreadyPaid(
   );
 }
 
+export function residualWaterAlreadyPaid(
+  cobros: AlquCobro[],
+  inquilinoId: string,
+  anio: number,
+  mes: number,
+  excludingId?: string,
+) {
+  const start = Math.floor((mes - 1) / 2) * 2 + 1;
+  return cobros.some(
+    (c) =>
+      c.id !== excludingId &&
+      c.inquilino_id === inquilinoId &&
+      c.anio === anio &&
+      c.mes >= start &&
+      c.mes < start + 2 &&
+      c.aplica_agua_residual &&
+      c.estado_pago === "Cobrado",
+  );
+}
+
 export function calculateAlquAmounts(
   inquilino: AlquInquilino,
   lecturaAnterior: number,
   lecturaActual: number,
   aplicaBasura: boolean,
   agua: number,
+  aplicaAguaResidual: boolean,
+  aguaResidual: number,
 ) {
   const kw = Math.max(0, lecturaActual - lecturaAnterior);
   const baseLuz = kw * Number(inquilino.precio_kw) + Number(inquilino.minimo_luz);
   const luz = baseLuz * (1 + Number(inquilino.iva) / 100);
   const basura = aplicaBasura ? Number(inquilino.importe_basura) : 0;
+  const residual = aplicaAguaResidual ? Math.max(0, aguaResidual) : 0;
   return {
     kw,
     baseLuz,
     luz,
     basura,
-    total: Number(inquilino.importe_alquiler) + luz + basura + Math.max(0, agua),
+    residual,
+    total: Number(inquilino.importe_alquiler) + luz + basura + Math.max(0, agua) + residual,
   };
 }
