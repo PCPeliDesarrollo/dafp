@@ -1,4 +1,4 @@
 # Roadmap
-- [x] Añadir un archivo de recibos guardados en ALQU.
-- [x] Separar los recibos por año y mes con totales y estados.
-- [x] Comprobar apertura e impresión de recibos en escritorio y móvil.
+- [ ] Añadir eliminación con confirmación en recibos guardados.
+- [ ] Actualizar el archivo y sus totales tras eliminar.
+- [ ] Verificar cancelar y confirmar el borrado.
