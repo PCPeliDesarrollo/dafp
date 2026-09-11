@@ -87,8 +87,7 @@ export function residualWaterAlreadyPaid(
       c.anio === anio &&
       c.mes >= start &&
       c.mes < start + 2 &&
-      c.aplica_agua_residual &&
-      c.estado_pago === "Cobrado",
+      c.aplica_agua_residual,
   );
 }
 

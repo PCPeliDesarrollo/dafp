@@ -138,7 +138,6 @@ export function AlquDashboard() {
     for (const tenant of tenants) {
       const row = current.get(tenant.id);
       const paid = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
-      const residualPaid = residualWaterAlreadyPaid(receipts, tenant.id, year, month, row?.id);
       next[tenant.id] = {
         lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
