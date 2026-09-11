@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, CalendarDays, Check, Edit3, Loader2, Printer, ReceiptText, Save, Zap } from "lucide-react";
+import type React from "react";
+import { Building2, CalendarDays, Check, Edit3, Loader2, Printer, ReceiptText, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
