@@ -15,6 +15,13 @@
       "when": 1789124922034,
       "tag": "0001_grant_alqu_data_api_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789124967163,
+      "tag": "0002_grant_has_role_to_authenticated",
+      "breakpoints": true
     }
   ]
 }
