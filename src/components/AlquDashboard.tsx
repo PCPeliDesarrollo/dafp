@@ -191,7 +191,7 @@ export function AlquDashboard() {
     if (!deleting) return;
     setDeletingId(deleting.receipt.id);
     try {
-      await deleteAlquCobro(deleting.receipt.id);
+      await deleteAlquCobro(deleting.receipt);
       toast.success(`Recibo de ${deleting.tenant?.inquilino ?? "inquilino"} eliminado`);
       setDeleting(null);
       await reload();
@@ -254,7 +254,7 @@ export function AlquDashboard() {
     </Tabs>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
     <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} />
-    <AlertDialog open={!!deleting} onOpenChange={(open) => !open && !deletingId && setDeleting(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar este recibo?</AlertDialogTitle><AlertDialogDescription>Se eliminará definitivamente el recibo de {deleting?.tenant?.inquilino ?? "este inquilino"} de {deleting ? `${MONTHS[deleting.receipt.mes - 1]} de ${deleting.receipt.anio}` : "este mes"}. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={!!deletingId} onClick={(event) => { event.preventDefault(); void confirmDeleteReceipt(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deletingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar recibo</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    <AlertDialog open={!!deleting} onOpenChange={(open) => !open && !deletingId && setDeleting(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar únicamente este recibo?</AlertDialogTitle><AlertDialogDescription>Vas a eliminar el recibo de <strong className="text-foreground">{deleting?.tenant?.inquilino ?? "este inquilino"}</strong> de <strong className="text-foreground">{deleting ? `${MONTHS[deleting.receipt.mes - 1]} de ${deleting.receipt.anio}` : "este mes"}</strong>, por <strong className="text-foreground">{deleting ? eur.format(n(deleting.receipt.total_a_cobrar)) : ""}</strong>. Ningún otro recibo se eliminará.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={!!deletingId} onClick={(event) => { event.preventDefault(); void confirmDeleteReceipt(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deletingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar solo este recibo</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </main>;
 }
 
