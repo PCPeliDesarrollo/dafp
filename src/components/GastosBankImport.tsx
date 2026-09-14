@@ -187,9 +187,17 @@ export function GastosBankImport() {
   return (
     <Card className="gradient-card border-border/50 shadow-elevated">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <CardTitle className="flex w-full items-center gap-2 text-base font-semibold">
           <Landmark className="h-4 w-4 text-info" />
           Importar extracto bancario
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto gap-2"
+            onClick={() => setListOpen(true)}
+          >
+            <List className="h-3.5 w-3.5" /> Movimientos importados
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
