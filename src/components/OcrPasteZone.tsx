@@ -109,15 +109,45 @@ function fingerprint(p: ParsedAlbaran): string {
 
 
 export function OcrPasteZone() {
-  const ventasStore = getVentasStore(useEmpresa());
+  const empresa = useEmpresa();
+  const ventasStore = getVentasStore(empresa);
+  const { rows } = useVentasImport(empresa);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [fechaOverride, setFechaOverride] = useState<string | null>(null);
   // Cuando la captura no muestra el STOCK, se elige a mano en el desplegable.
   const [stockOverride, setStockOverride] = useState<StockLetter | null>(null);
+  const [listOpen, setListOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const albaranes = useMemo(
+    () =>
+      (rows ?? [])
+        .filter((r) => (r.empleado ?? "").trim().toLowerCase() !== "banco")
+        .slice()
+        .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0)),
+    [rows],
+  );
+
+  const removeAlbaran = async (id: string) => {
+    setRemovingId(id);
+    try {
+      await ventasStore.remove(id);
+      setConfirmId(null);
+    } catch (err) {
+      setStatus({
+        kind: "error",
+        message: err instanceof Error ? err.message : "No se pudo eliminar el albarán",
+      });
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
 
   const runOcr = useCallback(async (source: File | Blob) => {
     setStatus({ kind: "ocr", progress: 5 });
