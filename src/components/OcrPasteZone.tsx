@@ -540,7 +540,88 @@ export function OcrPasteZone() {
             )}
           </div>
         </div>
+
+        <Dialog open={listOpen} onOpenChange={setListOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Albaranes subidos</DialogTitle>
+              <DialogDescription>
+                Toca <b>Eliminar</b> para borrar un albarán. La acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            {albaranes.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Todavía no hay albaranes subidos.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {albaranes.map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-lg border border-border/50 bg-card/60 px-3 py-2 text-xs"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-foreground">
+                          {r.empleado} ·{" "}
+                          {new Date(`${r.fecha}T00:00:00`).toLocaleDateString("es-ES")}
+                        </p>
+                        <p className="truncate text-muted-foreground">{r.id}</p>
+                      </div>
+                      <div className="flex items-center gap-3 tabular-nums">
+                        <span>
+                          <span className="mr-1 text-muted-foreground">Venta</span>
+                          <span className="font-semibold">{eur.format(r.total_venta)}</span>
+                        </span>
+                        <span>
+                          <span className="mr-1 text-muted-foreground">Beneficio</span>
+                          <span className="font-semibold text-success">
+                            {eur.format(r.beneficio ?? 0)}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      {confirmId === r.id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">¿Eliminar este albarán?</span>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={removingId === r.id}
+                            onClick={() => removeAlbaran(r.id)}
+                          >
+                            {removingId === r.id ? (
+                              <>
+                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Eliminando…
+                              </>
+                            ) : (
+                              "Sí, eliminar"
+                            )}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setConfirmId(null)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-destructive"
+                          onClick={() => setConfirmId(r.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
+
     </Card>
   );
 }
