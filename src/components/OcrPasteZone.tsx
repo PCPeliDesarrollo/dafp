@@ -337,7 +337,20 @@ export function OcrPasteZone() {
             <ClipboardPaste className="h-4 w-4" />
             Pegar captura
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              setConfirmId(null);
+              setListOpen(true);
+            }}
+          >
+            <ListOrdered className="h-4 w-4" />
+            Albaranes subidos ({albaranes.length})
+          </Button>
         </div>
+
 
 
         <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
