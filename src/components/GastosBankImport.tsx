@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Landmark, Loader2, Upload } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Landmark, Loader2, Trash2, Upload, List } from "lucide-react";
 import type { BankExpense, BankIncome } from "@/lib/bank-csv";
 import { parseBankFile } from "@/lib/bank-file";
-import { getGastosStore } from "@/lib/gastos-store";
-import { getVentasStore } from "@/lib/ventas-store";
+import { getGastosStore, useGastos } from "@/lib/gastos-store";
+import { getVentasStore, useVentasImport } from "@/lib/ventas-store";
 import { useEmpresa } from "@/lib/empresa";
 import type { VentaRow } from "@/lib/dashboard-mock";
 import { toast } from "sonner";
@@ -22,6 +28,55 @@ export function GastosBankImport() {
   const gastosStore = getGastosStore(empresa);
   const ventasStore = getVentasStore(empresa);
   const [busy, setBusy] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const gastos = useGastos(empresa);
+  const ventas = useVentasImport(empresa);
+
+  type BankMovement = {
+    id: string;
+    fecha: string;
+    concepto: string;
+    monto: number;
+    tipo: "ingreso" | "gasto";
+  };
+
+  const movimientos = useMemo<BankMovement[]>(() => {
+    const gs = gastos.rows
+      .filter((g) => g.fuente === "banco")
+      .map((g) => ({
+        id: g.id,
+        fecha: g.fecha,
+        concepto: g.concepto || "Gasto bancario",
+        monto: g.monto,
+        tipo: "gasto" as const,
+      }));
+    const vs = (ventas.rows ?? [])
+      .filter((v) => v.id.startsWith("bank-"))
+      .map((v) => ({
+        id: v.id,
+        fecha: v.fecha,
+        concepto: "Ingreso bancario",
+        monto: v.total_venta,
+        tipo: "ingreso" as const,
+      }));
+    return [...vs, ...gs].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }, [gastos.rows, ventas.rows]);
+
+  const removeMovement = async (m: BankMovement) => {
+    setBusy(true);
+    try {
+      if (m.tipo === "gasto") await gastosStore.remove(m.id);
+      else await ventasStore.remove(m.id);
+      toast.success("Movimiento eliminado");
+    } catch {
+      toast.error("No se pudo eliminar el movimiento");
+    } finally {
+      setBusy(false);
+      setConfirmingId(null);
+    }
+  };
+
   const [preview, setPreview] = useState<{
     file: string;
     expenses: BankExpense[];
@@ -132,9 +187,17 @@ export function GastosBankImport() {
   return (
     <Card className="gradient-card border-border/50 shadow-elevated">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <CardTitle className="flex w-full items-center gap-2 text-base font-semibold">
           <Landmark className="h-4 w-4 text-info" />
           Importar extracto bancario
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto gap-2"
+            onClick={() => setListOpen(true)}
+          >
+            <List className="h-3.5 w-3.5" /> Movimientos importados
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -235,6 +298,84 @@ export function GastosBankImport() {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={listOpen} onOpenChange={setListOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Movimientos importados del banco</DialogTitle>
+          </DialogHeader>
+          {movimientos.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Todavía no hay movimientos importados desde extractos bancarios.
+            </p>
+          ) : (
+            <div className="max-h-[60vh] overflow-auto rounded-lg border border-border/60">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Fecha</th>
+                    <th className="px-2 py-1 text-left">Concepto</th>
+                    <th className="px-2 py-1 text-left">Tipo</th>
+                    <th className="px-2 py-1 text-right">Importe</th>
+                    <th className="px-2 py-1 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movimientos.map((m) => (
+                    <tr key={m.id} className="border-t border-border/40">
+                      <td className="px-2 py-1 tabular-nums">{m.fecha}</td>
+                      <td className="px-2 py-1 truncate max-w-[220px]">{m.concepto}</td>
+                      <td
+                        className={cn(
+                          "px-2 py-1",
+                          m.tipo === "ingreso" ? "text-success" : "text-muted-foreground",
+                        )}
+                      >
+                        {m.tipo === "ingreso" ? "Ingreso" : "Gasto"}
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        {eur.format(m.monto)}
+                      </td>
+                      <td className="px-2 py-1 text-right">
+                        {confirmingId === m.id ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-6 px-2 text-[11px]"
+                              disabled={busy}
+                              onClick={() => removeMovement(m)}
+                            >
+                              Confirmar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={() => setConfirmingId(null)}
+                            >
+                              Cancelar
+                            </Button>
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-destructive"
+                            onClick={() => setConfirmingId(m.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
