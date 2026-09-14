@@ -28,6 +28,55 @@ export function GastosBankImport() {
   const gastosStore = getGastosStore(empresa);
   const ventasStore = getVentasStore(empresa);
   const [busy, setBusy] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const gastos = useGastos(empresa);
+  const ventas = useVentasImport(empresa);
+
+  type BankMovement = {
+    id: string;
+    fecha: string;
+    concepto: string;
+    monto: number;
+    tipo: "ingreso" | "gasto";
+  };
+
+  const movimientos = useMemo<BankMovement[]>(() => {
+    const gs = gastos.rows
+      .filter((g) => g.fuente === "banco")
+      .map((g) => ({
+        id: g.id,
+        fecha: g.fecha,
+        concepto: g.concepto || "Gasto bancario",
+        monto: g.monto,
+        tipo: "gasto" as const,
+      }));
+    const vs = (ventas.rows ?? [])
+      .filter((v) => v.id.startsWith("bank-"))
+      .map((v) => ({
+        id: v.id,
+        fecha: v.fecha,
+        concepto: "Ingreso bancario",
+        monto: v.total_venta,
+        tipo: "ingreso" as const,
+      }));
+    return [...vs, ...gs].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }, [gastos.rows, ventas.rows]);
+
+  const removeMovement = async (m: BankMovement) => {
+    setBusy(true);
+    try {
+      if (m.tipo === "gasto") await gastosStore.remove(m.id);
+      else await ventasStore.remove(m.id);
+      toast.success("Movimiento eliminado");
+    } catch {
+      toast.error("No se pudo eliminar el movimiento");
+    } finally {
+      setBusy(false);
+      setConfirmingId(null);
+    }
+  };
+
   const [preview, setPreview] = useState<{
     file: string;
     expenses: BankExpense[];
