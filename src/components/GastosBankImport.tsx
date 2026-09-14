@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Landmark, Loader2, Upload } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Landmark, Loader2, Trash2, Upload, List } from "lucide-react";
 import type { BankExpense, BankIncome } from "@/lib/bank-csv";
 import { parseBankFile } from "@/lib/bank-file";
-import { getGastosStore } from "@/lib/gastos-store";
-import { getVentasStore } from "@/lib/ventas-store";
+import { getGastosStore, useGastos } from "@/lib/gastos-store";
+import { getVentasStore, useVentasImport } from "@/lib/ventas-store";
 import { useEmpresa } from "@/lib/empresa";
 import type { VentaRow } from "@/lib/dashboard-mock";
 import { toast } from "sonner";
