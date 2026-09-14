@@ -298,6 +298,84 @@ export function GastosBankImport() {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={listOpen} onOpenChange={setListOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Movimientos importados del banco</DialogTitle>
+          </DialogHeader>
+          {movimientos.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Todavía no hay movimientos importados desde extractos bancarios.
+            </p>
+          ) : (
+            <div className="max-h-[60vh] overflow-auto rounded-lg border border-border/60">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Fecha</th>
+                    <th className="px-2 py-1 text-left">Concepto</th>
+                    <th className="px-2 py-1 text-left">Tipo</th>
+                    <th className="px-2 py-1 text-right">Importe</th>
+                    <th className="px-2 py-1 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movimientos.map((m) => (
+                    <tr key={m.id} className="border-t border-border/40">
+                      <td className="px-2 py-1 tabular-nums">{m.fecha}</td>
+                      <td className="px-2 py-1 truncate max-w-[220px]">{m.concepto}</td>
+                      <td
+                        className={cn(
+                          "px-2 py-1",
+                          m.tipo === "ingreso" ? "text-success" : "text-muted-foreground",
+                        )}
+                      >
+                        {m.tipo === "ingreso" ? "Ingreso" : "Gasto"}
+                      </td>
+                      <td className="px-2 py-1 text-right tabular-nums">
+                        {eur.format(m.monto)}
+                      </td>
+                      <td className="px-2 py-1 text-right">
+                        {confirmingId === m.id ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-6 px-2 text-[11px]"
+                              disabled={busy}
+                              onClick={() => removeMovement(m)}
+                            >
+                              Confirmar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={() => setConfirmingId(null)}
+                            >
+                              Cancelar
+                            </Button>
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-destructive"
+                            onClick={() => setConfirmingId(m.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
