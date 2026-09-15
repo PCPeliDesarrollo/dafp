@@ -36,7 +36,25 @@ const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(value) || 0;
 
+/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. */
+function amountsFor(tenant: AlquInquilino, draft: Draft) {
+  const base = calculateAlquAmounts(
+    tenant,
+    n(draft.lectura_anterior),
+    draft.luz_modo === "importe" ? n(draft.lectura_anterior) : n(draft.lectura_actual),
+    draft.aplica_basura_mes,
+    n(draft.importe_agua),
+    draft.aplica_agua_residual,
+    n(draft.importe_agua_residual),
+  );
+  if (draft.luz_modo !== "importe") return base;
+  const luz = Math.max(0, n(draft.total_luz_manual));
+  return { ...base, kw: 0, baseLuz: luz, luz, total: base.total - base.luz + luz };
+}
+
 type Draft = {
+  luz_modo: "lectura" | "importe";
+  total_luz_manual: string;
   lectura_anterior: string;
   lectura_actual: string;
   importe_agua: string;
@@ -106,16 +124,21 @@ function MoneyField({ label, value, step = "0.01", onChange }: { label: string; 
 function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquInquilino | null; receipt: AlquCobro | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   if (!tenant || !receipt) return null;
   const baseLuz = n(receipt.kw_consumidos) * n(tenant.precio_kw) + n(tenant.minimo_luz);
+  const manualLuz = n(receipt.kw_consumidos) === 0 && n(receipt.lectura_actual) === n(receipt.lectura_anterior) && n(receipt.total_luz) > 0;
   const printReceipt = () => window.print();
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-xl print:fixed print:inset-0 print:max-h-none print:max-w-none print:translate-x-0 print:translate-y-0 print:border-0">
     <DialogHeader><DialogTitle>Recibo de {MONTHS[receipt.mes - 1]} de {receipt.anio}</DialogTitle><DialogDescription>{tenant.inquilino} · {tenant.direccion}</DialogDescription></DialogHeader>
     <div className="space-y-4 rounded-lg border border-border bg-card p-5">
       <div className="flex justify-between"><span className="text-muted-foreground">Alquiler</span><strong>{eur.format(n(receipt.importe_alquiler))}</strong></div>
       <div className="border-y border-border py-3 text-sm">
-        <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
-        <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
-        <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
-        <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+        {manualLuz ? (
+          <div className="flex justify-between"><span className="text-muted-foreground">Luz (importe fijo)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+        ) : <>
+          <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
+          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
+          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
+          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+        </>}
       </div>
       <div className="flex justify-between"><span className="text-muted-foreground">Basura</span><strong>{eur.format(n(receipt.importe_basura_cobrado))}</strong></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Agua</span><strong>{eur.format(n(receipt.importe_agua))}</strong></div>
@@ -160,7 +183,10 @@ export function AlquDashboard() {
     for (const tenant of tenants) {
       const row = current.get(tenant.id);
       const paid = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
+      const manual = !!row && n(row.kw_consumidos) === 0 && n(row.total_luz) > 0 && n(row.lectura_actual) === n(row.lectura_anterior);
       next[tenant.id] = {
+        luz_modo: manual ? "importe" : "lectura",
+        total_luz_manual: String(manual ? n(row!.total_luz) : 0),
         lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
         importe_agua: String(row?.importe_agua ?? 0),
@@ -180,10 +206,11 @@ export function AlquDashboard() {
   const saveReceipt = async (tenant: AlquInquilino) => {
     const draft = drafts[tenant.id]; if (!draft) return;
     const existing = current.get(tenant.id);
+    const manual = draft.luz_modo === "importe";
     const anterior = n(draft.lectura_anterior);
-    const actual = n(draft.lectura_actual);
-    if (actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
-    const amounts = calculateAlquAmounts(tenant, anterior, actual, draft.aplica_basura_mes, n(draft.importe_agua), draft.aplica_agua_residual, n(draft.importe_agua_residual));
+    const actual = manual ? anterior : n(draft.lectura_actual);
+    if (!manual && actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
+    const amounts = amountsFor(tenant, draft);
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
@@ -249,7 +276,7 @@ export function AlquDashboard() {
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{tenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
-        const amounts = calculateAlquAmounts(tenant, anterior, n(draft.lectura_actual), draft.aplica_basura_mes, n(draft.importe_agua), draft.aplica_agua_residual, n(draft.importe_agua_residual));
+        const amounts = amountsFor(tenant, draft);
         const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
         const residualPaidElsewhere = residualWaterAlreadyPaid(receipts, tenant.id, year, month, row?.id);
         const isOpen = !!expanded[tenant.id];
@@ -281,7 +308,16 @@ export function AlquDashboard() {
             </button>
           </CardHeader>
           {isOpen && <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div>
+            <div className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Luz:</span>
+                <Button type="button" size="sm" variant={draft.luz_modo === "lectura" ? "default" : "outline"} onClick={() => patchDraft(tenant.id, { luz_modo: "lectura" })}>Por lecturas</Button>
+                <Button type="button" size="sm" variant={draft.luz_modo === "importe" ? "default" : "outline"} onClick={() => patchDraft(tenant.id, { luz_modo: "importe" })}>Importe fijo</Button>
+              </div>
+              {draft.luz_modo === "lectura"
+                ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div>
+                : <div className="grid grid-cols-2 gap-3"><Field label="Importe de luz que paga"><Input type="number" min="0" step="0.01" value={draft.total_luz_manual} onChange={(e) => patchDraft(tenant.id, { total_luz_manual: e.target.value })} /></Field><Readout label="Total luz" value={eur.format(amounts.luz)} accent /></div>}
+            </div>
             <div className="grid gap-3 sm:grid-cols-3"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_basura_mes} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_basura_mes: v === true })} /><span>Basura · {eur.format(n(tenant.importe_basura))}</span></label><Field label="Agua"><Input type="number" min="0" step="0.01" value={draft.importe_agua} onChange={(e) => patchDraft(tenant.id, { importe_agua: e.target.value })} /></Field><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.estado_pago === "Cobrado"} onCheckedChange={(v) => {
               const pagado = v === true;
               patchDraft(tenant.id, {
