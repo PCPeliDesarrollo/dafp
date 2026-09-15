@@ -36,6 +36,22 @@ const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(value) || 0;
 
+/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. */
+function amountsFor(tenant: AlquInquilino, draft: Draft) {
+  const base = calculateAlquAmounts(
+    tenant,
+    n(draft.lectura_anterior),
+    draft.luz_modo === "importe" ? n(draft.lectura_anterior) : n(draft.lectura_actual),
+    draft.aplica_basura_mes,
+    n(draft.importe_agua),
+    draft.aplica_agua_residual,
+    n(draft.importe_agua_residual),
+  );
+  if (draft.luz_modo !== "importe") return base;
+  const luz = Math.max(0, n(draft.total_luz_manual));
+  return { ...base, kw: 0, baseLuz: luz, luz, total: base.total - base.luz + luz };
+}
+
 type Draft = {
   luz_modo: "lectura" | "importe";
   total_luz_manual: string;
