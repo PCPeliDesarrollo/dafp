@@ -185,10 +185,11 @@ export function AlquDashboard() {
   const saveReceipt = async (tenant: AlquInquilino) => {
     const draft = drafts[tenant.id]; if (!draft) return;
     const existing = current.get(tenant.id);
+    const manual = draft.luz_modo === "importe";
     const anterior = n(draft.lectura_anterior);
-    const actual = n(draft.lectura_actual);
-    if (actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
-    const amounts = calculateAlquAmounts(tenant, anterior, actual, draft.aplica_basura_mes, n(draft.importe_agua), draft.aplica_agua_residual, n(draft.importe_agua_residual));
+    const actual = manual ? anterior : n(draft.lectura_actual);
+    if (!manual && actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
+    const amounts = amountsFor(tenant, draft);
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
