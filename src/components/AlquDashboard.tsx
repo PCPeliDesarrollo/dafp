@@ -82,7 +82,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
   useEffect(() => setForm(tenant), [tenant]);
   if (!form) return null;
   const isNew = !form.id;
-  const set = (key: keyof AlquInquilino, value: string | number) => setForm((old) => old ? { ...old, [key]: value } : old);
+  const set = (key: keyof AlquInquilino, value: string | number | boolean) => setForm((old) => old ? { ...old, [key]: value } : old);
   const save = async () => {
     if (!form.inquilino.trim()) { toast.error("Pon el nombre del inquilino"); return; }
     setSaving(true);
@@ -93,6 +93,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
         importe_agua_residual: n(form.importe_agua_residual),
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
+        cobra_suministros: form.cobra_suministros,
       };
       if (isNew) await createAlquInquilino(values); else await updateAlquInquilino(form.id, values);
       toast.success(isNew ? "Inquilino añadido" : "Contrato actualizado"); onOpenChange(false); onSaved();
@@ -105,12 +106,18 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
       <Field label="Inquilino"><Input value={form.inquilino} onChange={(e) => set("inquilino", e.target.value)} /></Field>
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
       <MoneyField label="Alquiler" value={form.importe_alquiler} onChange={(v) => set("importe_alquiler", v)} />
-      <MoneyField label="Basura" value={form.importe_basura} onChange={(v) => set("importe_basura", v)} />
-      <MoneyField label="Agua residual bimestral" value={form.importe_agua_residual} onChange={(v) => set("importe_agua_residual", v)} />
-      <Field label="Frecuencia de basura"><Select value={form.frecuencia_basura} onValueChange={(v: AlquInquilino["frecuencia_basura"]) => set("frecuencia_basura", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Mensual">Mensual</SelectItem><SelectItem value="Bimestral">Bimestral</SelectItem><SelectItem value="Trimestral">Trimestral</SelectItem></SelectContent></Select></Field>
-      <MoneyField label="IVA de luz (%)" value={form.iva} onChange={(v) => set("iva", v)} />
-      <MoneyField label="Precio por KW" value={form.precio_kw} step="0.000001" onChange={(v) => set("precio_kw", v)} />
-      <MoneyField label="Mínimo de luz" value={form.minimo_luz} onChange={(v) => set("minimo_luz", v)} />
+      <label className="flex min-h-10 items-center gap-2 self-end rounded-md border border-input px-3 text-sm sm:col-span-2">
+        <Checkbox checked={form.cobra_suministros} onCheckedChange={(v) => set("cobra_suministros", v === true)} />
+        <span>Cobrar suministros (luz, basura y agua). Si lo quitas, solo se cobra el alquiler.</span>
+      </label>
+      {form.cobra_suministros && <>
+        <MoneyField label="Basura" value={form.importe_basura} onChange={(v) => set("importe_basura", v)} />
+        <MoneyField label="Agua residual bimestral" value={form.importe_agua_residual} onChange={(v) => set("importe_agua_residual", v)} />
+        <Field label="Frecuencia de basura"><Select value={form.frecuencia_basura} onValueChange={(v: AlquInquilino["frecuencia_basura"]) => set("frecuencia_basura", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Mensual">Mensual</SelectItem><SelectItem value="Bimestral">Bimestral</SelectItem><SelectItem value="Trimestral">Trimestral</SelectItem></SelectContent></Select></Field>
+        <MoneyField label="IVA de luz (%)" value={form.iva} onChange={(v) => set("iva", v)} />
+        <MoneyField label="Precio por KW" value={form.precio_kw} step="0.000001" onChange={(v) => set("precio_kw", v)} />
+        <MoneyField label="Mínimo de luz" value={form.minimo_luz} onChange={(v) => set("minimo_luz", v)} />
+      </>}
       <Field label="Notas" className="sm:col-span-2"><Textarea value={form.notas ?? ""} onChange={(e) => set("notas", e.target.value)} /></Field>
     </div>
     <DialogFooter><Button onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></DialogFooter>
