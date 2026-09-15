@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { Building2, CalendarDays, Check, ChevronDown, Edit3, FolderArchive, Loader2, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
+import { Building2, CalendarDays, Check, ChevronDown, Edit3, FolderArchive, Loader2, Plus, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -17,7 +17,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   calculateAlquAmounts,
+  createAlquInquilino,
   deleteAlquCobro,
+  deleteAlquInquilino,
   garbageAlreadyPaid,
   loadAlquData,
   previousReading,
@@ -47,28 +49,37 @@ type Draft = {
   notas: string;
 };
 
+export const blankTenant = (): AlquInquilino => ({
+  id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
+  frecuencia_basura: "Trimestral", iva: 21, precio_kw: 0, minimo_luz: 10, notas: null,
+  created_at: "", updated_at: "",
+});
+
 function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInquilino | null; open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
   const [form, setForm] = useState<AlquInquilino | null>(tenant);
   const [saving, setSaving] = useState(false);
   useEffect(() => setForm(tenant), [tenant]);
   if (!form) return null;
+  const isNew = !form.id;
   const set = (key: keyof AlquInquilino, value: string | number) => setForm((old) => old ? { ...old, [key]: value } : old);
   const save = async () => {
+    if (!form.inquilino.trim()) { toast.error("Pon el nombre del inquilino"); return; }
     setSaving(true);
     try {
-      await updateAlquInquilino(form.id, {
+      const values = {
         inquilino: form.inquilino.trim(), direccion: form.direccion.trim(),
         importe_alquiler: n(form.importe_alquiler), importe_basura: n(form.importe_basura),
         importe_agua_residual: n(form.importe_agua_residual),
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
-      });
-      toast.success("Contrato actualizado"); onOpenChange(false); onSaved();
+      };
+      if (isNew) await createAlquInquilino(values); else await updateAlquInquilino(form.id, values);
+      toast.success(isNew ? "Inquilino añadido" : "Contrato actualizado"); onOpenChange(false); onSaved();
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar"); }
     finally { setSaving(false); }
   };
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-    <DialogHeader><DialogTitle>Editar contrato</DialogTitle><DialogDescription>Los cambios se aplicarán a las nuevas mensualidades.</DialogDescription></DialogHeader>
+    <DialogHeader><DialogTitle>{isNew ? "Nuevo inquilino" : "Editar contrato"}</DialogTitle><DialogDescription>Los cambios se aplicarán a las nuevas mensualidades.</DialogDescription></DialogHeader>
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Inquilino"><Input value={form.inquilino} onChange={(e) => set("inquilino", e.target.value)} /></Field>
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
@@ -129,6 +140,8 @@ export function AlquDashboard() {
   const [preview, setPreview] = useState<{ tenant: AlquInquilino; receipt: AlquCobro } | null>(null);
   const [deleting, setDeleting] = useState<{ tenant: AlquInquilino | null; receipt: AlquCobro } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingTenant, setDeletingTenant] = useState<AlquInquilino | null>(null);
+  const [removingTenant, setRemovingTenant] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState("mensualidades");
   const toggleExpanded = (id: string) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
@@ -190,6 +203,17 @@ export function AlquDashboard() {
       await reload();
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar"); }
     finally { setSavingId(null); }
+  };
+  const confirmDeleteTenant = async () => {
+    if (!deletingTenant) return;
+    setRemovingTenant(true);
+    try {
+      await deleteAlquInquilino(deletingTenant.id);
+      toast.success(`${deletingTenant.inquilino} eliminado`);
+      setDeletingTenant(null);
+      await reload();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo eliminar el inquilino"); }
+    finally { setRemovingTenant(false); }
   };
   const confirmDeleteReceipt = async () => {
     if (!deleting) return;
@@ -289,13 +313,14 @@ export function AlquDashboard() {
           </AccordionItem>;
         })}</Accordion>}
       </TabsContent>
-       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} /><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div>}</TabsContent>
+       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => setDeletingTenant(tenant)}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} /><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
       <TabsContent value="cobros" className="mt-5">{loading ? <Loading /> : <Card className="border-border/50"><CardContent className="p-4"><p className="mb-4 text-sm text-muted-foreground">Check verde = mes cobrado. Pincha un mes para abrirlo en Mensualidades.</p><div className="overflow-x-auto"><table className="w-full min-w-[720px] border-collapse text-sm"><thead><tr><th className="sticky left-0 bg-card p-2 text-left font-medium">Inquilino</th>{MONTHS.map((m) => <th key={m} className={cn("p-2 text-center text-xs font-medium text-muted-foreground", MONTHS[month - 1] === m && "text-primary")}>{m.slice(0, 3)}</th>)}</tr></thead><tbody>{tenants.map((tenant) => <tr key={tenant.id} className="border-t border-border/60"><td className="sticky left-0 bg-card p-2"><p className="font-medium">{tenant.inquilino}</p><p className="max-w-40 truncate text-xs text-muted-foreground">{tenant.direccion}</p></td>{MONTHS.map((m, i) => {
         const row = receipts.find((r) => r.inquilino_id === tenant.id && r.anio === year && r.mes === i + 1);
         const cobrado = row?.estado_pago === "Cobrado";
         return <td key={m} className="p-1 text-center"><button type="button" title={row ? `${m}: ${cobrado ? "Cobrado" : "Pendiente"} · ${eur.format(n(row.total_a_cobrar))}` : `${m}: sin recibo`} onClick={() => { setMonth(i + 1); setTab("mensualidades"); }} className={cn("mx-auto flex h-9 w-9 items-center justify-center rounded-md border transition", cobrado ? "border-transparent bg-green-500 text-white shadow-sm" : row ? "border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/40" : "border-border/60 text-muted-foreground/40 hover:bg-muted/60", month === i + 1 && "ring-2 ring-primary/40")}>{cobrado ? <Check className="h-4 w-4" /> : row ? "!" : "·"}</button></td>;
       })}</tr>)}</tbody></table></div><div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded bg-green-500 text-white"><Check className="h-3 w-3" /></span> Cobrado</span><span className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded border border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/40">!</span> Pendiente</span><span className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded border border-border/60">·</span> Sin recibo</span></div></CardContent></Card>}</TabsContent>
     </Tabs>
+    <AlertDialog open={!!deletingTenant} onOpenChange={(open) => !open && !removingTenant && setDeletingTenant(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar este inquilino?</AlertDialogTitle><AlertDialogDescription>Vas a eliminar a <strong className="text-foreground">{deletingTenant?.inquilino}</strong> y todos sus recibos guardados. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={removingTenant}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={removingTenant} onClick={(event) => { event.preventDefault(); void confirmDeleteTenant(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{removingTenant ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar inquilino</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
     <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} />
     <AlertDialog open={!!deleting} onOpenChange={(open) => !open && !deletingId && setDeleting(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar únicamente este recibo?</AlertDialogTitle><AlertDialogDescription>Vas a eliminar el recibo de <strong className="text-foreground">{deleting?.tenant?.inquilino ?? "este inquilino"}</strong> de <strong className="text-foreground">{deleting ? `${MONTHS[deleting.receipt.mes - 1]} de ${deleting.receipt.anio}` : "este mes"}</strong>, por <strong className="text-foreground">{deleting ? eur.format(n(deleting.receipt.total_a_cobrar)) : ""}</strong>. Ningún otro recibo se eliminará.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={!!deletingId} onClick={(event) => { event.preventDefault(); void confirmDeleteReceipt(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deletingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar solo este recibo</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
