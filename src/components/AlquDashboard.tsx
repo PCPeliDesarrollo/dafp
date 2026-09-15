@@ -34,7 +34,7 @@ const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", 
 const eur = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
 const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
-const n = (value: string | number | null | undefined) => Number(value) || 0;
+const n = (value: string | number | null | undefined) => Number(String(value ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
 
 /** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. */
 function amountsFor(tenant: AlquInquilino, draft: Draft) {
