@@ -17,7 +17,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   calculateAlquAmounts,
+  createAlquInquilino,
   deleteAlquCobro,
+  deleteAlquInquilino,
   garbageAlreadyPaid,
   loadAlquData,
   previousReading,
