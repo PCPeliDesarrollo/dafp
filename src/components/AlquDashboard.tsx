@@ -204,6 +204,17 @@ export function AlquDashboard() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar"); }
     finally { setSavingId(null); }
   };
+  const confirmDeleteTenant = async () => {
+    if (!deletingTenant) return;
+    setRemovingTenant(true);
+    try {
+      await deleteAlquInquilino(deletingTenant.id);
+      toast.success(`${deletingTenant.inquilino} eliminado`);
+      setDeletingTenant(null);
+      await reload();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo eliminar el inquilino"); }
+    finally { setRemovingTenant(false); }
+  };
   const confirmDeleteReceipt = async () => {
     if (!deleting) return;
     setDeletingId(deleting.receipt.id);
@@ -309,6 +320,7 @@ export function AlquDashboard() {
         return <td key={m} className="p-1 text-center"><button type="button" title={row ? `${m}: ${cobrado ? "Cobrado" : "Pendiente"} · ${eur.format(n(row.total_a_cobrar))}` : `${m}: sin recibo`} onClick={() => { setMonth(i + 1); setTab("mensualidades"); }} className={cn("mx-auto flex h-9 w-9 items-center justify-center rounded-md border transition", cobrado ? "border-transparent bg-green-500 text-white shadow-sm" : row ? "border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/40" : "border-border/60 text-muted-foreground/40 hover:bg-muted/60", month === i + 1 && "ring-2 ring-primary/40")}>{cobrado ? <Check className="h-4 w-4" /> : row ? "!" : "·"}</button></td>;
       })}</tr>)}</tbody></table></div><div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded bg-green-500 text-white"><Check className="h-3 w-3" /></span> Cobrado</span><span className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded border border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/40">!</span> Pendiente</span><span className="flex items-center gap-1.5"><span className="flex h-4 w-4 items-center justify-center rounded border border-border/60">·</span> Sin recibo</span></div></CardContent></Card>}</TabsContent>
     </Tabs>
+    <AlertDialog open={!!deletingTenant} onOpenChange={(open) => !open && !removingTenant && setDeletingTenant(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar este inquilino?</AlertDialogTitle><AlertDialogDescription>Vas a eliminar a <strong className="text-foreground">{deletingTenant?.inquilino}</strong> y todos sus recibos guardados. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={removingTenant}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={removingTenant} onClick={(event) => { event.preventDefault(); void confirmDeleteTenant(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{removingTenant ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar inquilino</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
     <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} />
     <AlertDialog open={!!deleting} onOpenChange={(open) => !open && !deletingId && setDeleting(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar únicamente este recibo?</AlertDialogTitle><AlertDialogDescription>Vas a eliminar el recibo de <strong className="text-foreground">{deleting?.tenant?.inquilino ?? "este inquilino"}</strong> de <strong className="text-foreground">{deleting ? `${MONTHS[deleting.receipt.mes - 1]} de ${deleting.receipt.anio}` : "este mes"}</strong>, por <strong className="text-foreground">{deleting ? eur.format(n(deleting.receipt.total_a_cobrar)) : ""}</strong>. Ningún otro recibo se eliminará.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={!!deletingId} onClick={(event) => { event.preventDefault(); void confirmDeleteReceipt(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deletingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar solo este recibo</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
