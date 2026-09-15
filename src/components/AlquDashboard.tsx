@@ -271,7 +271,7 @@ export function AlquDashboard() {
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{tenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
-        const amounts = calculateAlquAmounts(tenant, anterior, n(draft.lectura_actual), draft.aplica_basura_mes, n(draft.importe_agua), draft.aplica_agua_residual, n(draft.importe_agua_residual));
+        const amounts = amountsFor(tenant, draft);
         const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
         const residualPaidElsewhere = residualWaterAlreadyPaid(receipts, tenant.id, year, month, row?.id);
         const isOpen = !!expanded[tenant.id];
