@@ -47,28 +47,37 @@ type Draft = {
   notas: string;
 };
 
+export const blankTenant = (): AlquInquilino => ({
+  id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
+  frecuencia_basura: "Trimestral", iva: 21, precio_kw: 0, minimo_luz: 10, notas: null,
+  created_at: "", updated_at: "",
+});
+
 function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInquilino | null; open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
   const [form, setForm] = useState<AlquInquilino | null>(tenant);
   const [saving, setSaving] = useState(false);
   useEffect(() => setForm(tenant), [tenant]);
   if (!form) return null;
+  const isNew = !form.id;
   const set = (key: keyof AlquInquilino, value: string | number) => setForm((old) => old ? { ...old, [key]: value } : old);
   const save = async () => {
+    if (!form.inquilino.trim()) { toast.error("Pon el nombre del inquilino"); return; }
     setSaving(true);
     try {
-      await updateAlquInquilino(form.id, {
+      const values = {
         inquilino: form.inquilino.trim(), direccion: form.direccion.trim(),
         importe_alquiler: n(form.importe_alquiler), importe_basura: n(form.importe_basura),
         importe_agua_residual: n(form.importe_agua_residual),
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
-      });
-      toast.success("Contrato actualizado"); onOpenChange(false); onSaved();
+      };
+      if (isNew) await createAlquInquilino(values); else await updateAlquInquilino(form.id, values);
+      toast.success(isNew ? "Inquilino añadido" : "Contrato actualizado"); onOpenChange(false); onSaved();
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar"); }
     finally { setSaving(false); }
   };
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-    <DialogHeader><DialogTitle>Editar contrato</DialogTitle><DialogDescription>Los cambios se aplicarán a las nuevas mensualidades.</DialogDescription></DialogHeader>
+    <DialogHeader><DialogTitle>{isNew ? "Nuevo inquilino" : "Editar contrato"}</DialogTitle><DialogDescription>Los cambios se aplicarán a las nuevas mensualidades.</DialogDescription></DialogHeader>
     <div className="grid gap-4 sm:grid-cols-2">
       <Field label="Inquilino"><Input value={form.inquilino} onChange={(e) => set("inquilino", e.target.value)} /></Field>
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
