@@ -102,6 +102,7 @@ export type Database = {
       }
       alqu_inquilinos: {
         Row: {
+          cobra_suministros: boolean
           created_at: string
           direccion: string
           frecuencia_basura: Database["public"]["Enums"]["alqu_frecuencia"]
@@ -117,6 +118,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cobra_suministros?: boolean
           created_at?: string
           direccion?: string
           frecuencia_basura?: Database["public"]["Enums"]["alqu_frecuencia"]
@@ -132,6 +134,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cobra_suministros?: boolean
           created_at?: string
           direccion?: string
           frecuencia_basura?: Database["public"]["Enums"]["alqu_frecuencia"]

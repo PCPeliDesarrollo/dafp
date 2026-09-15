@@ -29,6 +29,13 @@
       "when": 1789146160669,
       "tag": "0003_add_bimonthly_residual_water_to_alqu",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789491432204,
+      "tag": "0004_add_cobra_suministros_to_alqu_inquilinos",
+      "breakpoints": true
     }
   ]
 }

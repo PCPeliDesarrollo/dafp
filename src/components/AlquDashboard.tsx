@@ -36,8 +36,11 @@ const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(String(value ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
 
-/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. */
+/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. Si el inquilino no lleva suministros, solo cobra el alquiler. */
 function amountsFor(tenant: AlquInquilino, draft: Draft) {
+  if (!tenant.cobra_suministros) {
+    return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: n(tenant.importe_alquiler) };
+  }
   const base = calculateAlquAmounts(
     tenant,
     n(draft.lectura_anterior),
@@ -70,7 +73,7 @@ type Draft = {
 export const blankTenant = (): AlquInquilino => ({
   id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
   frecuencia_basura: "Trimestral", iva: 21, precio_kw: 0, minimo_luz: 10, notas: null,
-  created_at: "", updated_at: "",
+  cobra_suministros: true, created_at: "", updated_at: "",
 });
 
 function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInquilino | null; open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
@@ -79,7 +82,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
   useEffect(() => setForm(tenant), [tenant]);
   if (!form) return null;
   const isNew = !form.id;
-  const set = (key: keyof AlquInquilino, value: string | number) => setForm((old) => old ? { ...old, [key]: value } : old);
+  const set = (key: keyof AlquInquilino, value: string | number | boolean) => setForm((old) => old ? { ...old, [key]: value } : old);
   const save = async () => {
     if (!form.inquilino.trim()) { toast.error("Pon el nombre del inquilino"); return; }
     setSaving(true);
@@ -90,6 +93,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
         importe_agua_residual: n(form.importe_agua_residual),
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
+        cobra_suministros: form.cobra_suministros,
       };
       if (isNew) await createAlquInquilino(values); else await updateAlquInquilino(form.id, values);
       toast.success(isNew ? "Inquilino añadido" : "Contrato actualizado"); onOpenChange(false); onSaved();
@@ -102,12 +106,18 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
       <Field label="Inquilino"><Input value={form.inquilino} onChange={(e) => set("inquilino", e.target.value)} /></Field>
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
       <MoneyField label="Alquiler" value={form.importe_alquiler} onChange={(v) => set("importe_alquiler", v)} />
-      <MoneyField label="Basura" value={form.importe_basura} onChange={(v) => set("importe_basura", v)} />
-      <MoneyField label="Agua residual bimestral" value={form.importe_agua_residual} onChange={(v) => set("importe_agua_residual", v)} />
-      <Field label="Frecuencia de basura"><Select value={form.frecuencia_basura} onValueChange={(v: AlquInquilino["frecuencia_basura"]) => set("frecuencia_basura", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Mensual">Mensual</SelectItem><SelectItem value="Bimestral">Bimestral</SelectItem><SelectItem value="Trimestral">Trimestral</SelectItem></SelectContent></Select></Field>
-      <MoneyField label="IVA de luz (%)" value={form.iva} onChange={(v) => set("iva", v)} />
-      <MoneyField label="Precio por KW" value={form.precio_kw} step="0.000001" onChange={(v) => set("precio_kw", v)} />
-      <MoneyField label="Mínimo de luz" value={form.minimo_luz} onChange={(v) => set("minimo_luz", v)} />
+      <label className="flex min-h-10 items-center gap-2 self-end rounded-md border border-input px-3 text-sm sm:col-span-2">
+        <Checkbox checked={form.cobra_suministros} onCheckedChange={(v) => set("cobra_suministros", v === true)} />
+        <span>Cobrar suministros (luz, basura y agua). Si lo quitas, solo se cobra el alquiler.</span>
+      </label>
+      {form.cobra_suministros && <>
+        <MoneyField label="Basura" value={form.importe_basura} onChange={(v) => set("importe_basura", v)} />
+        <MoneyField label="Agua residual bimestral" value={form.importe_agua_residual} onChange={(v) => set("importe_agua_residual", v)} />
+        <Field label="Frecuencia de basura"><Select value={form.frecuencia_basura} onValueChange={(v: AlquInquilino["frecuencia_basura"]) => set("frecuencia_basura", v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Mensual">Mensual</SelectItem><SelectItem value="Bimestral">Bimestral</SelectItem><SelectItem value="Trimestral">Trimestral</SelectItem></SelectContent></Select></Field>
+        <MoneyField label="IVA de luz (%)" value={form.iva} onChange={(v) => set("iva", v)} />
+        <MoneyField label="Precio por KW" value={form.precio_kw} step="0.000001" onChange={(v) => set("precio_kw", v)} />
+        <MoneyField label="Mínimo de luz" value={form.minimo_luz} onChange={(v) => set("minimo_luz", v)} />
+      </>}
       <Field label="Notas" className="sm:col-span-2"><Textarea value={form.notas ?? ""} onChange={(e) => set("notas", e.target.value)} /></Field>
     </div>
     <DialogFooter><Button onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></DialogFooter>
@@ -130,19 +140,21 @@ function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquIn
     <DialogHeader><DialogTitle>Recibo de {MONTHS[receipt.mes - 1]} de {receipt.anio}</DialogTitle><DialogDescription>{tenant.inquilino} · {tenant.direccion}</DialogDescription></DialogHeader>
     <div className="space-y-4 rounded-lg border border-border bg-card p-5">
       <div className="flex justify-between"><span className="text-muted-foreground">Alquiler</span><strong>{eur.format(n(receipt.importe_alquiler))}</strong></div>
-      <div className="border-y border-border py-3 text-sm">
-        {manualLuz ? (
-          <div className="flex justify-between"><span className="text-muted-foreground">Luz (importe fijo)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
-        ) : <>
-          <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
-          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
-          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
-          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
-        </>}
-      </div>
-      <div className="flex justify-between"><span className="text-muted-foreground">Basura</span><strong>{eur.format(n(receipt.importe_basura_cobrado))}</strong></div>
-      <div className="flex justify-between"><span className="text-muted-foreground">Agua</span><strong>{eur.format(n(receipt.importe_agua))}</strong></div>
-      <div className="flex justify-between"><span className="text-muted-foreground">Agua residual (bimestral)</span><strong>{eur.format(n(receipt.importe_agua_residual_cobrado))}</strong></div>
+      {tenant.cobra_suministros && <>
+        <div className="border-y border-border py-3 text-sm">
+          {manualLuz ? (
+            <div className="flex justify-between"><span className="text-muted-foreground">Luz (importe fijo)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+          ) : <>
+            <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+          </>}
+        </div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Basura</span><strong>{eur.format(n(receipt.importe_basura_cobrado))}</strong></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Agua</span><strong>{eur.format(n(receipt.importe_agua))}</strong></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Agua residual (bimestral)</span><strong>{eur.format(n(receipt.importe_agua_residual_cobrado))}</strong></div>
+      </>}
       <div className="flex items-center justify-between border-t border-border pt-4 text-xl"><span>TOTAL A PAGAR</span><strong className="text-primary">{eur.format(n(receipt.total_a_cobrar))}</strong></div>
       <div className="flex justify-between text-xs text-muted-foreground"><span>{receipt.estado_pago}</span><span>{receipt.fecha_cobro ? `Cobrado el ${receipt.fecha_cobro}${receipt.quien_cobra ? ` por ${receipt.quien_cobra}` : ""}` : ""}</span></div>
     </div>
@@ -214,13 +226,14 @@ export function AlquDashboard() {
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
+      const supplies = tenant.cobra_suministros;
       const savedReceipt = await upsertAlquCobro({
         ...(existing?.id ? { id: existing.id } : {}), inquilino_id: tenant.id, anio: year, mes: month,
-        lectura_anterior: anterior, lectura_actual: actual,
+        lectura_anterior: supplies ? anterior : 0, lectura_actual: supplies ? actual : 0,
         kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: n(tenant.importe_alquiler),
-        aplica_basura_mes: draft.aplica_basura_mes, estado_basura_trimestre: draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
-        importe_basura_cobrado: amounts.basura, importe_agua: Math.max(0, n(draft.importe_agua)), total_a_cobrar: amounts.total,
-        aplica_agua_residual: draft.aplica_agua_residual,
+        aplica_basura_mes: supplies && draft.aplica_basura_mes, estado_basura_trimestre: !supplies ? "No corresponde pagar" : draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
+        importe_basura_cobrado: amounts.basura, importe_agua: supplies ? Math.max(0, n(draft.importe_agua)) : 0, total_a_cobrar: amounts.total,
+        aplica_agua_residual: supplies && draft.aplica_agua_residual,
         importe_agua_residual_cobrado: amounts.residual,
         estado_pago: draft.estado_pago, fecha_cobro: draft.estado_pago === "Cobrado" ? (draft.fecha_cobro || isoToday()) : null,
         quien_cobra: draft.estado_pago === "Cobrado" ? draft.quien_cobra.trim() || null : null, notas: draft.notas.trim() || null,
@@ -308,7 +321,8 @@ export function AlquDashboard() {
             </button>
           </CardHeader>
           {isOpen && <CardContent className="space-y-4">
-            <div className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
+            {!tenant.cobra_suministros && <p className="rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">Este inquilino no lleva suministros: solo se cobra el alquiler ({eur.format(n(tenant.importe_alquiler))}).</p>}
+            {tenant.cobra_suministros && <div className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Luz:</span>
                 <Button type="button" size="sm" variant={draft.luz_modo === "lectura" ? "default" : "outline"} onClick={() => patchDraft(tenant.id, { luz_modo: "lectura" })}>Por lecturas</Button>
@@ -317,15 +331,15 @@ export function AlquDashboard() {
               {draft.luz_modo === "lectura"
                 ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div>
                 : <div className="grid grid-cols-2 gap-3"><Field label="Importe de luz que paga"><Input type="number" min="0" step="0.01" value={draft.total_luz_manual} onChange={(e) => patchDraft(tenant.id, { total_luz_manual: e.target.value })} /></Field><Readout label="Total luz" value={eur.format(amounts.luz)} accent /></div>}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">{!paidElsewhere && <label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_basura_mes} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_basura_mes: v === true })} /><span>Basura · {eur.format(n(tenant.importe_basura))}</span></label>}<Field label="Agua"><Input type="number" min="0" step="0.01" value={draft.importe_agua} onChange={(e) => patchDraft(tenant.id, { importe_agua: e.target.value })} /></Field><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.estado_pago === "Cobrado"} onCheckedChange={(v) => {
+            </div>}
+            <div className="grid gap-3 sm:grid-cols-3">{tenant.cobra_suministros && !paidElsewhere && <label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_basura_mes} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_basura_mes: v === true })} /><span>Basura · {eur.format(n(tenant.importe_basura))}</span></label>}{tenant.cobra_suministros && <Field label="Agua"><Input type="number" min="0" step="0.01" value={draft.importe_agua} onChange={(e) => patchDraft(tenant.id, { importe_agua: e.target.value })} /></Field>}<label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.estado_pago === "Cobrado"} onCheckedChange={(v) => {
               const pagado = v === true;
               patchDraft(tenant.id, {
                 estado_pago: pagado ? "Cobrado" : "Pendiente",
                 fecha_cobro: pagado ? (draft.fecha_cobro || isoToday()) : "",
               });
             }} /><span>Pagado</span></label></div>
-            {!residualPaidElsewhere && <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_agua_residual} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_agua_residual: v === true })} /><span>{draft.aplica_agua_residual ? "Agua residual pagada" : "Agua residual pendiente"}</span></label><Field label="Importe agua residual (editable)"><Input type="number" min="0" step="0.01" value={draft.importe_agua_residual} onChange={(e) => patchDraft(tenant.id, { importe_agua_residual: e.target.value })} /></Field></div>}
+            {tenant.cobra_suministros && !residualPaidElsewhere && <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_agua_residual} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_agua_residual: v === true })} /><span>{draft.aplica_agua_residual ? "Agua residual pagada" : "Agua residual pendiente"}</span></label><Field label="Importe agua residual (editable)"><Input type="number" min="0" step="0.01" value={draft.importe_agua_residual} onChange={(e) => patchDraft(tenant.id, { importe_agua_residual: e.target.value })} /></Field></div>}
             {draft.estado_pago === "Cobrado" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Fecha de cobro"><Input type="date" value={draft.fecha_cobro} onChange={(e) => patchDraft(tenant.id, { fecha_cobro: e.target.value })} /></Field><Field label="Quién cobra"><Input value={draft.quien_cobra} onChange={(e) => patchDraft(tenant.id, { quien_cobra: e.target.value })} placeholder="Nombre" /></Field></div>}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div><p className="text-xs text-muted-foreground">Total a pagar</p><p className="text-2xl font-semibold text-primary">{eur.format(amounts.total)}</p></div><div className="flex gap-2">{row && <Button variant="outline" size="sm" onClick={() => setPreview({ tenant, receipt: row })}><Printer className="h-4 w-4" /> Recibo</Button>}<Button size="sm" onClick={() => saveReceipt(tenant)} disabled={savingId === tenant.id}>{savingId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></div></div>
           </CardContent>}
@@ -347,7 +361,7 @@ export function AlquDashboard() {
           </AccordionItem>;
         })}</Accordion>}
       </TabsContent>
-       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => setDeletingTenant(tenant)}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} /><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
+       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => setDeletingTenant(tenant)}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} />{tenant.cobra_suministros ? <><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></> : <Readout label="Suministros" value="Solo alquiler" />}</div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
       <TabsContent value="cobros" className="mt-5">{loading ? <Loading /> : <Card className="border-border/50"><CardContent className="p-4"><p className="mb-4 text-sm text-muted-foreground">Check verde = mes cobrado. Pincha un mes para abrirlo en Mensualidades.</p><div className="overflow-x-auto"><table className="w-full min-w-[720px] border-collapse text-sm"><thead><tr><th className="sticky left-0 bg-card p-2 text-left font-medium">Inquilino</th>{MONTHS.map((m) => <th key={m} className={cn("p-2 text-center text-xs font-medium text-muted-foreground", MONTHS[month - 1] === m && "text-primary")}>{m.slice(0, 3)}</th>)}</tr></thead><tbody>{tenants.map((tenant) => <tr key={tenant.id} className="border-t border-border/60"><td className="sticky left-0 bg-card p-2"><p className="font-medium">{tenant.inquilino}</p><p className="max-w-40 truncate text-xs text-muted-foreground">{tenant.direccion}</p></td>{MONTHS.map((m, i) => {
         const row = receipts.find((r) => r.inquilino_id === tenant.id && r.anio === year && r.mes === i + 1);
         const cobrado = row?.estado_pago === "Cobrado";
