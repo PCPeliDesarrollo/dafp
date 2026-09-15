@@ -28,6 +28,19 @@ export async function updateAlquInquilino(id: string, values: AlquInquilinoUpdat
   if (error) throw error;
 }
 
+export async function createAlquInquilino(values: TablesInsert<"alqu_inquilinos">) {
+  const { data, error } = await supabase.from("alqu_inquilinos").insert(values).select("*").single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteAlquInquilino(id: string) {
+  const cobros = await supabase.from("alqu_cobros_mensuales").delete().eq("inquilino_id", id);
+  if (cobros.error) throw cobros.error;
+  const { error } = await supabase.from("alqu_inquilinos").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function upsertAlquCobro(values: AlquCobroInput) {
   const { data, error } = await supabase
     .from("alqu_cobros_mensuales")
