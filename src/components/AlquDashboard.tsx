@@ -130,10 +130,14 @@ function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquIn
     <div className="space-y-4 rounded-lg border border-border bg-card p-5">
       <div className="flex justify-between"><span className="text-muted-foreground">Alquiler</span><strong>{eur.format(n(receipt.importe_alquiler))}</strong></div>
       <div className="border-y border-border py-3 text-sm">
-        <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
-        <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
-        <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
-        <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+        {manualLuz ? (
+          <div className="flex justify-between"><span className="text-muted-foreground">Luz (importe fijo)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+        ) : <>
+          <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
+          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
+          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
+          <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+        </>}
       </div>
       <div className="flex justify-between"><span className="text-muted-foreground">Basura</span><strong>{eur.format(n(receipt.importe_basura_cobrado))}</strong></div>
       <div className="flex justify-between"><span className="text-muted-foreground">Agua</span><strong>{eur.format(n(receipt.importe_agua))}</strong></div>
