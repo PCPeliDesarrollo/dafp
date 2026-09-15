@@ -124,6 +124,7 @@ function MoneyField({ label, value, step = "0.01", onChange }: { label: string; 
 function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquInquilino | null; receipt: AlquCobro | null; open: boolean; onOpenChange: (v: boolean) => void }) {
   if (!tenant || !receipt) return null;
   const baseLuz = n(receipt.kw_consumidos) * n(tenant.precio_kw) + n(tenant.minimo_luz);
+  const manualLuz = n(receipt.kw_consumidos) === 0 && n(receipt.lectura_actual) === n(receipt.lectura_anterior) && n(receipt.total_luz) > 0;
   const printReceipt = () => window.print();
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-xl print:fixed print:inset-0 print:max-h-none print:max-w-none print:translate-x-0 print:translate-y-0 print:border-0">
     <DialogHeader><DialogTitle>Recibo de {MONTHS[receipt.mes - 1]} de {receipt.anio}</DialogTitle><DialogDescription>{tenant.inquilino} · {tenant.direccion}</DialogDescription></DialogHeader>
