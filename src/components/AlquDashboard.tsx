@@ -241,7 +241,13 @@ export function AlquDashboard() {
                 <p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p>
               </div>
               <div className="flex items-center gap-3">
-                {row && <Badge variant={row.estado_pago === "Cobrado" ? "default" : "secondary"}>{row.estado_pago}</Badge>}
+                {row?.estado_pago === "Cobrado" ? (
+                  <span className="inline-flex items-center rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-medium text-white shadow-sm">
+                    {MONTHS[month - 1].slice(0, 4).toLowerCase()}{String(year).slice(-2)}
+                  </span>
+                ) : (
+                  <Badge variant="secondary">Pendiente</Badge>
+                )}
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Total a pagar</p>
                   <p className="text-lg font-semibold text-primary">{eur.format(amounts.total)}</p>
