@@ -36,8 +36,11 @@ const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(String(value ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
 
-/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. */
+/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. Si el inquilino no lleva suministros, solo cobra el alquiler. */
 function amountsFor(tenant: AlquInquilino, draft: Draft) {
+  if (!tenant.cobra_suministros) {
+    return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: n(tenant.importe_alquiler) };
+  }
   const base = calculateAlquAmounts(
     tenant,
     n(draft.lectura_anterior),
@@ -70,7 +73,7 @@ type Draft = {
 export const blankTenant = (): AlquInquilino => ({
   id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
   frecuencia_basura: "Trimestral", iva: 21, precio_kw: 0, minimo_luz: 10, notas: null,
-  created_at: "", updated_at: "",
+  cobra_suministros: true, created_at: "", updated_at: "",
 });
 
 function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInquilino | null; open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
