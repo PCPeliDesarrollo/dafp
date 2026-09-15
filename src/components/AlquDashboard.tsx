@@ -130,6 +130,7 @@ export function AlquDashboard() {
   const [deleting, setDeleting] = useState<{ tenant: AlquInquilino | null; receipt: AlquCobro } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [tab, setTab] = useState("mensualidades");
   const toggleExpanded = (id: string) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
 
   const reload = useCallback(async () => {
@@ -220,7 +221,7 @@ export function AlquDashboard() {
   return <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
     <div className="flex flex-wrap items-end justify-between gap-4"><div><Badge className="mb-2 bg-primary/15 text-primary hover:bg-primary/15">Gestión de alquileres</Badge><h1 className="text-2xl font-semibold">ALQU</h1><p className="text-sm text-muted-foreground">Alquileres, lecturas y recibos mensuales</p></div><div className="flex gap-2"><Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent></Select><Select value={String(year)} onValueChange={(v) => setYear(Number(v))}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select></div></div>
     <div className="grid gap-3 sm:grid-cols-3"><Summary icon={Building2} label="Inquilinos" value={String(tenants.length)} /><Summary icon={ReceiptText} label="Facturado" value={eur.format(totalMonth)} /><Summary icon={Check} label="Cobrado" value={eur.format(collected)} /></div>
-    <Tabs defaultValue="mensualidades"><TabsList className="h-auto flex-wrap"><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="recibos"><FolderArchive className="mr-2 h-4 w-4" />Recibos guardados</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
+    <Tabs value={tab} onValueChange={setTab}><TabsList className="h-auto flex-wrap"><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="cobros"><Check className="mr-2 h-4 w-4" />Cobros por mes</TabsTrigger><TabsTrigger value="recibos"><FolderArchive className="mr-2 h-4 w-4" />Recibos guardados</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{tenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
