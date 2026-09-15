@@ -1,0 +1,1 @@
+ALTER TABLE public.alqu_inquilinos ADD COLUMN IF NOT EXISTS cobra_suministros boolean NOT NULL DEFAULT true;
