@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { Building2, CalendarDays, Check, Edit3, FolderArchive, Loader2, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
+import { Building2, CalendarDays, Check, ChevronDown, Edit3, FolderArchive, Loader2, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
