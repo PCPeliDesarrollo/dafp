@@ -128,6 +128,8 @@ export function AlquDashboard() {
   const [preview, setPreview] = useState<{ tenant: AlquInquilino; receipt: AlquCobro } | null>(null);
   const [deleting, setDeleting] = useState<{ tenant: AlquInquilino | null; receipt: AlquCobro } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggleExpanded = (id: string) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
 
   const reload = useCallback(async () => {
     setLoading(true);
