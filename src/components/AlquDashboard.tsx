@@ -224,13 +224,14 @@ export function AlquDashboard() {
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
+      const supplies = tenant.cobra_suministros;
       const savedReceipt = await upsertAlquCobro({
         ...(existing?.id ? { id: existing.id } : {}), inquilino_id: tenant.id, anio: year, mes: month,
-        lectura_anterior: anterior, lectura_actual: actual,
+        lectura_anterior: supplies ? anterior : 0, lectura_actual: supplies ? actual : 0,
         kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: n(tenant.importe_alquiler),
-        aplica_basura_mes: draft.aplica_basura_mes, estado_basura_trimestre: draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
-        importe_basura_cobrado: amounts.basura, importe_agua: Math.max(0, n(draft.importe_agua)), total_a_cobrar: amounts.total,
-        aplica_agua_residual: draft.aplica_agua_residual,
+        aplica_basura_mes: supplies && draft.aplica_basura_mes, estado_basura_trimestre: !supplies ? "No corresponde pagar" : draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
+        importe_basura_cobrado: amounts.basura, importe_agua: supplies ? Math.max(0, n(draft.importe_agua)) : 0, total_a_cobrar: amounts.total,
+        aplica_agua_residual: supplies && draft.aplica_agua_residual,
         importe_agua_residual_cobrado: amounts.residual,
         estado_pago: draft.estado_pago, fecha_cobro: draft.estado_pago === "Cobrado" ? (draft.fecha_cobro || isoToday()) : null,
         quien_cobra: draft.estado_pago === "Cobrado" ? draft.quien_cobra.trim() || null : null, notas: draft.notas.trim() || null,
