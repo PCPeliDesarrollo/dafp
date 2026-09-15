@@ -37,6 +37,8 @@ const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(value) || 0;
 
 type Draft = {
+  luz_modo: "lectura" | "importe";
+  total_luz_manual: string;
   lectura_anterior: string;
   lectura_actual: string;
   importe_agua: string;
