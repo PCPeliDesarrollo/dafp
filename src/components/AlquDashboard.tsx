@@ -162,7 +162,10 @@ export function AlquDashboard() {
     for (const tenant of tenants) {
       const row = current.get(tenant.id);
       const paid = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
+      const manual = !!row && n(row.kw_consumidos) === 0 && n(row.total_luz) > 0 && n(row.lectura_actual) === n(row.lectura_anterior);
       next[tenant.id] = {
+        luz_modo: manual ? "importe" : "lectura",
+        total_luz_manual: String(manual ? n(row!.total_luz) : 0),
         lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
         importe_agua: String(row?.importe_agua ?? 0),
