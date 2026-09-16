@@ -147,8 +147,9 @@ function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquIn
           ) : <>
             <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
             <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo + mínimo</span><span>{eur.format(baseLuz)}</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz con IVA ({dec.format(n(tenant.iva))} %)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo con IVA ({dec.format(n(tenant.iva))} %)</span><span>{eur.format(baseLuz * (1 + n(tenant.iva) / 100))}</span></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">+ Mínimo</span><span>{eur.format(n(tenant.minimo_luz))}</span></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Total luz</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
           </>}
         </div>
         <div className="flex justify-between"><span className="text-muted-foreground">Basura</span><strong>{eur.format(n(receipt.importe_basura_cobrado))}</strong></div>
