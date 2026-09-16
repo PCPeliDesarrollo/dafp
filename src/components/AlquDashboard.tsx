@@ -293,6 +293,9 @@ export function AlquDashboard() {
         const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
         const residualPaidElsewhere = residualWaterAlreadyPaid(receipts, tenant.id, year, month, row?.id);
         const isOpen = !!expanded[tenant.id];
+        const lastSaved = receipts
+          .filter((c) => c.inquilino_id === tenant.id && n(c.lectura_actual) > 0)
+          .sort((a, b) => b.anio * 12 + b.mes - (a.anio * 12 + a.mes))[0];
         return <Card key={tenant.id} className="gradient-card border-border/50 shadow-elevated">
           <CardHeader className="pb-3">
             <button
@@ -303,6 +306,13 @@ export function AlquDashboard() {
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-base">{tenant.inquilino}</CardTitle>
                 <p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p>
+                {tenant.cobra_suministros && (
+                  <p className="mt-1 text-xs font-medium text-muted-foreground">
+                    {lastSaved
+                      ? `Última lectura: ${dec.format(n(lastSaved.lectura_actual))} KW (${MONTHS[lastSaved.mes - 1].slice(0, 4).toLowerCase()}${String(lastSaved.anio).slice(-2)})`
+                      : "Sin lectura registrada todavía"}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 {row?.estado_pago === "Cobrado" ? (
