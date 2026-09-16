@@ -129,8 +129,8 @@ export function calculateAlquAmounts(
   aguaResidual: number,
 ) {
   const kw = Math.max(0, lecturaActual - lecturaAnterior);
-  const baseLuz = kw * Number(inquilino.precio_kw) + Number(inquilino.minimo_luz);
-  const luz = baseLuz * (1 + Number(inquilino.iva) / 100);
+  const baseLuz = kw * Number(inquilino.precio_kw);
+  const luz = baseLuz * (1 + Number(inquilino.iva) / 100) + Number(inquilino.minimo_luz);
   const basura = aplicaBasura ? Number(inquilino.importe_basura) : 0;
   const residual = aplicaAguaResidual ? Math.max(0, aguaResidual) : 0;
   return {
