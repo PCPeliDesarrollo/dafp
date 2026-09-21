@@ -346,6 +346,11 @@ export function AlquDashboard() {
             </button>
           </CardHeader>
           {isOpen && <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Alquiler de este mes (editable)"><Input type="number" min="0" step="0.01" value={draft.importe_alquiler} onChange={(e) => patchDraft(tenant.id, { importe_alquiler: e.target.value })} /></Field>
+              <Readout label="Alquiler habitual" value={eur.format(n(tenant.importe_alquiler))} />
+            </div>
+
             {!tenant.cobra_suministros && <p className="rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">Este inquilino no lleva suministros: solo se cobra el alquiler ({eur.format(n(tenant.importe_alquiler))}).</p>}
             {tenant.cobra_suministros && <div className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
               <div className="flex flex-wrap items-center gap-2">
