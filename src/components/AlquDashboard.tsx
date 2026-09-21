@@ -239,7 +239,7 @@ export function AlquDashboard() {
       const savedReceipt = await upsertAlquCobro({
         ...(existing?.id ? { id: existing.id } : {}), inquilino_id: tenant.id, anio: year, mes: month,
         lectura_anterior: supplies ? anterior : 0, lectura_actual: supplies ? actual : 0,
-        kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: n(tenant.importe_alquiler),
+        kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: Math.max(0, n(draft.importe_alquiler)),
         aplica_basura_mes: supplies && draft.aplica_basura_mes, estado_basura_trimestre: !supplies ? "No corresponde pagar" : draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
         importe_basura_cobrado: amounts.basura, importe_agua: supplies ? Math.max(0, n(draft.importe_agua)) : 0, total_a_cobrar: amounts.total,
         aplica_agua_residual: supplies && draft.aplica_agua_residual,
