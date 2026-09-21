@@ -36,12 +36,13 @@ const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(String(value ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
 
-/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. Si el inquilino no lleva suministros, solo cobra el alquiler. */
+/** Importes del mes: el alquiler puede ajustarse a mano (altas a mitad de mes), la luz sale de las lecturas o de un importe fijo. */
 function amountsFor(tenant: AlquInquilino, draft: Draft) {
+  const rent = Math.max(0, n(draft.importe_alquiler));
   if (!tenant.cobra_suministros) {
-    return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: n(tenant.importe_alquiler) };
+    return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: rent };
   }
-  const base = calculateAlquAmounts(
+  const raw = calculateAlquAmounts(
     tenant,
     n(draft.lectura_anterior),
     draft.luz_modo === "importe" ? n(draft.lectura_anterior) : n(draft.lectura_actual),
@@ -50,12 +51,14 @@ function amountsFor(tenant: AlquInquilino, draft: Draft) {
     draft.aplica_agua_residual,
     n(draft.importe_agua_residual),
   );
+  const base = { ...raw, total: raw.total - n(tenant.importe_alquiler) + rent };
   if (draft.luz_modo !== "importe") return base;
   const luz = Math.max(0, n(draft.total_luz_manual));
   return { ...base, kw: 0, baseLuz: luz, luz, total: base.total - base.luz + luz };
 }
 
 type Draft = {
+  importe_alquiler: string;
   luz_modo: "lectura" | "importe";
   total_luz_manual: string;
   lectura_anterior: string;
@@ -69,6 +72,7 @@ type Draft = {
   quien_cobra: string;
   notas: string;
 };
+
 
 export const blankTenant = (): AlquInquilino => ({
   id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
