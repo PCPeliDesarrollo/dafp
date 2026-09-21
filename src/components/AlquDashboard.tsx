@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type React from "react";
-import { Building2, CalendarDays, Check, ChevronDown, Edit3, FolderArchive, Loader2, Plus, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
+import { Building2, CalendarDays, Check, ChevronDown, Edit3, FolderArchive, Loader2, MessageSquareText, Plus, Printer, ReceiptText, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -157,6 +157,7 @@ function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquIn
         <div className="flex justify-between"><span className="text-muted-foreground">Agua</span><strong>{eur.format(n(receipt.importe_agua))}</strong></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Agua residual (bimestral)</span><strong>{eur.format(n(receipt.importe_agua_residual_cobrado))}</strong></div>
       </>}
+      {receipt.notas && <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"><p className="mb-1 text-xs font-medium uppercase tracking-wide">Comentario</p><p className="whitespace-pre-wrap">{receipt.notas}</p></div>}
       <div className="flex items-center justify-between border-t border-border pt-4 text-xl"><span>TOTAL A PAGAR</span><strong className="text-primary">{eur.format(n(receipt.total_a_cobrar))}</strong></div>
       <div className="flex justify-between text-xs text-muted-foreground"><span>{receipt.estado_pago}</span><span>{receipt.fecha_cobro ? `Cobrado el ${receipt.fecha_cobro}${receipt.quien_cobra ? ` por ${receipt.quien_cobra}` : ""}` : ""}</span></div>
     </div>
@@ -315,6 +316,12 @@ export function AlquDashboard() {
                       : "Sin lectura registrada todavía"}
                   </p>
                 )}
+                {draft.notas.trim() && (
+                  <p className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs font-medium text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                    <MessageSquareText className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span className="line-clamp-2 whitespace-pre-wrap">{draft.notas.trim()}</span>
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 {row?.estado_pago === "Cobrado" ? (
@@ -353,6 +360,7 @@ export function AlquDashboard() {
             }} /><span>Pagado</span></label></div>
             {tenant.cobra_suministros && !residualPaidElsewhere && <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><label className="flex min-h-10 items-center gap-2 rounded-md border border-input px-3 text-sm"><Checkbox checked={draft.aplica_agua_residual} onCheckedChange={(v) => patchDraft(tenant.id, { aplica_agua_residual: v === true })} /><span>{draft.aplica_agua_residual ? "Agua residual pagada" : "Agua residual pendiente"}</span></label><Field label="Importe agua residual (editable)"><Input type="number" min="0" step="0.01" value={draft.importe_agua_residual} onChange={(e) => patchDraft(tenant.id, { importe_agua_residual: e.target.value })} /></Field></div>}
             {draft.estado_pago === "Cobrado" && <div className="grid gap-3 sm:grid-cols-2"><Field label="Fecha de cobro"><Input type="date" value={draft.fecha_cobro} onChange={(e) => patchDraft(tenant.id, { fecha_cobro: e.target.value })} /></Field><Field label="Quién cobra"><Input value={draft.quien_cobra} onChange={(e) => patchDraft(tenant.id, { quien_cobra: e.target.value })} placeholder="Nombre" /></Field></div>}
+            <Field label="Comentario del recibo"><Textarea value={draft.notas} onChange={(e) => patchDraft(tenant.id, { notas: e.target.value })} placeholder="Ej.: Debe la luz del mes pasado" /></Field>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div><p className="text-xs text-muted-foreground">Total a pagar</p><p className="text-2xl font-semibold text-primary">{eur.format(amounts.total)}</p></div><div className="flex gap-2">{row && <Button variant="outline" size="sm" onClick={() => setPreview({ tenant, receipt: row })}><Printer className="h-4 w-4" /> Recibo</Button>}<Button size="sm" onClick={() => saveReceipt(tenant)} disabled={savingId === tenant.id}>{savingId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></div></div>
           </CardContent>}
         </Card>;
@@ -368,7 +376,7 @@ export function AlquDashboard() {
             <AccordionTrigger className="gap-4 py-4 hover:no-underline"><div className="flex min-w-0 flex-1 flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"><div><p className="text-base font-semibold">{MONTHS[first.mes - 1]} {first.anio}</p><p className="text-xs font-normal text-muted-foreground">{rows.length} {rows.length === 1 ? "recibo guardado" : "recibos guardados"}</p></div><div className="flex flex-wrap gap-x-5 gap-y-1 text-xs font-normal"><span>Facturado <strong className="ml-1 text-foreground">{eur.format(total)}</strong></span><span>Cobrado <strong className="ml-1 text-primary">{eur.format(paidTotal)}</strong></span></div></div></AccordionTrigger>
             <AccordionContent><div className="divide-y divide-border rounded-md border border-border">{rows.map((receipt) => {
               const tenant = tenantById.get(receipt.inquilino_id);
-              return <div key={receipt.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{tenant?.inquilino ?? "Inquilino"}</p><Badge variant={receipt.estado_pago === "Cobrado" ? "default" : "secondary"}>{receipt.estado_pago}</Badge></div><p className="mt-1 truncate text-xs text-muted-foreground">{tenant?.direccion || "Sin dirección"}{receipt.fecha_cobro ? ` · Cobrado el ${receipt.fecha_cobro}` : ""}</p></div><div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end"><strong className="mr-1 text-base">{eur.format(n(receipt.total_a_cobrar))}</strong><Button variant="outline" size="sm" disabled={!tenant} onClick={() => tenant && setPreview({ tenant, receipt })}><Printer className="h-4 w-4" /> Abrir recibo</Button><Button variant="destructive" size="sm" onClick={() => setDeleting({ tenant: tenant ?? null, receipt })}><Trash2 className="h-4 w-4" /> Eliminar</Button></div></div>;
+              return <div key={receipt.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{tenant?.inquilino ?? "Inquilino"}</p><Badge variant={receipt.estado_pago === "Cobrado" ? "default" : "secondary"}>{receipt.estado_pago}</Badge>{receipt.notas && <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100"><MessageSquareText className="h-3 w-3" /> Comentario</Badge>}</div><p className="mt-1 truncate text-xs text-muted-foreground">{tenant?.direccion || "Sin dirección"}{receipt.fecha_cobro ? ` · Cobrado el ${receipt.fecha_cobro}` : ""}</p>{receipt.notas && <p className="mt-2 max-w-2xl whitespace-pre-wrap rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">{receipt.notas}</p>}</div><div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end"><strong className="mr-1 text-base">{eur.format(n(receipt.total_a_cobrar))}</strong><Button variant="outline" size="sm" disabled={!tenant} onClick={() => tenant && setPreview({ tenant, receipt })}><Printer className="h-4 w-4" /> Abrir recibo</Button><Button variant="destructive" size="sm" onClick={() => setDeleting({ tenant: tenant ?? null, receipt })}><Trash2 className="h-4 w-4" /> Eliminar</Button></div></div>;
             })}</div></AccordionContent>
           </AccordionItem>;
         })}</Accordion>}
