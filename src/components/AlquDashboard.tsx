@@ -36,12 +36,13 @@ const dec = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
 const isoToday = () => new Date().toISOString().slice(0, 10);
 const n = (value: string | number | null | undefined) => Number(String(value ?? "").replace(/\s/g, "").replace(",", ".")) || 0;
 
-/** Importes del mes: la luz sale de las lecturas o de un importe fijo escrito a mano. Si el inquilino no lleva suministros, solo cobra el alquiler. */
+/** Importes del mes: el alquiler puede ajustarse a mano (altas a mitad de mes), la luz sale de las lecturas o de un importe fijo. */
 function amountsFor(tenant: AlquInquilino, draft: Draft) {
+  const rent = Math.max(0, n(draft.importe_alquiler));
   if (!tenant.cobra_suministros) {
-    return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: n(tenant.importe_alquiler) };
+    return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: rent };
   }
-  const base = calculateAlquAmounts(
+  const raw = calculateAlquAmounts(
     tenant,
     n(draft.lectura_anterior),
     draft.luz_modo === "importe" ? n(draft.lectura_anterior) : n(draft.lectura_actual),
@@ -50,12 +51,14 @@ function amountsFor(tenant: AlquInquilino, draft: Draft) {
     draft.aplica_agua_residual,
     n(draft.importe_agua_residual),
   );
+  const base = { ...raw, total: raw.total - n(tenant.importe_alquiler) + rent };
   if (draft.luz_modo !== "importe") return base;
   const luz = Math.max(0, n(draft.total_luz_manual));
   return { ...base, kw: 0, baseLuz: luz, luz, total: base.total - base.luz + luz };
 }
 
 type Draft = {
+  importe_alquiler: string;
   luz_modo: "lectura" | "importe";
   total_luz_manual: string;
   lectura_anterior: string;
@@ -69,6 +72,7 @@ type Draft = {
   quien_cobra: string;
   notas: string;
 };
+
 
 export const blankTenant = (): AlquInquilino => ({
   id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
@@ -200,7 +204,9 @@ export function AlquDashboard() {
       const paid = garbageAlreadyPaid(receipts, tenant, year, month, row?.id);
       const manual = !!row && n(row.kw_consumidos) === 0 && n(row.total_luz) > 0 && n(row.lectura_actual) === n(row.lectura_anterior);
       next[tenant.id] = {
+        importe_alquiler: String(row && n(row.importe_alquiler) > 0 ? row.importe_alquiler : tenant.importe_alquiler),
         luz_modo: manual ? "importe" : "lectura",
+
         total_luz_manual: String(manual ? n(row!.total_luz) : 0),
         lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
@@ -233,7 +239,7 @@ export function AlquDashboard() {
       const savedReceipt = await upsertAlquCobro({
         ...(existing?.id ? { id: existing.id } : {}), inquilino_id: tenant.id, anio: year, mes: month,
         lectura_anterior: supplies ? anterior : 0, lectura_actual: supplies ? actual : 0,
-        kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: n(tenant.importe_alquiler),
+        kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: Math.max(0, n(draft.importe_alquiler)),
         aplica_basura_mes: supplies && draft.aplica_basura_mes, estado_basura_trimestre: !supplies ? "No corresponde pagar" : draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
         importe_basura_cobrado: amounts.basura, importe_agua: supplies ? Math.max(0, n(draft.importe_agua)) : 0, total_a_cobrar: amounts.total,
         aplica_agua_residual: supplies && draft.aplica_agua_residual,
@@ -340,6 +346,11 @@ export function AlquDashboard() {
             </button>
           </CardHeader>
           {isOpen && <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Alquiler de este mes (editable)"><Input type="number" min="0" step="0.01" value={draft.importe_alquiler} onChange={(e) => patchDraft(tenant.id, { importe_alquiler: e.target.value })} /></Field>
+              <Readout label="Alquiler habitual" value={eur.format(n(tenant.importe_alquiler))} />
+            </div>
+
             {!tenant.cobra_suministros && <p className="rounded-lg border border-border/60 bg-card/40 p-3 text-sm text-muted-foreground">Este inquilino no lleva suministros: solo se cobra el alquiler ({eur.format(n(tenant.importe_alquiler))}).</p>}
             {tenant.cobra_suministros && <div className="space-y-3 rounded-lg border border-border/60 bg-card/40 p-3">
               <div className="flex flex-wrap items-center gap-2">
