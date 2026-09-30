@@ -110,10 +110,12 @@ export type Database = {
           importe_agua_residual: number
           importe_alquiler: number
           importe_basura: number
+          importe_fianza: number
           inquilino: string
           iva: number
           minimo_luz: number
           notas: string | null
+          paga_fianza: boolean
           precio_kw: number
           updated_at: string
         }
@@ -126,10 +128,12 @@ export type Database = {
           importe_agua_residual?: number
           importe_alquiler?: number
           importe_basura?: number
+          importe_fianza?: number
           inquilino: string
           iva?: number
           minimo_luz?: number
           notas?: string | null
+          paga_fianza?: boolean
           precio_kw?: number
           updated_at?: string
         }
@@ -142,10 +146,12 @@ export type Database = {
           importe_agua_residual?: number
           importe_alquiler?: number
           importe_basura?: number
+          importe_fianza?: number
           inquilino?: string
           iva?: number
           minimo_luz?: number
           notas?: string | null
+          paga_fianza?: boolean
           precio_kw?: number
           updated_at?: string
         }

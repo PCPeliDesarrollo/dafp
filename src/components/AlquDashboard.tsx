@@ -100,7 +100,7 @@ type Draft = {
 export const blankTenant = (): AlquInquilino => ({
   id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
   frecuencia_basura: "Trimestral", iva: 21, precio_kw: 0, minimo_luz: 10, notas: null,
-  cobra_suministros: true, created_at: "", updated_at: "",
+  cobra_suministros: true, paga_fianza: false, importe_fianza: 0, created_at: "", updated_at: "",
 });
 
 function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInquilino | null; open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
@@ -121,6 +121,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
         cobra_suministros: form.cobra_suministros,
+        paga_fianza: form.paga_fianza, importe_fianza: n(form.importe_fianza),
       };
       if (isNew) await createAlquInquilino(values); else await updateAlquInquilino(form.id, values);
       toast.success(isNew ? "Inquilino añadido" : "Contrato actualizado"); onOpenChange(false); onSaved();
@@ -133,6 +134,11 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
       <Field label="Inquilino"><Input value={form.inquilino} onChange={(e) => set("inquilino", e.target.value)} /></Field>
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
       <MoneyField label="Alquiler" value={form.importe_alquiler} onChange={(v) => set("importe_alquiler", v)} />
+      <label className="flex min-h-10 items-center gap-2 self-end rounded-md border border-input px-3 text-sm">
+        <Checkbox checked={form.paga_fianza} onCheckedChange={(v) => set("paga_fianza", v === true)} />
+        <span>¿Paga fianza?</span>
+      </label>
+      {form.paga_fianza && <MoneyField label="Importe de la fianza" value={form.importe_fianza} onChange={(v) => set("importe_fianza", v)} />}
       <label className="flex min-h-10 items-center gap-2 self-end rounded-md border border-input px-3 text-sm sm:col-span-2">
         <Checkbox checked={form.cobra_suministros} onCheckedChange={(v) => set("cobra_suministros", v === true)} />
         <span>Cobrar suministros (luz, basura y agua). Si lo quitas, solo se cobra el alquiler.</span>
@@ -424,7 +430,7 @@ export function AlquDashboard() {
           </AccordionItem>;
         })}</Accordion>}
       </TabsContent>
-       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => setDeletingTenant(tenant)}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} />{tenant.cobra_suministros ? <><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></> : <Readout label="Suministros" value="Solo alquiler" />}</div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
+       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{tenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => setDeletingTenant(tenant)}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} />{tenant.cobra_suministros ? <><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></> : <Readout label="Suministros" value="Solo alquiler" />}{tenant.paga_fianza && <Readout label="Fianza" value={eur.format(n(tenant.importe_fianza))} />}</div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
       <TabsContent value="cobros" className="mt-5">{loading ? <Loading /> : <Card className="border-border/50"><CardContent className="p-4"><p className="mb-4 text-sm text-muted-foreground">Check verde = mes cobrado. Pincha un mes para abrirlo en Mensualidades.</p><div className="overflow-x-auto"><table className="w-full min-w-[720px] border-collapse text-sm"><thead><tr><th className="sticky left-0 bg-card p-2 text-left font-medium">Inquilino</th>{MONTHS.map((m) => <th key={m} className={cn("p-2 text-center text-xs font-medium text-muted-foreground", MONTHS[month - 1] === m && "text-primary")}>{m.slice(0, 3)}</th>)}</tr></thead><tbody>{tenants.map((tenant) => <tr key={tenant.id} className="border-t border-border/60"><td className="sticky left-0 bg-card p-2"><p className="font-medium">{tenant.inquilino}</p><p className="max-w-40 truncate text-xs text-muted-foreground">{tenant.direccion}</p></td>{MONTHS.map((m, i) => {
         const row = receipts.find((r) => r.inquilino_id === tenant.id && r.anio === year && r.mes === i + 1);
         const cobrado = row?.estado_pago === "Cobrado";
