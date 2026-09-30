@@ -100,7 +100,7 @@ type Draft = {
 export const blankTenant = (): AlquInquilino => ({
   id: "", inquilino: "", direccion: "", importe_alquiler: 0, importe_basura: 0, importe_agua_residual: 0,
   frecuencia_basura: "Trimestral", iva: 21, precio_kw: 0, minimo_luz: 10, notas: null,
-  cobra_suministros: true, created_at: "", updated_at: "",
+  cobra_suministros: true, paga_fianza: false, importe_fianza: 0, created_at: "", updated_at: "",
 });
 
 function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInquilino | null; open: boolean; onOpenChange: (v: boolean) => void; onSaved: () => void }) {
@@ -121,6 +121,7 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
         frecuencia_basura: form.frecuencia_basura, iva: n(form.iva), precio_kw: n(form.precio_kw),
         minimo_luz: n(form.minimo_luz), notas: form.notas?.trim() || null,
         cobra_suministros: form.cobra_suministros,
+        paga_fianza: form.paga_fianza, importe_fianza: n(form.importe_fianza),
       };
       if (isNew) await createAlquInquilino(values); else await updateAlquInquilino(form.id, values);
       toast.success(isNew ? "Inquilino añadido" : "Contrato actualizado"); onOpenChange(false); onSaved();
@@ -133,6 +134,11 @@ function TenantEditor({ tenant, open, onOpenChange, onSaved }: { tenant: AlquInq
       <Field label="Inquilino"><Input value={form.inquilino} onChange={(e) => set("inquilino", e.target.value)} /></Field>
       <Field label="Dirección"><Input value={form.direccion} onChange={(e) => set("direccion", e.target.value)} /></Field>
       <MoneyField label="Alquiler" value={form.importe_alquiler} onChange={(v) => set("importe_alquiler", v)} />
+      <label className="flex min-h-10 items-center gap-2 self-end rounded-md border border-input px-3 text-sm">
+        <Checkbox checked={form.paga_fianza} onCheckedChange={(v) => set("paga_fianza", v === true)} />
+        <span>¿Paga fianza?</span>
+      </label>
+      {form.paga_fianza && <MoneyField label="Importe de la fianza" value={form.importe_fianza} onChange={(v) => set("importe_fianza", v)} />}
       <label className="flex min-h-10 items-center gap-2 self-end rounded-md border border-input px-3 text-sm sm:col-span-2">
         <Checkbox checked={form.cobra_suministros} onCheckedChange={(v) => set("cobra_suministros", v === true)} />
         <span>Cobrar suministros (luz, basura y agua). Si lo quitas, solo se cobra el alquiler.</span>
