@@ -19,7 +19,7 @@ import {
   calculateAlquAmounts,
   createAlquInquilino,
   deleteAlquCobro,
-  deleteAlquInquilino,
+  deleteAlquInquilinoFrom,
   garbageAlreadyPaid,
   loadAlquData,
   previousReading,
@@ -212,6 +212,7 @@ export function AlquDashboard() {
   const [deleting, setDeleting] = useState<{ tenant: AlquInquilino | null; receipt: AlquCobro } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingTenant, setDeletingTenant] = useState<AlquInquilino | null>(null);
+  const [deleteFrom, setDeleteFrom] = useState<{ mes: number; anio: number }>({ mes: new Date().getMonth() + 1, anio: new Date().getFullYear() });
   const [removingTenant, setRemovingTenant] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState("mensualidades");
