@@ -287,8 +287,12 @@ export function AlquDashboard() {
     if (!deletingTenant) return;
     setRemovingTenant(true);
     try {
-      await deleteAlquInquilino(deletingTenant.id);
-      toast.success(`${deletingTenant.inquilino} eliminado`);
+      const result = await deleteAlquInquilinoFrom(deletingTenant.id, deleteFrom.anio, deleteFrom.mes);
+      toast.success(
+        result.tenantRemoved
+          ? `${deletingTenant.inquilino} eliminado por completo`
+          : `${deletingTenant.inquilino}: ${result.receiptsRemoved} recibo(s) eliminados desde ${MONTHS[deleteFrom.mes - 1]} de ${deleteFrom.anio}. Se conserva su historial anterior.`,
+      );
       setDeletingTenant(null);
       await reload();
     } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo eliminar el inquilino"); }
