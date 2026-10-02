@@ -157,6 +157,45 @@ export type Database = {
         }
         Relationships: []
       }
+      aportaciones: {
+        Row: {
+          concepto: string
+          created_at: string
+          devuelta: boolean
+          empresa: string
+          fecha: string
+          fecha_devolucion: string | null
+          fuente: string
+          id: string
+          monto: number
+          updated_at: string
+        }
+        Insert: {
+          concepto?: string
+          created_at?: string
+          devuelta?: boolean
+          empresa: string
+          fecha?: string
+          fecha_devolucion?: string | null
+          fuente?: string
+          id?: string
+          monto?: number
+          updated_at?: string
+        }
+        Update: {
+          concepto?: string
+          created_at?: string
+          devuelta?: boolean
+          empresa?: string
+          fecha?: string
+          fecha_devolucion?: string | null
+          fuente?: string
+          id?: string
+          monto?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cierres_mensuales: {
         Row: {
           anio: number
