@@ -1199,13 +1199,20 @@ export function SalesDashboard() {
                                 total: d.ingreso - gastosTiendaCash,
                                 totalLabel: "Dinero S",
                                 items: [
-                                  ...ventaItems(
-                                    filtered
-                                      .map((r) => ({ r, bd: getMetodoBreakdown(r) }))
-                                      .filter(({ bd }) => bd.efectivo > 0)
-                                      .sort((a, b) => (a.r.fecha < b.r.fecha ? 1 : -1))
-                                      .map(({ r }) => r),
-                                  ).map((it) => ({ ...it, importe: getMetodoBreakdown(filtered.find((r) => String(r.id) === it.sourceId) ?? r).efectivo })),
+                                  ...filtered
+                                    .map((r) => ({ r, bd: getMetodoBreakdown(r) }))
+                                    .filter(({ bd }) => bd.efectivo > 0)
+                                    .sort((a, b) => (a.r.fecha < b.r.fecha ? 1 : -1))
+                                    .map(({ r, bd }) => ({
+                                      id: String(r.id),
+                                      fecha: r.fecha,
+                                      concepto: ventaConcepto(r),
+                                      detalle: `Cobrado en efectivo ${eurP.format(bd.efectivo)}`,
+                                      importe: bd.efectivo,
+                                      sourceKind: "venta" as const,
+                                      sourceId: String(r.id),
+                                      hasPvd: r.pvd != null,
+                                    })),
                                   ...filteredGastos
                                     .filter((g) => g.categoria === "tienda" && g.fuente === "efectivo")
                                     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
