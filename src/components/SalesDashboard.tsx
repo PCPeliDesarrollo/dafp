@@ -1031,7 +1031,7 @@ export function SalesDashboard() {
               setKpiDetail({
                 title: `TOTAL · ${rangoLabel}`,
                 formula:
-                  "Dinero Real Efectivo + Dinero Real TPV + Dinero Real Banco + Gastos Personales del periodo seleccionado.",
+                  "Dinero Real Efectivo + Dinero Real TPV + Dinero Real Banco + Gastos Personales del periodo seleccionado − Aportaciones pendientes de devolver.",
                 total: totalDefinitivo,
                 totalLabel: "Total definitivo",
                 items: [
@@ -1055,6 +1055,16 @@ export function SalesDashboard() {
                     concepto: "Gastos Personales",
                     importe: gastosPersonales,
                   },
+                  ...(aportacionesPendientes > 0
+                    ? [
+                        {
+                          id: "total-aportaciones",
+                          concepto: "Aportaciones pendientes de devolver",
+                          importe: aportacionesPendientes,
+                          negativo: true,
+                        },
+                      ]
+                    : []),
                 ],
               })
             }
@@ -1077,6 +1087,16 @@ export function SalesDashboard() {
             </CardContent>
           </Card>
         </section>
+
+        {isSuper && (
+          <section className="mt-4">
+            <AportacionesCard
+              rows={aportacionesVista}
+              empresaDestino={esGeneral ? null : vista}
+              dineroS={dineroS}
+            />
+          </section>
+        )}
 
         {/* Resumen real de ingresos y beneficio, respeta filtro */}
         <section className="mt-4 grid gap-4 md:grid-cols-2">
