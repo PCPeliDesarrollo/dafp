@@ -1186,6 +1186,52 @@ export function SalesDashboard() {
                           </span>
                         </button>
 
+                        {mp === "efectivo" && (
+                          <button
+                            type="button"
+                            title="Ingresos en efectivo menos los gastos de tienda pagados en efectivo"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setKpiDetail({
+                                title: `Dinero S · ${rangoLabel}`,
+                                formula:
+                                  "Ingresos cobrados en efectivo menos los gastos de tienda pagados en efectivo del periodo seleccionado.",
+                                total: d.ingreso - gastosTiendaCash,
+                                totalLabel: "Dinero S",
+                                items: [
+                                  ...ventaItems(
+                                    filtered
+                                      .map((r) => ({ r, bd: getMetodoBreakdown(r) }))
+                                      .filter(({ bd }) => bd.efectivo > 0)
+                                      .sort((a, b) => (a.r.fecha < b.r.fecha ? 1 : -1))
+                                      .map(({ r }) => r),
+                                  ).map((it) => ({ ...it, importe: getMetodoBreakdown(filtered.find((r) => String(r.id) === it.sourceId) ?? r).efectivo })),
+                                  ...filteredGastos
+                                    .filter((g) => g.categoria === "tienda" && g.fuente === "efectivo")
+                                    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
+                                    .map((g) => ({
+                                      id: `gs-${g.id}`,
+                                      fecha: g.fecha,
+                                      concepto: g.concepto || "Gasto tienda",
+                                      detalle: "Gasto tienda · efectivo",
+                                      importe: -g.monto,
+                                      sourceKind: "gasto" as const,
+                                      sourceId: g.id,
+                                    })),
+                                ],
+                              });
+                            }}
+                            className="flex w-full items-center justify-between rounded px-1 py-0.5 text-[11px] transition-colors hover:bg-muted/50"
+                          >
+                            <span className="font-medium uppercase tracking-widest text-foreground/80 underline decoration-dotted underline-offset-2">
+                              Dinero S
+                            </span>
+                            <span className="tabular-nums font-semibold text-info">
+                              {eurP.format(d.ingreso - gastosTiendaCash)}
+                            </span>
+                          </button>
+                        )}
+
                         {cierre !== 0 && (
                           <div className="flex items-center justify-between px-1 text-[11px]">
                             <span className="text-muted-foreground">+ Cuentas anteriores</span>
