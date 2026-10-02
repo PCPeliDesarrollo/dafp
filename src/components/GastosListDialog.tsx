@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -50,10 +50,19 @@ export function GastosListDialog({
   const puedeBorrar = true;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [cat, setCat] = useState<GastoCategoria | "todas">(categoria);
+  const [fuenteF, setFuenteF] = useState<"todas" | "efectivo" | "banco">("todas");
+  useEffect(() => {
+    if (open) {
+      setCat(categoria);
+      setFuenteF("todas");
+    }
+  }, [open, categoria]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return gastos
-      .filter((g) => g.categoria === categoria)
+      .filter((g) => cat === "todas" || g.categoria === cat)
+      .filter((g) => fuenteF === "todas" || g.fuente === fuenteF)
       .filter((g) => {
         if (!q) return true;
         const fecha = fmtDate.format(new Date(g.fecha));
@@ -63,7 +72,7 @@ export function GastosListDialog({
           .includes(q);
       })
       .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
-  }, [gastos, categoria, query]);
+  }, [gastos, cat, fuenteF, query]);
   const total = filtered.reduce((a, g) => a + g.monto, 0);
 
 
@@ -85,7 +94,11 @@ export function GastosListDialog({
 
 
   const title =
-    categoria === "personales" ? "Gastos Personales" : "Gastos Tienda";
+    cat === "todas" ? "Todos los gastos" : cat === "personales" ? "Gastos Personales" : "Gastos Tienda";
+  const chip = (a: boolean) =>
+    `rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+      a ? "border-primary bg-primary/15 text-foreground" : "border-border/60 text-muted-foreground hover:bg-muted/50"
+    }`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,6 +123,20 @@ export function GastosListDialog({
             placeholder="Buscar por concepto, origen, fecha o importe…"
             className="h-9 pl-9 text-sm"
           />
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {(["todas", "tienda", "personales"] as const).map((c) => (
+            <button key={c} type="button" className={chip(cat === c)} onClick={() => setCat(c)}>
+              {c === "todas" ? "Tienda y personales" : c === "tienda" ? "Gastos Tienda" : "Gastos Personales"}
+            </button>
+          ))}
+          <span className="mx-1 w-px bg-border" />
+          {(["todas", "efectivo", "banco"] as const).map((f) => (
+            <button key={f} type="button" className={chip(fuenteF === f)} onClick={() => setFuenteF(f)}>
+              {f === "todas" ? "Efectivo y banco" : f === "efectivo" ? "Efectivo" : "Banco"}
+            </button>
+          ))}
         </div>
 
         {filtered.length === 0 ? (

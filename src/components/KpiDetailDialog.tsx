@@ -62,6 +62,8 @@ export function KpiDetailDialog({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
+  const [catF, setCatF] = useState<"todas" | "tienda" | "personal">("todas");
+  const [fuenteF, setFuenteF] = useState<"todas" | "efectivo" | "banco" | "tpv">("todas");
   const [pvdEditId, setPvdEditId] = useState<string | null>(null);
   const [pvdValue, setPvdValue] = useState("");
   const [pvdBusy, setPvdBusy] = useState(false);
@@ -69,6 +71,8 @@ export function KpiDetailDialog({
   useEffect(() => {
     setRemoved(new Set());
     setQuery("");
+    setCatF("todas");
+    setFuenteF("todas");
     setPvdEditId(null);
     setPvdValue("");
   }, [detail?.title]);
@@ -90,8 +94,12 @@ export function KpiDetailDialog({
   const visibleItems = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!detail) return [];
-    if (!q) return detail.items;
-    return detail.items.filter((it) => {
+    const txt = (it: KpiDetailItem) => `${it.concepto} ${it.detalle ?? ""}`.toLowerCase();
+    const base = detail.items
+      .filter((it) => catF === "todas" || txt(it).includes(catF))
+      .filter((it) => fuenteF === "todas" || txt(it).includes(fuenteF));
+    if (!q) return base;
+    return base.filter((it) => {
       const fecha = it.fecha
         ? new Date(it.fecha).toLocaleDateString("es-ES", {
             day: "2-digit",
@@ -104,7 +112,15 @@ export function KpiDetailDialog({
         .toLowerCase()
         .includes(q);
     });
-  }, [detail, query]);
+  }, [detail, query, catF, fuenteF]);
+  const hasText = (w: string) =>
+    !!detail?.items.some((it) => `${it.concepto} ${it.detalle ?? ""}`.toLowerCase().includes(w));
+  const showCat = hasText("tienda") || hasText("personal");
+  const showFuente = ["efectivo", "banco", "tpv"].filter((w) => hasText(w)).length > 1;
+  const chip = (a: boolean) =>
+    `rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+      a ? "border-primary bg-primary/15 text-foreground" : "border-border/60 text-muted-foreground hover:bg-muted/50"
+    }`;
 
   const visibleTotal = useMemo(
     () =>
