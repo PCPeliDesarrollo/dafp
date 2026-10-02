@@ -51,6 +51,7 @@ export function KpiDetailDialog({
   onOpenChange,
   onDelete,
   onSetPvd,
+  pvdSugerido,
 }: {
   detail: KpiDetail | null;
   onOpenChange: (open: boolean) => void;
@@ -58,6 +59,8 @@ export function KpiDetailDialog({
   onDelete?: (item: KpiDetailItem) => Promise<void> | void;
   /** Fija el PVD (coste) de un albarán; el beneficio se recalcula solo. */
   onSetPvd?: (item: KpiDetailItem, pvd: number) => Promise<void> | void;
+  /** Sugerencia de PVD al abrir el editor (p. ej. 20% en ingresos de banco de PCP). */
+  pvdSugerido?: (item: KpiDetailItem) => number | undefined;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
