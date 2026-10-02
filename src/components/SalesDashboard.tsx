@@ -1758,6 +1758,11 @@ export function SalesDashboard() {
         onOpenChange={(v) => !v && setKpiDetail(null)}
         onDelete={deleteKpiItem}
         onSetPvd={setVentaPvd}
+        pvdSugerido={(it) =>
+          vista === "pcp" && (it.sourceId ?? it.id).startsWith("bank-")
+            ? Math.round(it.importe * 0.2 * 100) / 100
+            : undefined
+        }
       />
 
     </div>
