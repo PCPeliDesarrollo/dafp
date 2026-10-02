@@ -51,6 +51,7 @@ export function KpiDetailDialog({
   onOpenChange,
   onDelete,
   onSetPvd,
+  pvdSugerido,
 }: {
   detail: KpiDetail | null;
   onOpenChange: (open: boolean) => void;
@@ -58,6 +59,8 @@ export function KpiDetailDialog({
   onDelete?: (item: KpiDetailItem) => Promise<void> | void;
   /** Fija el PVD (coste) de un albarán; el beneficio se recalcula solo. */
   onSetPvd?: (item: KpiDetailItem, pvd: number) => Promise<void> | void;
+  /** Sugerencia de PVD al abrir el editor (p. ej. 20% en ingresos de banco de PCP). */
+  pvdSugerido?: (item: KpiDetailItem) => number | undefined;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
@@ -76,6 +79,12 @@ export function KpiDetailDialog({
     setPvdEditId(null);
     setPvdValue("");
   }, [detail?.title]);
+
+  const openPvdEdit = (it: KpiDetailItem) => {
+    setPvdEditId(it.id);
+    const sug = pvdSugerido?.(it);
+    setPvdValue(sug !== undefined && Number.isFinite(sug) ? sug.toFixed(2) : "");
+  };
 
   const handleSavePvd = async (it: KpiDetailItem) => {
     if (!onSetPvd) return;
@@ -264,10 +273,7 @@ export function KpiDetailDialog({
                           ) : it.hasPvd ? (
                             <button
                               type="button"
-                              onClick={() => {
-                                setPvdEditId(it.id);
-                                setPvdValue("");
-                              }}
+                              onClick={() => openPvdEdit(it)}
                               className="mt-1 inline-flex items-center gap-1 rounded-md border border-blue-500/40 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-500 hover:bg-blue-500/20"
                               title="PVD añadido. Pincha para cambiarlo"
                             >
@@ -276,10 +282,7 @@ export function KpiDetailDialog({
                           ) : (
                             <button
                               type="button"
-                              onClick={() => {
-                                setPvdEditId(it.id);
-                                setPvdValue("");
-                              }}
+                              onClick={() => openPvdEdit(it)}
                               className="mt-1 inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20"
                             >
                               + PVD · calcular beneficio
