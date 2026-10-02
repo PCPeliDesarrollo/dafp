@@ -174,7 +174,24 @@ export function KpiDetailDialog({
                 className="h-9 pl-9 text-sm"
               />
             </div>
-            {query.trim() && (
+            {(showCat || showFuente) && (
+              <div className="flex flex-wrap gap-1.5">
+                {showCat &&
+                  (["todas", "tienda", "personal"] as const).map((c) => (
+                    <button key={c} type="button" className={chip(catF === c)} onClick={() => setCatF(c)}>
+                      {c === "todas" ? "Todo" : c === "tienda" ? "Gastos Tienda" : "Gastos Personales"}
+                    </button>
+                  ))}
+                {showCat && showFuente && <span className="mx-1 w-px bg-border" />}
+                {showFuente &&
+                  (["todas", "efectivo", "banco", "tpv"] as const).map((f) => (
+                    <button key={f} type="button" className={chip(fuenteF === f)} onClick={() => setFuenteF(f)}>
+                      {f === "todas" ? "Todos los cobros" : f === "efectivo" ? "Efectivo" : f === "banco" ? "Banco" : "TPV"}
+                    </button>
+                  ))}
+              </div>
+            )}
+            {(query.trim() || catF !== "todas" || fuenteF !== "todas") && (
               <div className="flex items-baseline justify-between rounded-lg border border-dashed border-border/60 px-3 py-2 text-xs">
                 <span className="text-muted-foreground">
                   {visibleItems.length} resultado{visibleItems.length === 1 ? "" : "s"}
