@@ -43,6 +43,13 @@
       "when": 1790788910689,
       "tag": "0005_add_fianza_to_alqu_inquilinos",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790930604224,
+      "tag": "0006_create_aportaciones",
+      "breakpoints": true
     }
   ]
 }
