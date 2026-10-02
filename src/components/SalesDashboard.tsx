@@ -53,6 +53,8 @@ import { CierresImportDialog } from "./CierresImportDialog";
 
 import { getVentasStore } from "@/lib/ventas-store";
 import { useGastos, useGastosGeneral, getGastosStore } from "@/lib/gastos-store";
+import { useAportaciones } from "@/lib/aportaciones-store";
+import { AportacionesCard } from "./AportacionesCard";
 import { useCierres, parseFuenteVendedor, VENDEDOR_NOMBRE } from "@/lib/cierres-store";
 import { formatMesAnio } from "@/lib/cierres-parser";
 import { EMPRESAS, EMPRESA_KEYS, useVista } from "@/lib/empresa";
@@ -606,14 +608,35 @@ export function SalesDashboard() {
     return ingreso - gasto + cierre;
   };
 
-  /** KPI definitivo: Dinero Real Efectivo + Gastos Personales + Dinero Real TPV + Dinero Real Banco. */
+  /** Aportaciones del jefe (solo superusuario): lo pendiente de devolver resta del TOTAL. */
+  const aportacionesAll = useAportaciones(isSuper);
+  const aportacionesVista = useMemo(() => {
+    let end: Date;
+    if (rango === "mes") {
+      const [yy, mm] = monthAnchor.split("-").map(Number);
+      end = new Date(yy, mm, 1);
+    } else {
+      end = new Date();
+      end.setDate(end.getDate() + 1);
+    }
+    return aportacionesAll.filter(
+      (a) => empresasVista.includes(a.empresa) && new Date(a.fecha) < end,
+    );
+  }, [aportacionesAll, empresasVista, rango, monthAnchor]);
+  const aportacionesPendientes = aportacionesVista
+    .filter((a) => !a.devuelta)
+    .reduce((s, a) => s + a.monto, 0);
+  const dineroS = desglosePago.efectivo.ingreso - gastosTiendaCash;
+
+  /** KPI definitivo: Dinero Real Efectivo + Gastos Personales + Dinero Real TPV + Dinero Real Banco − Aportaciones pendientes. */
   const totalDefinitivo = useMemo(
     () =>
       dineroRealMetodo("efectivo") +
       dineroRealMetodo("tpv") +
       dineroRealMetodo("banco") +
-      gastosPersonales,
-    [desglosePago, gastosPorFuente, cierresPeriodo, gastosPersonales],
+      gastosPersonales -
+      aportacionesPendientes,
+    [desglosePago, gastosPorFuente, cierresPeriodo, gastosPersonales, aportacionesPendientes],
   );
 
   /** Fija el PVD de un albarán desde el detalle de un KPI; el beneficio se recalcula solo. */
