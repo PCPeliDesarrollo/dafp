@@ -1,0 +1,2 @@
+ALTER TABLE public.alqu_inquilinos ADD COLUMN baja_desde date;
+COMMENT ON COLUMN public.alqu_inquilinos.baja_desde IS 'Primer dia del mes desde el que el inquilino deja de aparecer; se conserva la ficha y el historial previo.';

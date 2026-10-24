@@ -102,6 +102,7 @@ export type Database = {
       }
       alqu_inquilinos: {
         Row: {
+          baja_desde: string | null
           cobra_suministros: boolean
           created_at: string
           direccion: string
@@ -120,6 +121,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          baja_desde?: string | null
           cobra_suministros?: boolean
           created_at?: string
           direccion?: string
@@ -138,6 +140,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          baja_desde?: string | null
           cobra_suministros?: boolean
           created_at?: string
           direccion?: string

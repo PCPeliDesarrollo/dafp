@@ -50,6 +50,13 @@
       "when": 1790930604224,
       "tag": "0006_create_aportaciones",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792838573446,
+      "tag": "0007_alqu_baja_mensual",
+      "breakpoints": true
     }
   ]
 }
