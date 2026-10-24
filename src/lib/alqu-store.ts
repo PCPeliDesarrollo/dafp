@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { alquBajaDesde } from "./alqu-vigencia";
 
 export type AlquInquilino = Tables<"alqu_inquilinos">;
 export type AlquCobro = Tables<"alqu_cobros_mensuales">;
@@ -41,30 +42,13 @@ export async function deleteAlquInquilino(id: string) {
   if (error) throw error;
 }
 
-// Elimina los recibos del inquilino desde un mes/año en adelante. Si no queda
-// ningún recibo anterior, elimina también la ficha del inquilino.
+// Baja desde el mes siguiente, conservando ficha y recibos para el historial.
 export async function deleteAlquInquilinoFrom(id: string, anio: number, mes: number) {
-  const { data: recibos, error: readError } = await supabase
-    .from("alqu_cobros_mensuales")
-    .select("id,anio,mes")
-    .eq("inquilino_id", id);
-  if (readError) throw readError;
-  const target = anio * 12 + mes;
-  const toDelete = (recibos ?? []).filter((r) => r.anio * 12 + r.mes >= target);
-  if (toDelete.length > 0) {
-    const { error } = await supabase
-      .from("alqu_cobros_mensuales")
-      .delete()
-      .in("id", toDelete.map((r) => r.id));
-    if (error) throw error;
-  }
-  const quedanAnteriores = (recibos ?? []).some((r) => r.anio * 12 + r.mes < target);
-  if (!quedanAnteriores) {
-    const { error } = await supabase.from("alqu_inquilinos").delete().eq("id", id);
-    if (error) throw error;
-    return { tenantRemoved: true, receiptsRemoved: toDelete.length };
-  }
-  return { tenantRemoved: false, receiptsRemoved: toDelete.length };
+  const { data, error } = await supabase.from("alqu_inquilinos")
+    .update({ baja_desde: alquBajaDesde(anio, mes) }).eq("id", id)
+    .select("id").maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("No se pudo dar de baja al inquilino");
 }
 
 export async function upsertAlquCobro(values: AlquCobroInput) {
