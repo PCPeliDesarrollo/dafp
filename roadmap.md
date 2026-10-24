@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Guardar bajas de OTMAN y RUBÉN y verificar su ausencia en Cobros por mes de noviembre.
 - [x] Mostrar fecha de registro de cada inquilino.
 - [x] Guardar baja mensual y ocultar inquilinos en los meses siguientes conservando su historial.
 - [x] Verificar registro, baja en octubre y ausencia desde noviembre.
