@@ -312,6 +312,11 @@ export function AlquDashboard() {
   const years = Array.from({ length: 9 }, (_, i) => now.getFullYear() + 2 - i);
   const totalMonth = Array.from(current.values()).reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
   const collected = Array.from(current.values()).filter((r) => r.estado_pago === "Cobrado").reduce((sum, row) => sum + n(row.total_a_cobrar), 0);
+  // Luz mensual de los apartamentos de las Alcabalas (dirección "ALCABALAS APAR …"), calculada con los importes del mes seleccionado.
+  const alcabalasRows = useMemo(() => activeTenants
+    .filter((tenant) => /alcabalas/i.test(tenant.direccion))
+    .map((tenant) => ({ tenant, luz: drafts[tenant.id] ? amountsFor(tenant, drafts[tenant.id]).luz : 0 })), [activeTenants, drafts]);
+  const alcabalasLuzTotal = alcabalasRows.reduce((sum, row) => sum + row.luz, 0);
   const tenantById = useMemo(() => new Map(tenants.map((tenant) => [tenant.id, tenant])), [tenants]);
   const receiptGroups = useMemo(() => {
     const grouped = new Map<string, AlquCobro[]>();
