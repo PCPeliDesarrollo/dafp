@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { alquActivoEnMes, alquBajaDesde } from "@/lib/alqu-vigencia";
+import { paymentDayInfo } from "@/lib/alqu-pago";
 import {
   calculateAlquAmounts,
   createAlquInquilino,
@@ -353,6 +354,7 @@ export function AlquDashboard() {
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-base">{tenant.inquilino}</CardTitle>
                 <p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p><p className="mt-1 text-xs text-muted-foreground">Registro: {formatPaymentDate(tenant.created_at?.slice(0, 10) || null)}</p>
+                <PaymentDayLine cobros={receipts} tenantId={tenant.id} year={year} month={month} />
                 {tenant.cobra_suministros && (
                   <p className="mt-1 text-xs font-medium text-muted-foreground">
                     {lastSaved
@@ -439,7 +441,7 @@ export function AlquDashboard() {
           </AccordionItem>;
         })}</Accordion>}
       </TabsContent>
-       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{activeTenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p><p className="mt-1 text-xs text-muted-foreground">Registro: {formatPaymentDate(tenant.created_at?.slice(0, 10) || null)}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => { setDeleteFrom({ mes: month, anio: year }); setDeletingTenant(tenant); }}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} />{tenant.cobra_suministros ? <><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></> : <Readout label="Suministros" value="Solo alquiler" />}{tenant.paga_fianza && <Readout label="Fianza" value={eur.format(n(tenant.importe_fianza))} />}</div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
+       <TabsContent value="inquilinos" className="mt-5">{loading ? <Loading /> : <><div className="mb-4 flex justify-end"><Button onClick={() => setEditing(blankTenant())}><Plus className="h-4 w-4" /> Añadir inquilino</Button></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{activeTenants.map((tenant) => <Card key={tenant.id} className="gradient-card border-border/50"><CardContent className="p-5"><div className="flex items-start justify-between"><div><h2 className="font-semibold">{tenant.inquilino}</h2><p className="mt-1 text-xs text-muted-foreground">{tenant.direccion}</p><p className="mt-1 text-xs text-muted-foreground">Registro: {formatPaymentDate(tenant.created_at?.slice(0, 10) || null)}</p></div><div className="flex gap-1"><Button variant="ghost" size="icon" title="Editar contrato" onClick={() => setEditing(tenant)}><Edit3 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Eliminar inquilino" className="text-destructive hover:text-destructive" onClick={() => { setDeleteFrom({ mes: month, anio: year }); setDeletingTenant(tenant); }}><Trash2 className="h-4 w-4" /></Button></div></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Readout label="Alquiler" value={eur.format(n(tenant.importe_alquiler))} />{tenant.cobra_suministros ? <><Readout label="Basura" value={`${eur.format(n(tenant.importe_basura))} · ${tenant.frecuencia_basura}`} /><Readout label="Agua residual" value={`${eur.format(n(tenant.importe_agua_residual))} · Bimestral`} /><Readout label="Precio/KW" value={eur.format(n(tenant.precio_kw))} /><Readout label="Mínimo + IVA" value={`${eur.format(n(tenant.minimo_luz))} + ${dec.format(n(tenant.iva))} %`} /></> : <Readout label="Suministros" value="Solo alquiler" />}<PaymentDayReadout cobros={receipts} tenantId={tenant.id} year={year} month={month} />{tenant.paga_fianza && <Readout label="Fianza" value={eur.format(n(tenant.importe_fianza))} />}</div>{tenant.notas && <p className="mt-4 rounded-md bg-muted/60 p-2 text-xs text-muted-foreground">{tenant.notas}</p>}</CardContent></Card>)}</div></>}</TabsContent>
       <TabsContent value="cobros" className="mt-5">{loading ? <Loading /> : <div className="space-y-4"><Card className="gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><CardTitle className="text-base">Luz de las Alcabalas · {MONTHS[month - 1]} {year}</CardTitle><p className="text-xs text-muted-foreground">Lo que pagan de luz los apartamentos de las Alcabalas este mes (mínimo e IVA incluidos).</p></CardHeader><CardContent className="space-y-3"><div className="divide-y divide-border rounded-md border border-border">{alcabalasRows.map(({ tenant, luz }) => <div key={tenant.id} className="flex items-center justify-between gap-3 p-3 text-sm"><div className="min-w-0"><p className="font-medium">{tenant.inquilino}</p><p className="text-xs text-muted-foreground">{tenant.direccion}</p></div><strong>{eur.format(luz)}</strong></div>)}</div><div className="flex items-center justify-between border-t border-border pt-3"><span className="text-sm text-muted-foreground">Total luz Alcabalas</span><span className="text-xl font-semibold text-primary">{eur.format(alcabalasLuzTotal)}</span></div></CardContent></Card><Card className="border-border/50"><CardContent className="p-4"><p className="mb-4 text-sm text-muted-foreground">Check verde = mes cobrado. Pincha un mes para abrirlo en Mensualidades.</p><div className="overflow-x-auto"><table className="w-full min-w-[720px] border-collapse text-sm"><thead><tr><th className="sticky left-0 bg-card p-2 text-left font-medium">Inquilino</th>{MONTHS.map((m) => <th key={m} className={cn("p-2 text-center text-xs font-medium text-muted-foreground", MONTHS[month - 1] === m && "text-primary")}>{m.slice(0, 3)}</th>)}</tr></thead><tbody>{activeTenants.map((tenant) => <tr key={tenant.id} className="border-t border-border/60"><td className="sticky left-0 bg-card p-2"><p className="font-medium">{tenant.inquilino}</p><p className="max-w-40 truncate text-xs text-muted-foreground">{tenant.direccion}</p><p className="mt-1 text-xs text-muted-foreground">Registro: {formatPaymentDate(tenant.created_at?.slice(0, 10) || null)}</p></td>{MONTHS.map((m, i) => {
         const row = receipts.find((r) => r.inquilino_id === tenant.id && r.anio === year && r.mes === i + 1);
         const cobrado = row?.estado_pago === "Cobrado";
@@ -454,6 +456,24 @@ export function AlquDashboard() {
   </main>;
 }
 
+function PaymentDayLine({ cobros, tenantId, year, month }: { cobros: AlquCobro[]; tenantId: string; year: number; month: number }) {
+  const info = paymentDayInfo(cobros, tenantId, year, month);
+  if (info?.kind === "mes") {
+    return <p className="mt-1 text-xs font-medium text-green-700 dark:text-green-400">
+      Pagado el día {formatPaymentDate(info.fecha)}
+    </p>;
+  }
+  if (info) {
+    return <p className="mt-1 text-xs text-muted-foreground">
+      Último pago: {formatPaymentDate(info.fecha)}
+    </p>;
+  }
+  return <p className="mt-1 text-xs text-muted-foreground">Pago: sin registros todavía</p>;
+}
+function PaymentDayReadout({ cobros, tenantId, year, month }: { cobros: AlquCobro[]; tenantId: string; year: number; month: number }) {
+  const info = paymentDayInfo(cobros, tenantId, year, month);
+  return <Readout label="Día de pago" value={info ? formatPaymentDate(info.fecha) : "Sin registros"} />;
+}
 function Readout({ label, value, accent }: { label: string; value: string; accent?: boolean }) { return <div className="rounded-md bg-muted/50 p-2"><p className="text-[11px] text-muted-foreground">{label}</p><p className={accent ? "mt-1 font-semibold text-primary" : "mt-1 font-medium"}>{value}</p></div>; }
 function PeriodicPaidNotice({ receipt, period }: { receipt: AlquCobro; period: string }) { return <div className="flex items-start gap-2 rounded-md bg-green-500/10 px-2.5 py-2 text-xs font-medium text-green-700 dark:text-green-400"><Check className="mt-0.5 h-4 w-4 shrink-0" /><span>Pagado el día {formatPaymentDate(receipt.fecha_cobro)} en {MONTHS[receipt.mes - 1].toLowerCase()}. No corresponde volver a cobrarlo en este {period}.</span></div>; }
 function Summary({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) { return <Card className="gradient-card border-border/50"><CardContent className="flex items-center gap-4 p-4"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15"><Icon className="h-5 w-5 text-primary" /></div><div><p className="text-xs text-muted-foreground">{label}</p><p className="text-xl font-semibold">{value}</p></div></CardContent></Card>; }
