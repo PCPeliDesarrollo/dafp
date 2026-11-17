@@ -153,3 +153,18 @@ export function calculateAlquAmounts(
     total: Number(inquilino.importe_alquiler) + luz + basura + Math.max(0, agua) + residual,
   };
 }
+export type AlquFacturaLuz = Tables<"alqu_facturas_luz">;
+
+export async function loadAlquFacturasLuz() {
+  const { data, error } = await supabase.from("alqu_facturas_luz").select("*");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function upsertAlquFacturaLuz(anio: number, mes: number, monto_total: number, kwh_totales: number) {
+  const { data, error } = await supabase.from("alqu_facturas_luz")
+    .upsert({ anio, mes, monto_total, kwh_totales, updated_at: new Date().toISOString() }, { onConflict: "anio,mes" })
+    .select("*").single();
+  if (error) throw error;
+  return data;
+}

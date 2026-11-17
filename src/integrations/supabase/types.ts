@@ -100,6 +100,36 @@ export type Database = {
           },
         ]
       }
+      alqu_facturas_luz: {
+        Row: {
+          anio: number
+          created_at: string
+          id: string
+          kwh_totales: number
+          mes: number
+          monto_total: number
+          updated_at: string
+        }
+        Insert: {
+          anio: number
+          created_at?: string
+          id?: string
+          kwh_totales: number
+          mes: number
+          monto_total: number
+          updated_at?: string
+        }
+        Update: {
+          anio?: number
+          created_at?: string
+          id?: string
+          kwh_totales?: number
+          mes?: number
+          monto_total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alqu_inquilinos: {
         Row: {
           baja_desde: string | null

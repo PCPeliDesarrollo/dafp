@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { alquActivoEnMes, alquBajaDesde } from "@/lib/alqu-vigencia";
 import { paymentDayInfo } from "@/lib/alqu-pago";
+import { isAlcabalas, precioKwhFactura } from "@/lib/alqu-luz";
 import {
   calculateAlquAmounts,
   createAlquInquilino,
@@ -24,6 +25,9 @@ import {
   deleteAlquInquilinoFrom,
   garbageAlreadyPaid,
   loadAlquData,
+  loadAlquFacturasLuz,
+  upsertAlquFacturaLuz,
+  type AlquFacturaLuz,
   previousReading,
   updateAlquInquilino,
   upsertAlquCobro,
@@ -62,7 +66,8 @@ function paidPeriodicReceipt(
 }
 
 /** Importes del mes: el alquiler puede ajustarse a mano (altas a mitad de mes), la luz sale de las lecturas o de un importe fijo. */
-function amountsFor(tenant: AlquInquilino, draft: Draft) {
+function amountsFor(tenantBase: AlquInquilino, draft: Draft, precioKw?: number | null) {
+  const tenant = precioKw != null ? { ...tenantBase, precio_kw: precioKw } : tenantBase;
   const rent = Math.max(0, n(draft.importe_alquiler));
   if (!tenant.cobra_suministros) {
     return { kw: 0, baseLuz: 0, luz: 0, basura: 0, residual: 0, total: rent };
@@ -166,8 +171,11 @@ function MoneyField({ label, value, step = "0.01", onChange }: { label: string; 
   return <Field label={label}><Input type="number" min="0" step={step} value={value} onChange={(e) => onChange(n(e.target.value))} /></Field>;
 }
 
-function ReceiptDialog({ tenant, receipt, open, onOpenChange }: { tenant: AlquInquilino | null; receipt: AlquCobro | null; open: boolean; onOpenChange: (v: boolean) => void }) {
-  if (!tenant || !receipt) return null;
+function ReceiptDialog({ tenant: tenantBase, receipt, open, onOpenChange, facturas }: { tenant: AlquInquilino | null; receipt: AlquCobro | null; open: boolean; onOpenChange: (v: boolean) => void; facturas: AlquFacturaLuz[] }) {
+  if (!tenantBase || !receipt) return null;
+  const factura = isAlcabalas(tenantBase.direccion) ? facturas.find((f) => f.anio === receipt.anio && f.mes === receipt.mes) : undefined;
+  const precioFactura = factura ? precioKwhFactura(n(factura.monto_total), n(factura.kwh_totales)) : null;
+  const tenant = precioFactura != null ? { ...tenantBase, precio_kw: precioFactura } : tenantBase;
   const baseLuz = n(receipt.kw_consumidos) * n(tenant.precio_kw);
   const manualLuz = n(receipt.kw_consumidos) === 0 && n(receipt.lectura_actual) === n(receipt.lectura_anterior) && n(receipt.total_luz) > 0;
   const printReceipt = () => window.print();
@@ -218,11 +226,14 @@ export function AlquDashboard() {
   const [removingTenant, setRemovingTenant] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState("mensualidades");
+  const [facturas, setFacturas] = useState<AlquFacturaLuz[]>([]);
+  const [facturaForm, setFacturaForm] = useState({ monto: "", kwh: "" });
+  const [savingFactura, setSavingFactura] = useState(false);
   const toggleExpanded = (id: string) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
 
   const reload = useCallback(async () => {
     setLoading(true);
-    try { const data = await loadAlquData(); setTenants(data.inquilinos); setReceipts(data.cobros); }
+    try { const data = await loadAlquData(); setTenants(data.inquilinos); setReceipts(data.cobros); setFacturas(await loadAlquFacturasLuz()); }
     catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo cargar ALQU"); }
     finally { setLoading(false); }
   }, []);
@@ -257,6 +268,18 @@ export function AlquDashboard() {
     setDrafts(next);
   }, [tenants, receipts, current, year, month]);
 
+  const facturaMes = facturas.find((f) => f.anio === year && f.mes === month);
+  const precioMes = facturaMes ? precioKwhFactura(n(facturaMes.monto_total), n(facturaMes.kwh_totales)) : null;
+  useEffect(() => { setFacturaForm({ monto: facturaMes ? String(facturaMes.monto_total) : "", kwh: facturaMes ? String(facturaMes.kwh_totales) : "" }); }, [facturaMes?.id, facturaMes?.monto_total, facturaMes?.kwh_totales, year, month]);
+  const priceFor = (tenant: AlquInquilino) => isAlcabalas(tenant.direccion) ? precioMes : undefined;
+  const precioPreview = precioKwhFactura(n(facturaForm.monto), n(facturaForm.kwh));
+  const saveFactura = async () => {
+    if (precioPreview == null) { toast.error("Introduce el importe total y los kWh totales de la factura"); return; }
+    setSavingFactura(true);
+    try { const saved = await upsertAlquFacturaLuz(year, month, n(facturaForm.monto), n(facturaForm.kwh)); setFacturas((old) => [...old.filter((f) => f.id !== saved.id && !(f.anio === year && f.mes === month)), saved]); toast.success("Factura de luz guardada"); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar la factura"); }
+    finally { setSavingFactura(false); }
+  };
   const patchDraft = (id: string, values: Partial<Draft>) => setDrafts((old) => ({ ...old, [id]: { ...old[id], ...values } as Draft }));
   const saveReceipt = async (tenant: AlquInquilino) => {
     const draft = drafts[tenant.id]; if (!draft || !alquActivoEnMes(tenant, year, month)) return;
@@ -265,7 +288,8 @@ export function AlquDashboard() {
     const anterior = n(draft.lectura_anterior);
     const actual = manual ? anterior : n(draft.lectura_actual);
     if (!manual && actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
-    const amounts = amountsFor(tenant, draft);
+    if (!manual && tenant.cobra_suministros && isAlcabalas(tenant.direccion) && precioMes == null) { toast.error("Primero introduce la factura de luz del mes (Paso 1)"); return; }
+    const amounts = amountsFor(tenant, draft, priceFor(tenant));
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
@@ -316,7 +340,7 @@ export function AlquDashboard() {
   // Luz mensual de los apartamentos de las Alcabalas (dirección "ALCABALAS APAR …"), calculada con los importes del mes seleccionado.
   const alcabalasRows = useMemo(() => activeTenants
     .filter((tenant) => /alcabalas/i.test(tenant.direccion))
-    .map((tenant) => ({ tenant, luz: drafts[tenant.id] ? amountsFor(tenant, drafts[tenant.id]).luz : 0 })), [activeTenants, drafts]);
+    .map((tenant) => ({ tenant, luz: drafts[tenant.id] ? amountsFor(tenant, drafts[tenant.id], priceFor(tenant)).luz : 0 })), [activeTenants, drafts, precioMes]);
   const alcabalasLuzTotal = alcabalasRows.reduce((sum, row) => sum + row.luz, 0);
   const tenantById = useMemo(() => new Map(tenants.map((tenant) => [tenant.id, tenant])), [tenants]);
   const receiptGroups = useMemo(() => {
@@ -334,10 +358,11 @@ export function AlquDashboard() {
     <div className="flex flex-wrap items-end justify-between gap-4"><div><Badge className="mb-2 bg-primary/15 text-primary hover:bg-primary/15">Gestión de alquileres</Badge><h1 className="text-2xl font-semibold">ALQU</h1><p className="text-sm text-muted-foreground">Alquileres, lecturas y recibos mensuales</p></div><div className="flex gap-2"><Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent></Select><Select value={String(year)} onValueChange={(v) => setYear(Number(v))}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select></div></div>
     <div className="grid gap-3 sm:grid-cols-3"><Summary icon={Building2} label="Inquilinos" value={String(activeTenants.length)} /><Summary icon={ReceiptText} label="Facturado" value={eur.format(totalMonth)} /><Summary icon={Check} label="Cobrado" value={eur.format(collected)} /></div>
     <Tabs value={tab} onValueChange={setTab}><TabsList className="h-auto flex-wrap"><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="cobros"><Check className="mr-2 h-4 w-4" />Cobros por mes</TabsTrigger><TabsTrigger value="recibos"><FolderArchive className="mr-2 h-4 w-4" />Recibos guardados</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
-      <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <div className="grid gap-4 xl:grid-cols-2">{activeTenants.map((tenant) => {
+      <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <><Card className="mb-4 gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><CardTitle className="text-base">Paso 1 · Factura de luz de las Alcabalas · {MONTHS[month - 1]} {year}</CardTitle><p className="text-xs text-muted-foreground">Introduce los datos de la factura de la compañía eléctrica. Después podrás meter las lecturas de los 7 apartamentos (Paso 2).</p></CardHeader><CardContent className="space-y-3"><div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"><Field label="Importe total a pagar (€)"><Input inputMode="decimal" value={facturaForm.monto} onChange={(e) => setFacturaForm((f) => ({ ...f, monto: e.target.value }))} placeholder="0,00" /></Field><Field label="Kilovatios totales (kWh)"><Input inputMode="decimal" value={facturaForm.kwh} onChange={(e) => setFacturaForm((f) => ({ ...f, kwh: e.target.value }))} placeholder="0" /></Field><Button onClick={() => void saveFactura()} disabled={savingFactura}>{savingFactura ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar factura</Button></div>{precioMes != null ? <div className="rounded-md bg-green-500/10 px-3 py-2 text-sm font-medium text-green-700 dark:text-green-400">El precio del kWh para este mes es de {new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 6 }).format(precioMes)}</div> : <div className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">Falta la factura de este mes. {precioPreview != null ? `Con estos datos saldría a ${dec.format(precioPreview)} € el kWh — pulsa Guardar factura.` : "Hasta que la guardes no se calcula la luz de las Alcabalas."}</div>}</CardContent></Card><div className="grid gap-4 xl:grid-cols-2">{activeTenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
-        const amounts = amountsFor(tenant, draft);
+        const amounts = amountsFor(tenant, draft, priceFor(tenant));
+        const needsFactura = isAlcabalas(tenant.direccion) && precioMes == null;
         const garbagePayment = paidPeriodicReceipt(receipts, tenant, year, month, "garbage");
         const residualPayment = paidPeriodicReceipt(receipts, tenant, year, month, "residual");
         const isOpen = !!expanded[tenant.id];
@@ -398,7 +423,9 @@ export function AlquDashboard() {
                 <Button type="button" size="sm" variant={draft.luz_modo === "lectura" ? "default" : "outline"} onClick={() => patchDraft(tenant.id, { luz_modo: "lectura" })}>Por lecturas</Button>
                 <Button type="button" size="sm" variant={draft.luz_modo === "importe" ? "default" : "outline"} onClick={() => patchDraft(tenant.id, { luz_modo: "importe" })}>Importe fijo</Button>
               </div>
-              {draft.luz_modo === "lectura"
+              {draft.luz_modo === "lectura" && needsFactura
+                ? <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">Primero introduce la factura de luz del mes arriba (Paso 1) para saber a cuánto sale el kWh.</p>
+                : draft.luz_modo === "lectura"
                 ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div>
                 : <div className="grid grid-cols-2 gap-3"><Field label="Importe de luz que paga"><Input type="number" min="0" step="0.01" value={draft.total_luz_manual} onChange={(e) => patchDraft(tenant.id, { total_luz_manual: e.target.value })} /></Field><Readout label="Total luz" value={eur.format(amounts.luz)} accent /></div>}
             </div>}
@@ -424,7 +451,7 @@ export function AlquDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><div><p className="text-xs text-muted-foreground">Total a pagar</p><p className="text-2xl font-semibold text-primary">{eur.format(amounts.total)}</p></div><div className="flex gap-2">{row && <Button variant="outline" size="sm" onClick={() => setPreview({ tenant, receipt: row })}><Printer className="h-4 w-4" /> Recibo</Button>}<Button size="sm" onClick={() => saveReceipt(tenant)} disabled={savingId === tenant.id}>{savingId === tenant.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar</Button></div></div>
           </CardContent>}
         </Card>;
-      })}</div>}</TabsContent>
+      })}</div></>}</TabsContent>
       <TabsContent value="recibos" className="mt-5">
         {loading ? <Loading /> : receiptGroups.length === 0 ? <Card className="border-dashed"><CardContent className="flex min-h-48 flex-col items-center justify-center text-center"><FolderArchive className="mb-3 h-8 w-8 text-muted-foreground" /><p className="font-medium">Todavía no hay recibos guardados</p><p className="mt-1 text-sm text-muted-foreground">Al pulsar Guardar en una mensualidad, aparecerá aquí dentro de su mes.</p></CardContent></Card> : <Accordion type="multiple" defaultValue={[receiptGroups[0]?.key ?? ""]} className="space-y-3">{receiptGroups.map(({ key, rows }) => {
           const first = rows[0];
@@ -451,7 +478,7 @@ export function AlquDashboard() {
     </Tabs>
     <AlertDialog open={!!deletingTenant} onOpenChange={(open) => !open && !removingTenant && setDeletingTenant(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar este inquilino?</AlertDialogTitle><AlertDialogDescription>Vas a dar de baja a <strong className="text-foreground">{deletingTenant?.inquilino}</strong>. El mes elegido será su último mes en la lista; desde el siguiente ya no aparecerá. Su ficha y sus recibos guardados se conservarán en el historial.</AlertDialogDescription></AlertDialogHeader><div className="flex flex-wrap items-end gap-3 py-2"><div className="flex flex-col gap-1.5"><span className="text-xs font-medium text-muted-foreground">Último mes del inquilino</span><Select value={String(deleteFrom.mes)} onValueChange={(v) => setDeleteFrom((prev) => ({ ...prev, mes: Number(v) }))}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent></Select></div><div className="flex flex-col gap-1.5"><span className="text-xs font-medium text-muted-foreground">Año</span><Select value={String(deleteFrom.anio)} onValueChange={(v) => setDeleteFrom((prev) => ({ ...prev, anio: Number(v) }))}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select></div></div><AlertDialogFooter><AlertDialogCancel disabled={removingTenant}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={removingTenant} onClick={(event) => { event.preventDefault(); void confirmDeleteTenant(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{removingTenant ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar inquilino</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     <TenantEditor tenant={editing} open={!!editing} onOpenChange={(v) => !v && setEditing(null)} onSaved={reload} />
-    <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} />
+    <ReceiptDialog tenant={preview?.tenant ?? null} receipt={preview?.receipt ?? null} open={!!preview} onOpenChange={(v) => !v && setPreview(null)} facturas={facturas} />
     <AlertDialog open={!!deleting} onOpenChange={(open) => !open && !deletingId && setDeleting(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar únicamente este recibo?</AlertDialogTitle><AlertDialogDescription>Vas a eliminar el recibo de <strong className="text-foreground">{deleting?.tenant?.inquilino ?? "este inquilino"}</strong> de <strong className="text-foreground">{deleting ? `${MONTHS[deleting.receipt.mes - 1]} de ${deleting.receipt.anio}` : "este mes"}</strong>, por <strong className="text-foreground">{deleting ? eur.format(n(deleting.receipt.total_a_cobrar)) : ""}</strong>. Ningún otro recibo se eliminará.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={!!deletingId}>Cancelar</AlertDialogCancel><AlertDialogAction disabled={!!deletingId} onClick={(event) => { event.preventDefault(); void confirmDeleteReceipt(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deletingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Eliminar solo este recibo</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </main>;
 }

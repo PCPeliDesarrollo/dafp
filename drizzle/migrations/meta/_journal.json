@@ -57,6 +57,13 @@
       "when": 1792838573446,
       "tag": "0007_alqu_baja_mensual",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794940905730,
+      "tag": "0008_alqu_facturas_luz",
+      "breakpoints": true
     }
   ]
 }
