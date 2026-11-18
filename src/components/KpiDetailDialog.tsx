@@ -84,6 +84,11 @@ export function KpiDetailDialog({
 
   const openPvdEdit = (it: KpiDetailItem) => {
     setPvdEditId(it.id);
+    // Si ya hay PVD guardado, se abre con esa cantidad para poder revisarla.
+    if (it.pvd != null && Number.isFinite(it.pvd)) {
+      setPvdValue(it.pvd.toFixed(2));
+      return;
+    }
     const sug = pvdSugerido?.(it);
     setPvdValue(sug !== undefined && Number.isFinite(sug) ? sug.toFixed(2) : "");
   };
