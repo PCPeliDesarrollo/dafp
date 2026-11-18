@@ -646,6 +646,16 @@ export function SalesDashboard() {
     for (const s of stores) {
       try {
         await s.updatePvd(id, pvd);
+        setKpiDetail((d) =>
+          d
+            ? {
+                ...d,
+                items: d.items.map((x) =>
+                  x.id === item.id ? { ...x, pvd, hasPvd: true } : x,
+                ),
+              }
+            : d,
+        );
         toast.success("PVD guardado", {
           description: "Beneficio recalculado: PVP total − PVD.",
         });
