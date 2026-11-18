@@ -677,6 +677,7 @@ export function SalesDashboard() {
         sourceKind: "venta" as const,
         sourceId: String(r.id),
         hasPvd: r.pvd != null,
+        pvd: r.pvd ?? null,
       }));
 
   const showMetodoDetalle = (mp: MetodoPago) => {
@@ -693,6 +694,7 @@ export function SalesDashboard() {
         sourceKind: "venta" as const,
         sourceId: String(r.id),
         hasPvd: r.pvd != null,
+        pvd: r.pvd ?? null,
       }));
     setKpiDetail({
       title: `${METODO_PAGO_LABEL[mp]} · ${rangoLabel}`,
@@ -719,6 +721,7 @@ export function SalesDashboard() {
       sourceKind: "venta" as const,
       sourceId: String(r.id),
       hasPvd: r.pvd != null,
+      pvd: r.pvd ?? null,
     }));
 
   /** Detalle de los gastos pagados con una fuente concreta (efectivo / banco) del mes. */
@@ -1255,6 +1258,7 @@ export function SalesDashboard() {
                                       sourceKind: "venta" as const,
                                       sourceId: String(r.id),
                                       hasPvd: r.pvd != null,
+                                      pvd: r.pvd ?? null,
                                     })),
                                   ...filteredGastos
                                     .filter((g) => g.categoria === "tienda" && g.fuente === "efectivo")
