@@ -12,6 +12,7 @@ import {
   type Aportacion,
 } from "@/lib/aportaciones-store";
 import { EMPRESAS, type EmpresaKey } from "@/lib/empresa";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 const eur = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
 const fmt = (d: string) => new Date(d).toLocaleDateString("es-ES");
@@ -36,6 +37,8 @@ export function AportacionesCard({
   const [busy, setBusy] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("pendientes");
   const [filtroFuente, setFiltroFuente] = useState<FiltroFuente>("todas");
+  const [pendingDelete, setPendingDelete] = useState<Aportacion | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const pendiente = rows.filter((r) => !r.devuelta).reduce((a, r) => a + r.monto, 0);
   const puedePagar = pendiente > 0 && dineroS >= pendiente;
@@ -72,6 +75,7 @@ export function AportacionesCard({
     }`;
 
   return (
+    <>
     <Card className="border-warning/40 shadow-elevated">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between gap-2 text-base">
@@ -170,10 +174,7 @@ export function AportacionesCard({
                   size="sm"
                   variant="ghost"
                   className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                  onClick={async () => {
-                    if (!confirm("¿Eliminar esta aportación?")) return;
-                    await deleteAportacion(a.id);
-                  }}
+                  onClick={() => setPendingDelete(a)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -184,5 +185,41 @@ export function AportacionesCard({
         <p className="text-[11px] text-muted-foreground">Marca la casilla cuando se la devolváis. Lo pendiente resta del TOTAL; no suma al Dinero S.</p>
       </CardContent>
     </Card>
+      <ConfirmDeleteDialog
+        request={
+          pendingDelete
+            ? {
+                title: "¿Eliminar esta aportación?",
+                description: (
+                  <>
+                    Vas a eliminar la aportación de{" "}
+                    <strong className="text-foreground">
+                      {pendingDelete.concepto || "este concepto"}
+                    </strong>{" "}
+                    ({EMPRESAS[pendingDelete.empresa]?.label ?? pendingDelete.empresa} ·{" "}
+                    {pendingDelete.fuente === "banco" ? "Banco" : "Efectivo"}), por{" "}
+                    <strong className="text-foreground">
+                      {eur.format(pendingDelete.monto)}
+                    </strong>
+                    . Dejará de contar en lo pendiente de devolver. Después no se puede recuperar.
+                  </>
+                ),
+              }
+            : null
+        }
+        busy={removing}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          setRemoving(true);
+          try {
+            await deleteAportacion(pendingDelete.id);
+          } finally {
+            setRemoving(false);
+            setPendingDelete(null);
+          }
+        }}
+        onClose={() => setPendingDelete(null)}
+      />
+    </>
   );
 }

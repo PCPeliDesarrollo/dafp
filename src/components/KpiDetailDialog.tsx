@@ -12,6 +12,7 @@ import { Loader2, Search, Trash2, CheckCircle2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 
 const eurP = new Intl.NumberFormat("es-ES", {
@@ -72,6 +73,7 @@ export function KpiDetailDialog({
   const [pvdEditId, setPvdEditId] = useState<string | null>(null);
   const [pvdValue, setPvdValue] = useState("");
   const [pvdBusy, setPvdBusy] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<KpiDetailItem | null>(null);
 
   useEffect(() => {
     setRemoved(new Set());
@@ -80,6 +82,7 @@ export function KpiDetailDialog({
     setFuenteF("todas");
     setPvdEditId(null);
     setPvdValue("");
+    setPendingDelete(null);
   }, [detail?.title]);
 
   const openPvdEdit = (it: KpiDetailItem) => {
@@ -157,10 +160,12 @@ export function KpiDetailDialog({
       setRemoved((prev) => new Set(prev).add(it.id));
     } finally {
       setBusyId(null);
+      setPendingDelete(null);
     }
   };
 
   return (
+    <>
     <Dialog open={!!detail} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl overflow-hidden">
         <DialogHeader>
@@ -313,7 +318,7 @@ export function KpiDetailDialog({
                           variant="ghost"
                           className="h-7 w-7 shrink-0 p-0 text-destructive hover:bg-destructive/10"
                           disabled={busyId === it.id || removed.has(it.id)}
-                          onClick={() => handleDelete(it)}
+                          onClick={() => setPendingDelete(it)}
                           title="Eliminar movimiento"
                         >
                           {busyId === it.id ? (
@@ -337,5 +342,45 @@ export function KpiDetailDialog({
         )}
       </DialogContent>
     </Dialog>
+      <ConfirmDeleteDialog
+        request={
+          pendingDelete
+            ? {
+                title: "¿Eliminar este movimiento?",
+                description: (
+                  <>
+                    Vas a eliminar{" "}
+                    <strong className="text-foreground">
+                      {pendingDelete.concepto}
+                    </strong>
+                    {pendingDelete.fecha ? (
+                      <>
+                        {" "}
+                        de{" "}
+                        <strong className="text-foreground">
+                          {new Date(pendingDelete.fecha).toLocaleDateString("es-ES", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </strong>
+                      </>
+                    ) : null}
+                    , por{" "}
+                    <strong className="text-foreground">
+                      {eurP.format(Math.abs(pendingDelete.importe))}
+                    </strong>
+                    . Se borra {pendingDelete.sourceKind === "venta" ? "el albarán" : "el gasto"}{" "}
+                    completo y la cantidad dejará de contar. Después no se puede recuperar.
+                  </>
+                ),
+              }
+            : null
+        }
+        busy={busyId === pendingDelete?.id}
+        onConfirm={() => pendingDelete && void handleDelete(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+      />
+    </>
   );
 }

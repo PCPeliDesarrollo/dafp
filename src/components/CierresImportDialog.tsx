@@ -30,6 +30,7 @@ import {
   cierresStore,
   cierreFuenteLabel,
   useCierres,
+  type Cierre,
   type CierreFuente,
   type CierreInput,
 } from "@/lib/cierres-store";
@@ -41,6 +42,7 @@ import {
   parseCierresText,
 } from "@/lib/cierres-parser";
 import { readCierresImage } from "@/lib/cierres-ai.functions";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 import { EMPRESAS, type EmpresaKey } from "@/lib/empresa";
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -93,6 +95,8 @@ export function CierresImportDialog() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Cierre | null>(null);
+  const [removingCierre, setRemovingCierre] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const imgRef = useRef<HTMLInputElement | null>(null);
   const { rows } = useCierres();
@@ -196,6 +200,7 @@ export function CierresImportDialog() {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
@@ -387,7 +392,7 @@ export function CierresImportDialog() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => cierresStore.remove(c.id)}
+                      onClick={() => setPendingDelete(c)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -399,5 +404,45 @@ export function CierresImportDialog() {
         </div>
       </DialogContent>
     </Dialog>
+      <ConfirmDeleteDialog
+        request={
+          pendingDelete
+            ? {
+                title: "¿Eliminar este cierre?",
+                description: (
+                  <>
+                    Vas a eliminar el cierre de{" "}
+                    <strong className="text-foreground">
+                      {formatMesAnio(pendingDelete.mes, pendingDelete.anio)}
+                    </strong>{" "}
+                    de{" "}
+                    <strong className="text-foreground">
+                      {EMPRESAS[pendingDelete.empresa]?.label ?? pendingDelete.empresa}
+                    </strong>{" "}
+                    ({cierreFuenteLabel(pendingDelete.fuente)}), por{" "}
+                    <strong className="text-foreground">
+                      {eur.format(pendingDelete.monto)}
+                    </strong>
+                    . Ese saldo dejará de entrar en las cuentas del mes. Después no se puede
+                    recuperar.
+                  </>
+                ),
+              }
+            : null
+        }
+        busy={removingCierre}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          setRemovingCierre(true);
+          try {
+            await cierresStore.remove(pendingDelete.id);
+          } finally {
+            setRemovingCierre(false);
+            setPendingDelete(null);
+          }
+        }}
+        onClose={() => setPendingDelete(null)}
+      />
+    </>
   );
 }

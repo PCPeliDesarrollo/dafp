@@ -9,3 +9,5 @@
 - [x] Restaurar el recibo de Lola eliminado durante la comprobación.
 - [x] Limitar cada borrado al recibo, inquilino, mes y año exactos.
 - [x] Mostrar claramente la periodicidad y la fecha de los pagos trimestrales y bimestrales.
+- [x] Pedir confirmación antes de borrar gastos, movimientos de KPI, cierres y aportaciones.
+- [x] Verificar cancelar (no borra) y confirmar (borra) en cada uno de esos sitios.

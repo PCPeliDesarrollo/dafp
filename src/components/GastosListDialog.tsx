@@ -19,6 +19,7 @@ import {
 } from "@/lib/gastos-store";
 import { useVista, EMPRESA_KEYS, type EmpresaKey } from "@/lib/empresa";
 import { toast } from "sonner";
+import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
 
 const eur = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -49,6 +50,7 @@ export function GastosListDialog({
   const gastosStore = getGastosStore(esGeneral ? EMPRESA_KEYS[0] : (vista as EmpresaKey));
   const puedeBorrar = true;
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pending, setPending] = useState<Gasto | null>(null);
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<GastoCategoria | "todas">(categoria);
   const [fuenteF, setFuenteF] = useState<"todas" | "efectivo" | "banco">("todas");
@@ -89,6 +91,7 @@ export function GastosListDialog({
       toast.error(e?.message ?? "No se pudo eliminar");
     } finally {
       setBusyId(null);
+      setPending(null);
     }
   };
 
@@ -101,6 +104,7 @@ export function GastosListDialog({
     }`;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -190,7 +194,7 @@ export function GastosListDialog({
                         variant="ghost"
                         className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
                         disabled={busyId === g.id}
-                        onClick={() => remove(g.id)}
+                        onClick={() => setPending(g)}
                         title="Eliminar"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -205,5 +209,35 @@ export function GastosListDialog({
         )}
       </DialogContent>
     </Dialog>
+      <ConfirmDeleteDialog
+        request={
+          pending
+            ? {
+                title: "¿Eliminar este gasto?",
+                description: (
+                  <>
+                    Vas a eliminar{" "}
+                    <strong className="text-foreground">
+                      {pending.concepto || "este gasto"}
+                    </strong>{" "}
+                    de{" "}
+                    <strong className="text-foreground">
+                      {fmtDate.format(new Date(pending.fecha))}
+                    </strong>
+                    , por{" "}
+                    <strong className="text-foreground">
+                      {eur.format(pending.monto)}
+                    </strong>
+                    . Después no se puede recuperar.
+                  </>
+                ),
+              }
+            : null
+        }
+        busy={busyId === pending?.id}
+        onConfirm={() => pending && void remove(pending.id)}
+        onClose={() => setPending(null)}
+      />
+    </>
   );
 }
