@@ -6,6 +6,11 @@ export function precioKwhFactura(montoTotal: number, kwhTotales: number): number
   return montoTotal / kwhTotales;
 }
 
+/** El precio mensual corregido por el administrador sustituye al calculado con la factura. */
+export function precioKwhMes(precioManual: number | null | undefined, montoTotal: number, kwhTotales: number): number | null {
+  return precioManual != null && precioManual > 0 ? precioManual : precioKwhFactura(montoTotal, kwhTotales);
+}
+
 /** Un precio personalizado en el recibo tiene prioridad sobre la factura y el contrato. */
 export function precioKwhRecibo(precioManual: number | null | undefined, precioFactura: number | null | undefined, precioContrato: number): number {
   return precioManual ?? precioFactura ?? precioContrato;

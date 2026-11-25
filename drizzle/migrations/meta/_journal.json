@@ -71,6 +71,13 @@
       "when": 1795598616276,
       "tag": "0009_alqu_precio_kw_mensual_editable",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795598927478,
+      "tag": "0010_precio_kwh_mensual_alcabalas",
+      "breakpoints": true
     }
   ]
 }

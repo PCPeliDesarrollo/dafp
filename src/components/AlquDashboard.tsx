@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { alquActivoEnMes, alquBajaDesde } from "@/lib/alqu-vigencia";
 import { paymentDayInfo } from "@/lib/alqu-pago";
-import { isAlcabalas, precioKwhFactura, precioKwhRecibo } from "@/lib/alqu-luz";
+import { isAlcabalas, precioKwhFactura, precioKwhMes, precioKwhRecibo } from "@/lib/alqu-luz";
 import { readFacturaLuzImage } from "@/lib/factura-luz-ai.functions";
 import {
   calculateAlquAmounts,
@@ -177,7 +177,7 @@ function MoneyField({ label, value, step = "0.01", onChange }: { label: string; 
 function ReceiptDialog({ tenant: tenantBase, receipt, open, onOpenChange, facturas }: { tenant: AlquInquilino | null; receipt: AlquCobro | null; open: boolean; onOpenChange: (v: boolean) => void; facturas: AlquFacturaLuz[] }) {
   if (!tenantBase || !receipt) return null;
   const factura = isAlcabalas(tenantBase.direccion) ? facturas.find((f) => f.anio === receipt.anio && f.mes === receipt.mes) : undefined;
-  const precioFactura = factura ? precioKwhFactura(n(factura.monto_total), n(factura.kwh_totales)) : null;
+  const precioFactura = factura ? precioKwhMes(factura.precio_kw, n(factura.monto_total), n(factura.kwh_totales)) : null;
   const tenant = { ...tenantBase, precio_kw: precioKwhRecibo(receipt.precio_kw, precioFactura, n(tenantBase.precio_kw)) };
   const baseLuz = n(receipt.kw_consumidos) * n(tenant.precio_kw);
   const manualLuz = n(receipt.kw_consumidos) === 0 && n(receipt.lectura_actual) === n(receipt.lectura_anterior) && n(receipt.total_luz) > 0;
@@ -230,7 +230,7 @@ export function AlquDashboard() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState("mensualidades");
   const [facturas, setFacturas] = useState<AlquFacturaLuz[]>([]);
-  const [facturaForm, setFacturaForm] = useState({ monto: "", kwh: "" });
+  const [facturaForm, setFacturaForm] = useState({ monto: "", kwh: "", precio: "" });
   const [savingFactura, setSavingFactura] = useState(false);
   const toggleExpanded = (id: string) => setExpanded((old) => ({ ...old, [id]: !old[id] }));
 
@@ -246,7 +246,7 @@ export function AlquDashboard() {
   const activeIds = useMemo(() => new Set(activeTenants.map((tenant) => tenant.id)), [activeTenants]);
   const current = useMemo(() => new Map(receipts.filter((r) => r.anio === year && r.mes === month && activeIds.has(r.inquilino_id)).map((r) => [r.inquilino_id, r])), [receipts, year, month, activeIds]);
   const facturaMes = facturas.find((f) => f.anio === year && f.mes === month);
-  const precioMes = facturaMes ? precioKwhFactura(n(facturaMes.monto_total), n(facturaMes.kwh_totales)) : null;
+  const precioMes = facturaMes ? precioKwhMes(facturaMes.precio_kw, n(facturaMes.monto_total), n(facturaMes.kwh_totales)) : null;
   useEffect(() => {
     const next: Record<string, Draft> = {};
     for (const tenant of tenants) {
@@ -274,9 +274,21 @@ export function AlquDashboard() {
     setDrafts(next);
   }, [tenants, receipts, current, year, month, precioMes]);
 
-  useEffect(() => { setFacturaForm({ monto: facturaMes ? String(facturaMes.monto_total) : "", kwh: facturaMes ? String(facturaMes.kwh_totales) : "" }); }, [facturaMes?.id, facturaMes?.monto_total, facturaMes?.kwh_totales, year, month]);
+  useEffect(() => {
+    const calculado = facturaMes ? precioKwhFactura(n(facturaMes.monto_total), n(facturaMes.kwh_totales)) : null;
+    setFacturaForm({
+      monto: facturaMes ? String(facturaMes.monto_total) : "",
+      kwh: facturaMes ? String(facturaMes.kwh_totales) : "",
+      precio: facturaMes ? String(facturaMes.precio_kw ?? calculado ?? "") : "",
+    });
+  }, [facturaMes?.id, facturaMes?.monto_total, facturaMes?.kwh_totales, facturaMes?.precio_kw, year, month]);
   const priceFor = (tenant: AlquInquilino, draft?: Draft) => isAlcabalas(tenant.direccion) ? (draft ? n(draft.precio_kw) : precioMes) : undefined;
-  const precioPreview = precioKwhFactura(n(facturaForm.monto), n(facturaForm.kwh));
+  const precioCalculado = precioKwhFactura(n(facturaForm.monto), n(facturaForm.kwh));
+  const precioPreview = n(facturaForm.precio) > 0 ? n(facturaForm.precio) : null;
+  const changeFacturaDato = (campo: "monto" | "kwh", value: string) => setFacturaForm((old) => {
+    const next = { ...old, [campo]: value };
+    return { ...next, precio: String(precioKwhFactura(n(next.monto), n(next.kwh)) ?? "") };
+  });
   const [readingFactura, setReadingFactura] = useState(false);
   const readFacturaFile = async (file: File | null | undefined) => {
     if (!file || !file.type.startsWith("image/")) { toast.error("Sube una imagen (pantallazo) de la factura"); return; }
@@ -284,7 +296,11 @@ export function AlquDashboard() {
     try {
       const imageDataUrl = await new Promise<string>((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result)); fr.onerror = () => reject(new Error("No se pudo leer la imagen")); fr.readAsDataURL(file); });
       const res = await readFacturaLuzImage({ data: { imageDataUrl } });
-      setFacturaForm((f) => ({ monto: res.monto_total != null ? String(res.monto_total) : f.monto, kwh: res.kwh_totales != null ? String(res.kwh_totales) : f.kwh }));
+      setFacturaForm((f) => ({
+        monto: res.monto_total != null ? String(res.monto_total) : f.monto,
+        kwh: res.kwh_totales != null ? String(res.kwh_totales) : f.kwh,
+        precio: String(precioKwhFactura(res.monto_total ?? n(f.monto), res.kwh_totales ?? n(f.kwh)) ?? ""),
+      }));
       const precioLeido = precioKwhFactura(res.monto_total ?? 0, res.kwh_totales ?? 0);
       if (precioLeido == null) {
         toast.warning("No pude leer todo; revisa y completa los datos");
@@ -295,9 +311,33 @@ export function AlquDashboard() {
     finally { setReadingFactura(false); }
   };
   const saveFactura = async () => {
-    if (precioPreview == null) { toast.error("Introduce el importe total y los kWh totales de la factura"); return; }
+    const precio = precioPreview;
+    if (precio == null) { toast.error("Introduce un precio del kWh mayor que cero"); return; }
     setSavingFactura(true);
-    try { const saved = await upsertAlquFacturaLuz(year, month, n(facturaForm.monto), n(facturaForm.kwh)); setFacturas((old) => [...old.filter((f) => f.id !== saved.id && !(f.anio === year && f.mes === month)), saved]); toast.success("Factura de luz guardada"); }
+    try {
+      await upsertAlquFacturaLuz(year, month, n(facturaForm.monto), n(facturaForm.kwh), precio);
+      const actualizaciones = activeTenants.filter((tenant) => isAlcabalas(tenant.direccion)).map(async (tenant) => {
+        const existing = current.get(tenant.id);
+        const draft = drafts[tenant.id];
+        if (!existing || !draft || !tenant.cobra_suministros || draft.luz_modo === "importe") return false;
+        const amounts = amountsFor(tenant, { ...draft, precio_kw: String(precio) }, precio);
+        const { trimestre: generatedTrimestre, ...receiptBase } = existing;
+        void generatedTrimestre;
+        await upsertAlquCobro({
+          ...receiptBase,
+          kw_consumidos: amounts.kw,
+          total_luz: amounts.luz,
+          total_a_cobrar: amounts.total,
+          precio_kw: precio,
+          updated_at: new Date().toISOString(),
+        });
+        return true;
+      });
+      const resultados = await Promise.all(actualizaciones);
+      const actualizados = resultados.filter(Boolean).length;
+      await reload();
+      toast.success(`Precio guardado: ${precioKwh.format(precio)} / kWh. Se aplicó a los 7 apartamentos${actualizados ? ` y actualizó ${actualizados} recibos guardados` : ""}.`);
+    }
     catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar la factura"); }
     finally { setSavingFactura(false); }
   };
@@ -380,7 +420,7 @@ export function AlquDashboard() {
     <div className="flex flex-wrap items-end justify-between gap-4"><div><Badge className="mb-2 bg-primary/15 text-primary hover:bg-primary/15">Gestión de alquileres</Badge><h1 className="text-2xl font-semibold">ALQU</h1><p className="text-sm text-muted-foreground">Alquileres, lecturas y recibos mensuales</p></div><div className="flex gap-2"><Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent></Select><Select value={String(year)} onValueChange={(v) => setYear(Number(v))}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select></div></div>
     <div className="grid gap-3 sm:grid-cols-3"><Summary icon={Building2} label="Inquilinos" value={String(activeTenants.length)} /><Summary icon={ReceiptText} label="Facturado" value={eur.format(totalMonth)} /><Summary icon={Check} label="Cobrado" value={eur.format(collected)} /></div>
     <Tabs value={tab} onValueChange={setTab}><TabsList className="h-auto flex-wrap"><TabsTrigger value="mensualidades"><CalendarDays className="mr-2 h-4 w-4" />Mensualidades</TabsTrigger><TabsTrigger value="cobros"><Check className="mr-2 h-4 w-4" />Cobros por mes</TabsTrigger><TabsTrigger value="recibos"><FolderArchive className="mr-2 h-4 w-4" />Recibos guardados</TabsTrigger><TabsTrigger value="inquilinos"><Building2 className="mr-2 h-4 w-4" />Inquilinos</TabsTrigger></TabsList>
-      <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <><Card className="mb-4 gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><CardTitle className="text-base">Paso 1 · Factura de luz de las Alcabalas · {MONTHS[month - 1]} {year}</CardTitle><p className="text-xs text-muted-foreground">Introduce los datos de la factura de la compañía eléctrica. Después podrás meter las lecturas de los 7 apartamentos (Paso 2).</p></CardHeader><CardContent className="space-y-3" onPaste={(e) => { const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith("image/")); if (f) { e.preventDefault(); void readFacturaFile(f); } }}><label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border p-4 text-center text-sm hover:bg-muted/40">{readingFactura ? <><Loader2 className="h-5 w-5 animate-spin" />Leyendo la factura…</> : <><ReceiptText className="h-5 w-5 text-primary" /><span className="font-medium">Subir pantallazo de la factura</span><span className="text-xs text-muted-foreground">Pulsa para elegir la imagen o pégala aquí (Ctrl+V)</span></>}<input type="file" accept="image/*" className="hidden" disabled={readingFactura} onChange={(e) => { void readFacturaFile(e.target.files?.[0]); e.target.value = ""; }} /></label><div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"><Field label="Importe total a pagar (€)"><Input inputMode="decimal" value={facturaForm.monto} onChange={(e) => setFacturaForm((f) => ({ ...f, monto: e.target.value }))} placeholder="0,00" /></Field><Field label="Kilovatios totales (kWh)"><Input inputMode="decimal" value={facturaForm.kwh} onChange={(e) => setFacturaForm((f) => ({ ...f, kwh: e.target.value }))} placeholder="0" /></Field><Button onClick={() => void saveFactura()} disabled={savingFactura}>{savingFactura ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar factura</Button></div>{precioPreview != null ? <div className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400"><p className="font-semibold">Pon el precio del kWh de {MONTHS[month - 1]} a {precioKwh.format(precioPreview)} / kWh.</p><p className="mt-1 text-xs">{precioMes === precioPreview ? "Factura guardada: este precio ya se usa en los recibos de las Alcabalas." : "Precio calculado con la factura. Revísalo y pulsa Guardar factura para aplicarlo a los recibos."}</p></div> : <div className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">Falta la factura de este mes. Sube el pantallazo y te diré aquí a cuánto poner el kWh antes de calcular los recibos.</div>}</CardContent></Card><div className="grid gap-4 xl:grid-cols-2">{activeTenants.map((tenant) => {
+      <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <><Card className="mb-4 gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><CardTitle className="text-base">Paso 1 · Factura de luz de las Alcabalas · {MONTHS[month - 1]} {year}</CardTitle><p className="text-xs text-muted-foreground">Introduce los datos de la factura de la compañía eléctrica. Después podrás meter las lecturas de los 7 apartamentos (Paso 2).</p></CardHeader><CardContent className="space-y-3" onPaste={(e) => { const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith("image/")); if (f) { e.preventDefault(); void readFacturaFile(f); } }}><label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border p-4 text-center text-sm hover:bg-muted/40">{readingFactura ? <><Loader2 className="h-5 w-5 animate-spin" />Leyendo la factura…</> : <><ReceiptText className="h-5 w-5 text-primary" /><span className="font-medium">Subir pantallazo de la factura</span><span className="text-xs text-muted-foreground">Pulsa para elegir la imagen o pégala aquí (Ctrl+V)</span></>}<input type="file" accept="image/*" className="hidden" disabled={readingFactura} onChange={(e) => { void readFacturaFile(e.target.files?.[0]); e.target.value = ""; }} /></label><div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"><Field label="Importe total a pagar (€)"><Input inputMode="decimal" value={facturaForm.monto} onChange={(e) => changeFacturaDato("monto", e.target.value)} placeholder="0,00" /></Field><Field label="Kilovatios totales (kWh)"><Input inputMode="decimal" value={facturaForm.kwh} onChange={(e) => changeFacturaDato("kwh", e.target.value)} placeholder="0" /></Field><Button onClick={() => void saveFactura()} disabled={savingFactura}>{savingFactura ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar y aplicar precio</Button></div>{precioPreview != null ? <div className="rounded-md bg-green-500/10 px-3 py-3 text-sm text-green-700 dark:text-green-400"><div className="grid gap-3 sm:grid-cols-[minmax(0,240px)_1fr] sm:items-end"><Field label={`Precio del kWh para los 7 recibos de ${MONTHS[month - 1]} (editable)`}><Input type="number" min="0" step="0.000001" value={facturaForm.precio} onChange={(e) => setFacturaForm((old) => ({ ...old, precio: e.target.value }))} className="bg-card font-semibold text-foreground" /></Field><div className="pb-2 text-xs"><p className="font-medium">Precio según la factura: {precioCalculado != null ? `${precioKwh.format(precioCalculado)} / kWh` : "completa importe y kWh"}.</p><p className="mt-1">Al guardar, este precio se aplicará a los siete apartamentos y recalculará sus recibos guardados.</p></div></div></div> : <div className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">Falta la factura de este mes. Sube el pantallazo y te diré aquí a cuánto poner el kWh antes de calcular los recibos.</div>}</CardContent></Card><div className="grid gap-4 xl:grid-cols-2">{activeTenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
         const amounts = amountsFor(tenant, draft, priceFor(tenant, drafts[tenant.id]));

@@ -161,9 +161,9 @@ export async function loadAlquFacturasLuz() {
   return data ?? [];
 }
 
-export async function upsertAlquFacturaLuz(anio: number, mes: number, monto_total: number, kwh_totales: number) {
+export async function upsertAlquFacturaLuz(anio: number, mes: number, monto_total: number, kwh_totales: number, precio_kw: number) {
   const { data, error } = await supabase.from("alqu_facturas_luz")
-    .upsert({ anio, mes, monto_total, kwh_totales, updated_at: new Date().toISOString() }, { onConflict: "anio,mes" })
+    .upsert({ anio, mes, monto_total, kwh_totales, precio_kw, updated_at: new Date().toISOString() }, { onConflict: "anio,mes" })
     .select("*").single();
   if (error) throw error;
   return data;

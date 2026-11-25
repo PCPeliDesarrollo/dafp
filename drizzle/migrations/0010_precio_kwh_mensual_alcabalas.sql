@@ -1,0 +1,1 @@
+ALTER TABLE public.alqu_facturas_luz ADD COLUMN precio_kw numeric;

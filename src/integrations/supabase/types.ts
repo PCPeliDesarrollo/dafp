@@ -111,6 +111,7 @@ export type Database = {
           kwh_totales: number
           mes: number
           monto_total: number
+          precio_kw: number | null
           updated_at: string
         }
         Insert: {
@@ -120,6 +121,7 @@ export type Database = {
           kwh_totales: number
           mes: number
           monto_total: number
+          precio_kw?: number | null
           updated_at?: string
         }
         Update: {
@@ -129,6 +131,7 @@ export type Database = {
           kwh_totales?: number
           mes?: number
           monto_total?: number
+          precio_kw?: number | null
           updated_at?: string
         }
         Relationships: []
