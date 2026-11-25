@@ -34,6 +34,7 @@ export type Database = {
           lectura_anterior: number
           mes: number
           notas: string | null
+          precio_kw: number | null
           quien_cobra: string | null
           total_a_cobrar: number
           total_luz: number
@@ -59,6 +60,7 @@ export type Database = {
           lectura_anterior?: number
           mes: number
           notas?: string | null
+          precio_kw?: number | null
           quien_cobra?: string | null
           total_a_cobrar?: number
           total_luz?: number
@@ -84,6 +86,7 @@ export type Database = {
           lectura_anterior?: number
           mes?: number
           notas?: string | null
+          precio_kw?: number | null
           quien_cobra?: string | null
           total_a_cobrar?: number
           total_luz?: number

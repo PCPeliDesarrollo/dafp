@@ -5,3 +5,8 @@ export function precioKwhFactura(montoTotal: number, kwhTotales: number): number
   if (!(montoTotal > 0) || !(kwhTotales > 0)) return null;
   return montoTotal / kwhTotales;
 }
+
+/** Un precio personalizado en el recibo tiene prioridad sobre la factura y el contrato. */
+export function precioKwhRecibo(precioManual: number | null | undefined, precioFactura: number | null | undefined, precioContrato: number): number {
+  return precioManual ?? precioFactura ?? precioContrato;
+}

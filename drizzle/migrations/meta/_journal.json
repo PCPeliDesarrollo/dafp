@@ -64,6 +64,13 @@
       "when": 1794940905730,
       "tag": "0008_alqu_facturas_luz",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795598616276,
+      "tag": "0009_alqu_precio_kw_mensual_editable",
+      "breakpoints": true
     }
   ]
 }

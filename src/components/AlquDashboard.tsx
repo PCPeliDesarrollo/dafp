@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { alquActivoEnMes, alquBajaDesde } from "@/lib/alqu-vigencia";
 import { paymentDayInfo } from "@/lib/alqu-pago";
-import { isAlcabalas, precioKwhFactura } from "@/lib/alqu-luz";
+import { isAlcabalas, precioKwhFactura, precioKwhRecibo } from "@/lib/alqu-luz";
 import { readFacturaLuzImage } from "@/lib/factura-luz-ai.functions";
 import {
   calculateAlquAmounts,
@@ -93,6 +93,7 @@ type Draft = {
   importe_alquiler: string;
   luz_modo: "lectura" | "importe";
   total_luz_manual: string;
+  precio_kw: string;
   lectura_anterior: string;
   lectura_actual: string;
   importe_agua: string;
@@ -177,7 +178,7 @@ function ReceiptDialog({ tenant: tenantBase, receipt, open, onOpenChange, factur
   if (!tenantBase || !receipt) return null;
   const factura = isAlcabalas(tenantBase.direccion) ? facturas.find((f) => f.anio === receipt.anio && f.mes === receipt.mes) : undefined;
   const precioFactura = factura ? precioKwhFactura(n(factura.monto_total), n(factura.kwh_totales)) : null;
-  const tenant = precioFactura != null ? { ...tenantBase, precio_kw: precioFactura } : tenantBase;
+  const tenant = { ...tenantBase, precio_kw: precioKwhRecibo(receipt.precio_kw, precioFactura, n(tenantBase.precio_kw)) };
   const baseLuz = n(receipt.kw_consumidos) * n(tenant.precio_kw);
   const manualLuz = n(receipt.kw_consumidos) === 0 && n(receipt.lectura_actual) === n(receipt.lectura_anterior) && n(receipt.total_luz) > 0;
   const printReceipt = () => window.print();
@@ -191,7 +192,7 @@ function ReceiptDialog({ tenant: tenantBase, receipt, open, onOpenChange, factur
             <div className="flex justify-between"><span className="text-muted-foreground">Luz (importe fijo)</span><strong>{eur.format(n(receipt.total_luz))}</strong></div>
           ) : <>
             <div className="flex justify-between"><span className="text-muted-foreground">Lectura de luz</span><span>{dec.format(n(receipt.lectura_anterior))} → {dec.format(n(receipt.lectura_actual))} KW</span></div>
-            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {eur.format(n(tenant.precio_kw))}</span></div>
+            <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{dec.format(n(receipt.kw_consumidos))} KW × {precioKwh.format(n(tenant.precio_kw))}</span></div>
             <div className="mt-1 flex justify-between"><span className="text-muted-foreground">Consumo</span><span>{eur.format(baseLuz)}</span></div>
             <div className="mt-1 flex justify-between"><span className="text-muted-foreground">+ Mínimo</span><span>{eur.format(n(tenant.minimo_luz))}</span></div>
             <div className="mt-1 flex justify-between"><span className="text-muted-foreground">IVA ({dec.format(n(tenant.iva))} %)</span><span>{eur.format((baseLuz + n(tenant.minimo_luz)) * n(tenant.iva) / 100)}</span></div>
@@ -244,6 +245,8 @@ export function AlquDashboard() {
   const activeTenants = useMemo(() => tenants.filter((tenant) => alquActivoEnMes(tenant, year, month)), [tenants, year, month]);
   const activeIds = useMemo(() => new Set(activeTenants.map((tenant) => tenant.id)), [activeTenants]);
   const current = useMemo(() => new Map(receipts.filter((r) => r.anio === year && r.mes === month && activeIds.has(r.inquilino_id)).map((r) => [r.inquilino_id, r])), [receipts, year, month, activeIds]);
+  const facturaMes = facturas.find((f) => f.anio === year && f.mes === month);
+  const precioMes = facturaMes ? precioKwhFactura(n(facturaMes.monto_total), n(facturaMes.kwh_totales)) : null;
   useEffect(() => {
     const next: Record<string, Draft> = {};
     for (const tenant of tenants) {
@@ -255,6 +258,7 @@ export function AlquDashboard() {
         luz_modo: manual ? "importe" : "lectura",
 
         total_luz_manual: String(manual ? n(row?.total_luz) : 0),
+        precio_kw: String(row?.precio_kw ?? (isAlcabalas(tenant.direccion) ? precioMes : n(tenant.precio_kw)) ?? 0),
         lectura_anterior: String(row?.lectura_anterior ?? previousReading(receipts, tenant.id, year, month)),
         lectura_actual: String(row?.lectura_actual ?? previousReading(receipts, tenant.id, year, month)),
         importe_agua: String(row?.importe_agua ?? 0),
@@ -268,12 +272,10 @@ export function AlquDashboard() {
       };
     }
     setDrafts(next);
-  }, [tenants, receipts, current, year, month]);
+  }, [tenants, receipts, current, year, month, precioMes]);
 
-  const facturaMes = facturas.find((f) => f.anio === year && f.mes === month);
-  const precioMes = facturaMes ? precioKwhFactura(n(facturaMes.monto_total), n(facturaMes.kwh_totales)) : null;
   useEffect(() => { setFacturaForm({ monto: facturaMes ? String(facturaMes.monto_total) : "", kwh: facturaMes ? String(facturaMes.kwh_totales) : "" }); }, [facturaMes?.id, facturaMes?.monto_total, facturaMes?.kwh_totales, year, month]);
-  const priceFor = (tenant: AlquInquilino) => isAlcabalas(tenant.direccion) ? precioMes : undefined;
+  const priceFor = (tenant: AlquInquilino, draft?: Draft) => isAlcabalas(tenant.direccion) ? (draft ? n(draft.precio_kw) : precioMes) : undefined;
   const precioPreview = precioKwhFactura(n(facturaForm.monto), n(facturaForm.kwh));
   const [readingFactura, setReadingFactura] = useState(false);
   const readFacturaFile = async (file: File | null | undefined) => {
@@ -308,7 +310,7 @@ export function AlquDashboard() {
     const actual = manual ? anterior : n(draft.lectura_actual);
     if (!manual && actual < anterior) { toast.error("La lectura actual no puede ser menor que la anterior"); return; }
     if (!manual && tenant.cobra_suministros && isAlcabalas(tenant.direccion) && precioMes == null) { toast.error("Primero introduce la factura de luz del mes (Paso 1)"); return; }
-    const amounts = amountsFor(tenant, draft, priceFor(tenant));
+    const amounts = amountsFor(tenant, draft, priceFor(tenant, drafts[tenant.id]));
     const paidElsewhere = garbageAlreadyPaid(receipts, tenant, year, month, existing?.id);
     setSavingId(tenant.id);
     try {
@@ -317,6 +319,7 @@ export function AlquDashboard() {
         ...(existing?.id ? { id: existing.id } : {}), inquilino_id: tenant.id, anio: year, mes: month,
         lectura_anterior: supplies ? anterior : 0, lectura_actual: supplies ? actual : 0,
         kw_consumidos: amounts.kw, total_luz: amounts.luz, importe_alquiler: Math.max(0, n(draft.importe_alquiler)),
+        precio_kw: supplies && !manual && isAlcabalas(tenant.direccion) ? Math.max(0, n(draft.precio_kw)) : null,
         aplica_basura_mes: supplies && draft.aplica_basura_mes, estado_basura_trimestre: !supplies ? "No corresponde pagar" : draft.aplica_basura_mes ? "Cobrado este trimestre" : paidElsewhere ? "No corresponde pagar" : "Pendiente de cobro",
         importe_basura_cobrado: amounts.basura, importe_agua: supplies ? Math.max(0, n(draft.importe_agua)) : 0, total_a_cobrar: amounts.total,
         aplica_agua_residual: supplies && draft.aplica_agua_residual,
@@ -359,7 +362,7 @@ export function AlquDashboard() {
   // Luz mensual de los apartamentos de las Alcabalas (dirección "ALCABALAS APAR …"), calculada con los importes del mes seleccionado.
   const alcabalasRows = useMemo(() => activeTenants
     .filter((tenant) => /alcabalas/i.test(tenant.direccion))
-    .map((tenant) => ({ tenant, luz: drafts[tenant.id] ? amountsFor(tenant, drafts[tenant.id], priceFor(tenant)).luz : 0 })), [activeTenants, drafts, precioMes]);
+    .map((tenant) => ({ tenant, luz: drafts[tenant.id] ? amountsFor(tenant, drafts[tenant.id], priceFor(tenant, drafts[tenant.id])).luz : 0 })), [activeTenants, drafts, precioMes]);
   const alcabalasLuzTotal = alcabalasRows.reduce((sum, row) => sum + row.luz, 0);
   const tenantById = useMemo(() => new Map(tenants.map((tenant) => [tenant.id, tenant])), [tenants]);
   const receiptGroups = useMemo(() => {
@@ -380,7 +383,7 @@ export function AlquDashboard() {
       <TabsContent value="mensualidades" className="mt-5">{loading ? <Loading /> : <><Card className="mb-4 gradient-card border-border/50 shadow-elevated"><CardHeader className="pb-3"><CardTitle className="text-base">Paso 1 · Factura de luz de las Alcabalas · {MONTHS[month - 1]} {year}</CardTitle><p className="text-xs text-muted-foreground">Introduce los datos de la factura de la compañía eléctrica. Después podrás meter las lecturas de los 7 apartamentos (Paso 2).</p></CardHeader><CardContent className="space-y-3" onPaste={(e) => { const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith("image/")); if (f) { e.preventDefault(); void readFacturaFile(f); } }}><label className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border p-4 text-center text-sm hover:bg-muted/40">{readingFactura ? <><Loader2 className="h-5 w-5 animate-spin" />Leyendo la factura…</> : <><ReceiptText className="h-5 w-5 text-primary" /><span className="font-medium">Subir pantallazo de la factura</span><span className="text-xs text-muted-foreground">Pulsa para elegir la imagen o pégala aquí (Ctrl+V)</span></>}<input type="file" accept="image/*" className="hidden" disabled={readingFactura} onChange={(e) => { void readFacturaFile(e.target.files?.[0]); e.target.value = ""; }} /></label><div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"><Field label="Importe total a pagar (€)"><Input inputMode="decimal" value={facturaForm.monto} onChange={(e) => setFacturaForm((f) => ({ ...f, monto: e.target.value }))} placeholder="0,00" /></Field><Field label="Kilovatios totales (kWh)"><Input inputMode="decimal" value={facturaForm.kwh} onChange={(e) => setFacturaForm((f) => ({ ...f, kwh: e.target.value }))} placeholder="0" /></Field><Button onClick={() => void saveFactura()} disabled={savingFactura}>{savingFactura ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar factura</Button></div>{precioPreview != null ? <div className="rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400"><p className="font-semibold">Pon el precio del kWh de {MONTHS[month - 1]} a {precioKwh.format(precioPreview)} / kWh.</p><p className="mt-1 text-xs">{precioMes === precioPreview ? "Factura guardada: este precio ya se usa en los recibos de las Alcabalas." : "Precio calculado con la factura. Revísalo y pulsa Guardar factura para aplicarlo a los recibos."}</p></div> : <div className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">Falta la factura de este mes. Sube el pantallazo y te diré aquí a cuánto poner el kWh antes de calcular los recibos.</div>}</CardContent></Card><div className="grid gap-4 xl:grid-cols-2">{activeTenants.map((tenant) => {
         const draft = drafts[tenant.id]; if (!draft) return null;
         const row = current.get(tenant.id); const anterior = n(draft.lectura_anterior);
-        const amounts = amountsFor(tenant, draft, priceFor(tenant));
+        const amounts = amountsFor(tenant, draft, priceFor(tenant, drafts[tenant.id]));
         const needsFactura = isAlcabalas(tenant.direccion) && precioMes == null;
         const garbagePayment = paidPeriodicReceipt(receipts, tenant, year, month, "garbage");
         const residualPayment = paidPeriodicReceipt(receipts, tenant, year, month, "residual");
@@ -445,7 +448,7 @@ export function AlquDashboard() {
               {draft.luz_modo === "lectura" && needsFactura
                 ? <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">Primero introduce la factura de luz del mes arriba (Paso 1) para saber a cuánto sale el kWh.</p>
                 : draft.luz_modo === "lectura"
-                ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div>
+                ? <div className="space-y-3">{isAlcabalas(tenant.direccion) && <Field label="Precio del kWh para este recibo (editable)"><Input type="number" min="0" step="0.000001" value={draft.precio_kw} onChange={(e) => patchDraft(tenant.id, { precio_kw: e.target.value })} /></Field>}<div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><Field label="Lectura anterior"><Input type="number" min="0" step="0.001" value={draft.lectura_anterior} onChange={(e) => patchDraft(tenant.id, { lectura_anterior: e.target.value })} /></Field><Field label="Lectura actual"><Input type="number" min={anterior} step="0.001" value={draft.lectura_actual} onChange={(e) => patchDraft(tenant.id, { lectura_actual: e.target.value })} /></Field><Readout label="Consumo" value={`${dec.format(amounts.kw)} KW`} /><Readout label="Total luz (mínimo + IVA)" value={eur.format(amounts.luz)} accent /></div></div>
                 : <div className="grid grid-cols-2 gap-3"><Field label="Importe de luz que paga"><Input type="number" min="0" step="0.01" value={draft.total_luz_manual} onChange={(e) => patchDraft(tenant.id, { total_luz_manual: e.target.value })} /></Field><Readout label="Total luz" value={eur.format(amounts.luz)} accent /></div>}
             </div>}
             {tenant.cobra_suministros && <div className="grid gap-3 sm:grid-cols-2">

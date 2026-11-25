@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { precioKwhFactura, isAlcabalas } from "./alqu-luz.ts";
+import { precioKwhFactura, precioKwhRecibo, isAlcabalas } from "./alqu-luz.ts";
 
 test("precio kWh = monto total / kWh totales", () => {
   assert.equal(precioKwhFactura(300, 1500), 0.2);
@@ -12,4 +12,10 @@ test("sin factura válida no hay precio", () => {
 test("detecta apartamentos de las Alcabalas", () => {
   assert.equal(isAlcabalas("ALCABALAS APAR 3"), true);
   assert.equal(isAlcabalas("CALLE MAYOR 2"), false);
+});
+test("el precio editable del recibo tiene prioridad sobre la factura", () => {
+  assert.equal(precioKwhRecibo(0.25, 0.2, 0.18), 0.25);
+});
+test("sin precio editable se mantiene el precio de la factura", () => {
+  assert.equal(precioKwhRecibo(null, 0.2, 0.18), 0.2);
 });
