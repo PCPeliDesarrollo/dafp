@@ -1,0 +1,1 @@
+COMMENT ON COLUMN public.alqu_facturas_luz.precio_kw IS 'DEPRECATED: el precio editable se gestiona individualmente en public.alqu_inquilinos.precio_kw';

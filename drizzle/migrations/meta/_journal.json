@@ -78,6 +78,13 @@
       "when": 1795598927478,
       "tag": "0010_precio_kwh_mensual_alcabalas",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795599286410,
+      "tag": "0011_retirar_precio_global_alcabalas",
+      "breakpoints": true
     }
   ]
 }

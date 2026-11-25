@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { precioKwhFactura, precioKwhMes, precioKwhRecibo, isAlcabalas } from "./alqu-luz.ts";
+import { precioKwhFactura, precioKwhAlcabalas, precioKwhRecibo, isAlcabalas } from "./alqu-luz.ts";
 
 test("precio kWh = monto total / kWh totales", () => {
   assert.equal(precioKwhFactura(300, 1500), 0.2);
@@ -19,9 +19,9 @@ test("el precio editable del recibo tiene prioridad sobre la factura", () => {
 test("sin precio editable se mantiene el precio de la factura", () => {
   assert.equal(precioKwhRecibo(null, 0.2, 0.18), 0.2);
 });
-test("el precio mensual corregido sustituye al cálculo de la factura", () => {
-  assert.equal(precioKwhMes(0.25, 300, 1500), 0.25);
+test("un recibo nuevo de Alcabalas usa el precio actualizado de la ficha", () => {
+  assert.equal(precioKwhAlcabalas(null, 0.25), 0.25);
 });
-test("sin corrección mensual se usa importe dividido entre kWh", () => {
-  assert.equal(precioKwhMes(null, 300, 1500), 0.2);
+test("un recibo guardado de Alcabalas conserva su precio individual", () => {
+  assert.equal(precioKwhAlcabalas(0.3, 0.25), 0.3);
 });

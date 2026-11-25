@@ -6,9 +6,9 @@ export function precioKwhFactura(montoTotal: number, kwhTotales: number): number
   return montoTotal / kwhTotales;
 }
 
-/** El precio mensual corregido por el administrador sustituye al calculado con la factura. */
-export function precioKwhMes(precioManual: number | null | undefined, montoTotal: number, kwhTotales: number): number | null {
-  return precioManual != null && precioManual > 0 ? precioManual : precioKwhFactura(montoTotal, kwhTotales);
+/** En Alcabalas, el recibo guardado conserva su precio; si aún no tiene uno, usa el de la ficha del inquilino. */
+export function precioKwhAlcabalas(precioRecibo: number | null | undefined, precioContrato: number): number {
+  return precioRecibo ?? precioContrato;
 }
 
 /** Un precio personalizado en el recibo tiene prioridad sobre la factura y el contrato. */
